@@ -1,0 +1,15 @@
+services:
+  mml:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: market-microstructure-lab:latest
+    container_name: mml-lab
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./data/normalized:/app/data/normalized
+      - ./data/metadata:/app/data/metadata
+    restart: unless-stopped

@@ -1,0 +1,187 @@
+:root {
+  --bg-darker: #080b10;
+  --bg-dark: #0d121c;
+  --bg-card: #131a27;
+  --bg-card-hover: #182132;
+  --border-color: #202b3d;
+  --border-highlight: #2f3d54;
+  
+  --color-buy: #00e5ff;
+  --color-buy-soft: rgba(0, 229, 255, 0.15);
+  --color-sell: #ff9100;
+  --color-sell-soft: rgba(255, 145, 0, 0.15);
+  --color-gold: #ffd700;
+  --color-gold-soft: rgba(255, 215, 0, 0.15);
+  --color-neutral: #94a3b8;
+  
+  --text-main: #f1f5f9;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
+  
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-sans: 'Inter', system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-darker);
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+/* Custom sleek scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-dark);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-highlight);
+}
+
+/* Global button styles */
+button {
+  cursor: pointer;
+  border: none;
+  outline: none;
+  transition: all 0.2s ease;
+  font-family: var(--font-sans);
+}
+
+/* Layout */
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.main-content {
+  flex: 1;
+  padding: 20px 28px;
+  max-width: 1720px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Card components */
+.mml-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+  position: relative;
+}
+
+.mml-card-title {
+  font-size: 0.92rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+/* Status Badges */
+.badge-buy {
+  background: var(--color-buy-soft);
+  color: var(--color-buy);
+  border: 1px solid rgba(0, 229, 255, 0.35);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.badge-sell {
+  background: var(--color-sell-soft);
+  color: var(--color-sell);
+  border: 1px solid rgba(255, 145, 0, 0.35);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.badge-gold {
+  background: var(--color-gold-soft);
+  color: var(--color-gold);
+  border: 1px solid rgba(255, 215, 0, 0.35);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* Tables */
+.mml-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.mml-table th {
+  text-align: left;
+  padding: 10px 14px;
+  background: rgba(13, 18, 28, 0.8);
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-color);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+.mml-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(32, 43, 61, 0.5);
+  color: var(--text-main);
+}
+
+.mml-table tr:hover td {
+  background: var(--bg-card-hover);
+}
+
+/* Grid layout helpers */
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 1200px) {
+  .grid-2, .grid-3, .grid-4 {
+    grid-template-columns: 1fr;
+  }
+}

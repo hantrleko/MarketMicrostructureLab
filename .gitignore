@@ -46,7 +46,10 @@ yarn-error.log*
 
 # Large raw & normalized datasets (reproducible via scripts/download_and_normalize.py)
 data/raw/*.zip
+data/raw/*.csv
 data/normalized/**/*.parquet
+*.parquet
+*.csv
 
 # Keep directory structures and metadata
 !data/raw/.gitkeep

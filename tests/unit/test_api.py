@@ -95,3 +95,23 @@ def test_system_info_and_health_endpoint():
         assert "build_commit" in data
         assert "data_version" in data
         assert data["runtime_mode"] in ["FULL_PARQUET_PRODUCTION", "RESEARCH_FIXTURE_FALLBACK", "STATIC_ONLY"]
+
+def test_fixture_fallback_mode(monkeypatch, tmp_path):
+    """Verify system enters RESEARCH_FIXTURE_FALLBACK mode when normalized parquet is absent"""
+    import apps.api.main as api_main
+    empty_dir = tmp_path / "empty_normalized"
+    empty_dir.mkdir()
+    monkeypatch.setattr(api_main, "NORMALIZED_DIR", empty_dir)
+    
+    mode_info = api_main.get_system_runtime_mode()
+    assert mode_info["runtime_mode"] == "RESEARCH_FIXTURE_FALLBACK"
+    assert mode_info["has_normalized_data"] is False
+    assert mode_info["has_fixtures"] is True
+    assert "Fixture" in mode_info["data_layer_description"]
+
+    # Test that get_trades_df successfully falls back to fixture
+    df = api_main.get_trades_df("BTCUSDT", "2026-07-01")
+    assert df is not None
+    assert len(df) > 0
+    assert "price" in df.columns
+

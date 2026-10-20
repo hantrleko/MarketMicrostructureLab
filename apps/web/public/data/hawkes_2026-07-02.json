@@ -37,6 +37,10 @@
     "sell_residual_autocorr_lag1": 0.020256979255966198,
     "interpretation": "Residual compensator increments tested against Exp(1) distribution. Non-rejection indicates empirical consistency with Hawkes intensity dynamics, but does not constitute mathematical proof of the underlying data generating mechanism."
   },
+  "fitting_warnings": [
+    "Supercritical regime: Spectral radius rho = 1.0153 >= 1.0 indicates theoretical non-stationarity over infinite horizons; linear branching approximations may diverge.",
+    "Residual misspecification: Compensator residual KS test rejects Exp(1) (buy p=0.0000, sell p=0.0000); empirical trade arrivals exhibit higher-order clustering beyond standard exponential decay."
+  ],
   "jitter_sensitivity": {
     "jitter_1e-06": {
       "spectral_radius": 1.0152913218963255,

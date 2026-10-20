@@ -37,6 +37,9 @@
     "sell_residual_autocorr_lag1": 0.03846476704562865,
     "interpretation": "Residual compensator increments tested against Exp(1) distribution. Non-rejection indicates empirical consistency with Hawkes intensity dynamics, but does not constitute mathematical proof of the underlying data generating mechanism."
   },
+  "fitting_warnings": [
+    "Residual misspecification: Compensator residual KS test rejects Exp(1) (buy p=0.0000, sell p=0.0000); empirical trade arrivals exhibit higher-order clustering beyond standard exponential decay."
+  ],
   "jitter_sensitivity": {
     "jitter_1e-06": {
       "spectral_radius": 0.9647102453083422,

@@ -194,6 +194,12 @@ class NonlinearImpactModel:
 
         # Trade-level estimation on individual positive trades (subsample up to 50k for tractability)
         trade_pos_mask = (R_clean > 0) & (Q_clean > 0)
+        trade_zero_count = int(np.sum(R_clean == 0))
+        trade_neg_count = int(np.sum(R_clean < 0))
+        trade_pos_count = int(np.sum(R_clean > 0))
+        trade_total_count = len(R_clean)
+        pos_pct = float((trade_pos_count / trade_total_count) * 100.0) if trade_total_count > 0 else 0.0
+
         if np.sum(trade_pos_mask) >= 100:
             q_tr = Q_clean[trade_pos_mask]
             r_tr = R_clean[trade_pos_mask]
@@ -211,12 +217,22 @@ class NonlinearImpactModel:
         half = n_obs // 2
         q_train, r_train = Q_clean[:half], R_clean[:half]
         q_test, r_test = Q_clean[half:], R_clean[half:]
+
+        train_start_utc = clean_times[0] if clean_times else ""
+        train_end_utc = clean_times[half - 1] if clean_times and half > 0 else ""
+        test_start_utc = clean_times[half] if clean_times and half < len(clean_times) else ""
+        test_end_utc = clean_times[-1] if clean_times else ""
+        train_obs = len(q_train)
+        test_obs = len(q_test)
+
+        train_r2_val = 0.0
         try:
             res_tr_log = sm.OLS(r_train, sm.add_constant(np.log(q_train))).fit()
             pred_test = res_tr_log.predict(sm.add_constant(np.log(q_test)))
             ss_res = np.sum((r_test - pred_test) ** 2)
             ss_tot = np.sum((r_test - np.mean(r_test)) ** 2)
             oos_r2_log = float(max(-1.0, 1.0 - (ss_res / ss_tot))) if ss_tot > 0 else 0.0
+            train_r2_val = float(res_tr_log.rsquared)
         except Exception:
             oos_r2_log = 0.0
 
@@ -302,6 +318,8 @@ class NonlinearImpactModel:
             "r_squared_binned": r2_power,
             "wls_fit": {
                 "name": "Weighted Least Squares (weighted by tier sample count)",
+                "estimator": "Classical WLS (weights = tier count)",
+                "se_type": "Classical WLS SE (unadjusted for cross-tier residual autocorrelation)",
                 "gamma_wls": gamma_wls,
                 "gamma_wls_se": gamma_wls_se,
                 "ci_95_lower": ci_wls_lower,
@@ -309,14 +327,37 @@ class NonlinearImpactModel:
                 "r_squared_wls": r2_wls
             },
             "trade_level_fit": {
-                "name": "Trade-Level Log-Log HAC Regression (individual trades)",
+                "name": "Trade-Level Log-Log HAC (Positive Response Sub-Sample: R > 0)",
+                "estimator": "OLS with Newey-West HAC covariance",
+                "sample_type": "POSITIVE_RESPONSE_SUBSAMPLE",
+                "conditioning": "Strictly conditional on positive signed price displacement (R_i > 0)",
+                "caveat": (
+                    "Evaluated strictly on the conditional positive-response sub-sample (R_i > 0); "
+                    "cannot serve as an unconditional full-sample validation because zero and adverse price moves "
+                    f"({trade_zero_count + trade_neg_count:,} trades, {(100.0 - pos_pct):.1f}% of sample) "
+                    "are dropped by the log transform."
+                ),
                 "gamma_trade": trade_level_gamma,
                 "gamma_trade_se": trade_level_gamma_se,
-                "r_squared_trade": trade_level_r2
+                "r_squared_trade": trade_level_r2,
+                "positive_trades_count": trade_pos_count,
+                "zero_trades_count": trade_zero_count,
+                "negative_trades_count": trade_neg_count,
+                "total_trades_count": trade_total_count,
+                "positive_trades_pct": pos_pct
             },
             "out_of_sample_validation": {
-                "train_window": "First 50% chronological sample",
-                "test_window": "Second 50% chronological sample",
+                "description": "50% chronological split of analyzed window",
+                "train_start_utc": train_start_utc,
+                "train_end_utc": train_end_utc,
+                "test_start_utc": test_start_utc,
+                "test_end_utc": test_end_utc,
+                "train_observations": train_obs,
+                "test_observations": test_obs,
+                "train_window": f"{train_start_utc} - {train_end_utc}",
+                "test_window": f"{test_start_utc} - {test_end_utc}",
+                "train_r2": train_r2_val,
+                "test_r2": oos_r2_log,
                 "log_model_oos_r2": oos_r2_log
             },
             "rejects_square_root_half": bool(p_val_sqrt < 0.05),
@@ -334,8 +375,9 @@ class NonlinearImpactModel:
                 "is_rejected_at_5pct": bool(p_val_sqrt < 0.05),
                 "interpretation": (
                     f"Exploratory single child-order estimation: WLS power-law exponent gamma = {gamma_wls:.4f} "
-                    f"(95% CI: [{ci_wls_lower:.4f}, {ci_wls_upper:.4f}]) and OLS exponent gamma = {gamma_est:.4f} "
+                    f"(Classical WLS SE: {gamma_wls_se:.4f}, 95% CI: [{ci_wls_lower:.4f}, {ci_wls_upper:.4f}]) and binned OLS exponent gamma = {gamma_est:.4f} "
                     f"(95% CI: [{ci_lower:.4f}, {ci_upper:.4f}]) are statistically indistinguishable from zero and reject 0.5 (p < 0.001). "
+                    "Note: WLS standard errors are classical weighted SEs unadjusted for cross-tier residual autocorrelation. "
                     "This finding strictly characterizes individual child-order conditional price response R(v, k). "
                     "It does NOT constitute an empirical refutation of the classical Square-Root Law of Meta-Orders "
                     "(which governs cumulative parent-order execution over hours or days), nor does it directly prove "
@@ -385,5 +427,8 @@ class NonlinearImpactModel:
             },
             "power_law_model": power_law_dict,
             "power_law_fit": power_law_dict,
+            "power_law_wls": power_law_dict["wls_fit"],
+            "trade_level_fit": power_law_dict["trade_level_fit"],
+            "out_of_sample_validation": power_law_dict["out_of_sample_validation"],
             "time_chunk_stability": time_chunks
         }

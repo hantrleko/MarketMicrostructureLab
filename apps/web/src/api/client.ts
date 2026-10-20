@@ -153,18 +153,6 @@ export async function fetchReplayWindow(
   durationSeconds: number = 60,
   limit: number = 2000
 ): Promise<ReplayWindowResponse> {
-  // Try live API first
-  try {
-    const res = await fetch(
-      `${API_BASE}/replay/window?symbol=${symbol}&date=${date}&start_second=${startSecond}&duration_seconds=${durationSeconds}&limit=${limit}`
-    );
-    if (res.ok) {
-      return await res.json();
-    }
-  } catch (e) {
-    // Fall back to pre-indexed static session
-  }
-
   // Pre-indexed intraday offsets: 0 (00:00), 28800 (08:00), 50400 (14:00), 72000 (20:00)
   const availableOffsets = [0, 28800, 50400, 72000];
   const matchedOffset = availableOffsets.reduce((prev, curr) =>

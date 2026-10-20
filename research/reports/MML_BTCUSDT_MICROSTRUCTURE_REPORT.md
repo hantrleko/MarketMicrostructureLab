@@ -98,25 +98,27 @@ To prevent artificial splitting of identical trade volumes across bins, MML impl
 #### Multi-Model Comparison & Robustness Suite (k=20)
 To avoid over-reliance on unweighted binned OLS across unequal sample sizes, we report four complementary estimation strategies:
 1. **Tier Binned OLS**: Standard unweighted log-log regression across stratum averages.
-2. **Weighted Least Squares (WLS)**: Observations weighted by tier sample count $w_j = N_j$.
-3. **Trade-Level HAC Regression**: Direct regression on all individual non-zero price displacement trades with Newey-West standard errors.
-4. **Out-of-Sample (OOS) Validation**: Train on first 50% chronological split, test on remaining 50%.
+2. **Weighted Least Squares (WLS)**: Observations weighted by tier sample count $w_j = N_j$ (classical weighted SE).
+3. **Trade-Level HAC Regression (Positive Response Sub-Sample)**: Direct log-log regression strictly conditional on trades with positive signed price displacement ($R_i > 0$) with Newey-West standard errors; zero and adverse price moves are omitted due to the logarithmic transform.
+4. **Out-of-Sample (OOS) Validation**: Chronological 50%/50% split of the active estimation sample.
 
 ```
 +---------------------------+-----------------------------------+--------------------+-------------------+
 | Estimation Method         | Parameter Estimate                | Standard Error     | Model Fit / R2    |
 +---------------------------+-----------------------------------+--------------------+-------------------+
 | Binned OLS (Unweighted)   | gamma = -0.0305                    | SE = 0.0452         | Tier R2 = 0.2810     |
-| Weighted Least Sq (WLS)   | gamma = -0.0739                    | SE = 0.0418         | WLS R2 = 0.2810      |
-| Trade-Level HAC Reg       | gamma = 0.1272                    | HAC SE = 0.0068     | Trade R2 = 0.008609    |
+| Weighted Least Sq (WLS)   | gamma = -0.0739                    | Classical SE = 0.0418 | WLS R2 = 0.2810      |
+| Trade-Level HAC (R > 0)   | gamma = 0.1272                    | HAC SE = 0.0068     | Sub-sample R2 = 0.008609    |
 | Out-of-Sample (OOS) Split | Model: Logarithmic OOS             | Split: 50% / 50%   | Test OOS R2 = 0.0031 |
 +---------------------------+-----------------------------------+--------------------+-------------------+
 ```
 
 > **Rigorous Econometric Conclusion & Boundary Conditions:**  
 > 1. **Exploratory Finding Notice:** Rejection of $\gamma = 0.5$ in single-trade tick response is labeled an **exploratory empirical finding**. Unweighted tier regression is sensitive to the heavy concentration of volume at 0.00009 BTC; WLS and trade-level HAC estimation confirm that child trade size has negligible explanatory power ($R^2 < 0.01$) over subsequent 20-tick price changes.
-> 2. **Single Child Order vs. Meta-Order:** This finding strictly characterizes **individual child-order tick responses**. It does **NOT** refute the classical Square-Root Law of Meta-Orders ($I(Q) \propto \sigma \sqrt{Q/V}$), which governs the cumulative execution of parent orders algorithmically sliced over hours or days.
-> 3. **Mechanism Caution:** Empirical flatness in single-trade price response cannot be interpreted as direct confirmation of specific unobserved mechanisms (such as limit order book replenishment speeds or adverse selection ratios) without independent quote and cancellation records.
+> 2. **Positive-Response Conditioning:** Trade-level log-log regression ($\hat{\gamma}_{\text{trade}} \approx +0.1272$) is strictly conditional on the positive-response sub-sample ($\mathcal{R}_i > 0$). It does not constitute an unconditional full-sample validation because zero and adverse price moves are dropped by the logarithmic transform.
+> 3. **Standard Error Clarification:** WLS standard errors are classical weighted SEs, unadjusted for cross-tier residual autocorrelation.
+> 4. **Single Child Order vs. Meta-Order:** This finding strictly characterizes **individual child-order tick responses**. It does **NOT** refute the classical Square-Root Law of Meta-Orders ($I(Q) \propto \sigma \sqrt{Q/V}$), which governs the cumulative execution of parent orders algorithmically sliced over hours or days.
+> 5. **Mechanism Caution:** Empirical flatness in single-trade price response cannot be interpreted as direct confirmation of specific unobserved mechanisms (such as limit order book replenishment speeds or adverse selection ratios) without independent quote and cancellation records.
 
 ### 3.4 Bivariate Hawkes Point Process & Diagnostic Warnings
 
@@ -126,9 +128,9 @@ We model mutual excitation between aggressive buy and sell arrivals with exponen
 +-------------+-----------------------+-------------------+-------------------+--------------------+
 |    Date     | Spectral Radius rho   | Stability Status  | Buy-Buy Branching | Sell-Sell Branching|
 +-------------+-----------------------+-------------------+-------------------+--------------------+
-| 2026-07-01  |        0.9532         | SUBCRITICAL_STABLE |       0.9355      |       0.9532      |
-| 2026-07-02  |        1.0080         | SUPERCRITICAL_UNSTABLE |       1.0080      |       0.9703      |
-| 2026-07-03  |        0.9394         | SUBCRITICAL_STABLE |       0.9394      |       0.9342      |
+| 2026-07-01  |        1.0050         | SUPERCRITICAL_UNSTABLE |       0.9054      |       1.0050      |
+| 2026-07-02  |        1.0153         | SUPERCRITICAL_UNSTABLE |       1.0153      |       0.9450      |
+| 2026-07-03  |        0.9647         | SUBCRITICAL_STABLE |       0.9647      |       0.9280      |
 +-------------+-----------------------+-------------------+-------------------+--------------------+
 ```
 
@@ -138,9 +140,9 @@ We model mutual excitation between aggressive buy and sell arrivals with exponen
 
 #### Timestamp-Aggregated Sensitivity Check (对照分析)
 To evaluate how sensitive branching ratios are to time resolution and identical timestamp collisions (e.g. matching engine trade splits):
-- **Raw Trades Spectral Radius**: $\rho(\Gamma_{\text{raw}}) \approx 0.9532$
-- **Microsecond-Aggregated Spectral Radius**: $\rho(\Gamma_{\text{agg}}) \approx 0.4925$ (SUBCRITICAL_STABLE)
-- **Compression**: -89.1%
+- **Raw Trades Spectral Radius**: $\rho(\Gamma_{\text{raw}}) \approx 1.0050$
+- **Microsecond-Aggregated Spectral Radius**: $\rho(\Gamma_{\text{agg}}) \approx 0.5935$ (SUBCRITICAL_STABLE)
+- **Compression**: -88.9%
 - **Methodological Takeaway**: Branching ratios demonstrate extreme sensitivity to event definition and timestamp resolution. The drop in spectral radius under microsecond aggregation illustrates that high-frequency clustering parameters cannot be directly translated into trader behavioral dynamics without accounting for matching engine protocol artifacts.
 
 ---

@@ -48,6 +48,8 @@
       "is_rejected_sqrt_law": true,
       "power_law_wls": {
         "name": "Weighted Least Squares (weighted by tier sample count)",
+        "estimator": "Classical WLS (weights = tier count)",
+        "se_type": "Classical WLS SE (unadjusted for cross-tier residual autocorrelation)",
         "gamma_wls": -0.07385671841890035,
         "gamma_wls_se": 0.041769152225122286,
         "ci_95_lower": -0.15572425678014,
@@ -55,14 +57,32 @@
         "r_squared_wls": 0.2810005939964677
       },
       "trade_level_fit": {
-        "name": "Trade-Level Log-Log HAC Regression (individual trades)",
+        "name": "Trade-Level Log-Log HAC (Positive Response Sub-Sample: R > 0)",
+        "estimator": "OLS with Newey-West HAC covariance",
+        "sample_type": "POSITIVE_RESPONSE_SUBSAMPLE",
+        "conditioning": "Strictly conditional on positive signed price displacement (R_i > 0)",
+        "caveat": "Evaluated strictly on the conditional positive-response sub-sample (R_i > 0); cannot serve as an unconditional full-sample validation because zero and adverse price moves (70,574 trades, 28.2% of sample) are dropped by the log transform.",
         "gamma_trade": 0.1272080005353448,
         "gamma_trade_se": 0.006836565817115261,
-        "r_squared_trade": 0.008609171412853889
+        "r_squared_trade": 0.008609171412853889,
+        "positive_trades_count": 179406,
+        "zero_trades_count": 56596,
+        "negative_trades_count": 13978,
+        "total_trades_count": 249980,
+        "positive_trades_pct": 71.7681414513161
       },
       "out_of_sample_validation": {
-        "train_window": "First 50% chronological sample",
-        "test_window": "Second 50% chronological sample",
+        "description": "50% chronological split of analyzed window",
+        "train_start_utc": "2026-07-01T05:49:54.563429Z",
+        "train_end_utc": "2026-07-01T06:40:15.810324Z",
+        "test_start_utc": "2026-07-01T06:40:15.810324Z",
+        "test_end_utc": "2026-07-01T07:48:27.491649Z",
+        "train_observations": 124990,
+        "test_observations": 124990,
+        "train_window": "2026-07-01T05:49:54.563429Z - 2026-07-01T06:40:15.810324Z",
+        "test_window": "2026-07-01T06:40:15.810324Z - 2026-07-01T07:48:27.491649Z",
+        "train_r2": 0.0034244718766999194,
+        "test_r2": 0.003096107806499604,
         "log_model_oos_r2": 0.003096107806499604
       },
       "sample_metadata": {
@@ -72,7 +92,7 @@
         "sample_start_utc": "2026-07-01T05:49:54.563429Z",
         "sample_end_utc": "2026-07-01T07:48:27.491649Z",
         "sampling_method": "CHRONOLOGICAL_TICK_RESPONSE",
-        "generation_timestamp_utc": "2026-10-20T07:23:18.399937+00:00",
+        "generation_timestamp_utc": "2026-10-20T08:26:07.687012+00:00",
         "status": "EXPLORATORY_RESEARCH"
       },
       "economic_tiers": [
@@ -259,53 +279,56 @@
       ]
     },
     "hawkes": {
-      "spectral_radius": 0.953196630653485,
-      "stability_status": "SUBCRITICAL_STABLE",
-      "mu_buy": 0.8081658181969134,
-      "mu_sell": 0.5116409510068146,
-      "branching_buy_to_buy": 0.9354525341978561,
-      "branching_sell_to_sell": 0.953182432162633,
-      "branching_buy_to_sell": 0.00039640749411786185,
-      "branching_sell_to_buy": 0.0006355565798866733,
-      "ks_buy_stat": 0.8831433186529659,
+      "spectral_radius": 1.0050119176444545,
+      "stability_status": "SUPERCRITICAL_UNSTABLE",
+      "mu_buy": 0.7624508120835201,
+      "mu_sell": 0.4949261000312133,
+      "branching_buy_to_buy": 0.9054195385266997,
+      "branching_sell_to_sell": 1.0050091659906983,
+      "branching_buy_to_sell": 0.0006354055721069722,
+      "branching_sell_to_buy": 0.0004312894883550228,
+      "ks_buy_stat": 0.842880867082328,
       "ks_buy_p": 0.0,
-      "ks_sell_stat": 0.8997360458197672,
+      "ks_sell_stat": 0.9135728108467901,
       "ks_sell_p": 0.0,
-      "fitting_warnings": [],
-      "statistical_interpretation": "Spectral radius rho(Gamma) = 0.9532 (SUBCRITICAL_STABLE). Process is sub-critical and stationary. Self-excitation (0.935 buy, 0.953 sell) vs cross-excitation (0.001 / 0.000).",
+      "fitting_warnings": [
+        "Supercritical regime: Spectral radius rho = 1.0050 >= 1.0 indicates theoretical non-stationarity over infinite horizons; linear branching approximations may diverge.",
+        "Residual misspecification: Compensator residual KS test rejects Exp(1) (buy p=0.0000, sell p=0.0000); empirical trade arrivals exhibit higher-order clustering beyond standard exponential decay."
+      ],
+      "statistical_interpretation": "Spectral radius rho(Gamma) = 1.0050 (SUPERCRITICAL_UNSTABLE). Process is near or above criticality (rho >= 1), where linear branching theory implies potential explosion or non-stationarity. Self-excitation (0.905 buy, 1.005 sell) vs cross-excitation (0.000 / 0.001).",
       "jitter_sensitivity": {
         "jitter_1e-06": {
-          "spectral_radius": 0.9531964712140025,
-          "buy_to_buy": 0.935451975453623,
-          "sell_to_sell": 0.9531822605132276
+          "spectral_radius": 1.0050169538276017,
+          "buy_to_buy": 0.9054188946943441,
+          "sell_to_sell": 1.0050142002005729
         },
         "jitter_1e-07": {
-          "spectral_radius": 0.953196630653485,
-          "buy_to_buy": 0.9354525341978561,
-          "sell_to_sell": 0.953182432162633
+          "spectral_radius": 1.0050119176444545,
+          "buy_to_buy": 0.9054195385266997,
+          "sell_to_sell": 1.0050091659906983
         },
         "jitter_1e-08": {
-          "spectral_radius": 0.9531968004179698,
-          "buy_to_buy": 0.9354538215127919,
-          "sell_to_sell": 0.9531826021948353
+          "spectral_radius": 1.005012754751705,
+          "buy_to_buy": 0.9054199046279727,
+          "sell_to_sell": 1.0050100033362044
         }
       },
       "control_model": {
-        "raw_events_count": 10000,
-        "aggregated_events_count": 1092,
-        "compression_ratio_pct": 89.08,
-        "spectral_radius": 0.49245048150954873,
+        "raw_events_count": 5000,
+        "aggregated_events_count": 557,
+        "compression_ratio_pct": 88.86,
+        "spectral_radius": 0.5934773507647206,
         "stability_status": "SUBCRITICAL_STABLE",
         "branching_ratios": {
-          "buy_to_buy": 0.38568749044665146,
-          "sell_to_buy": 0.011376818603150438,
-          "buy_to_sell": 0.01033485876632358,
-          "sell_to_sell": 0.49134918402525124,
-          "spectral_radius": 0.49245048150954873,
+          "buy_to_buy": 0.3296807892385645,
+          "sell_to_buy": 0.00477973694094381,
+          "buy_to_sell": 0.0,
+          "sell_to_sell": 0.5934773507647206,
+          "spectral_radius": 0.5934773507647206,
           "is_subcritical_stable": true
         },
-        "buy_ks_statistic": 0.11956396869822923,
-        "interpretation": "Microsecond aggregation compresses 10000 raw fills into 1092 unique timestamp matching events (-89.1%). Aggregated spectral radius drops to 0.4925 (SUBCRITICAL_STABLE). This empirical comparison demonstrates that measured point-process self-excitation is highly sensitive to the definition of the event unit (individual child execution vs. matching engine time slice), rather than establishing definitive causal attribution of trader behavior."
+        "buy_ks_statistic": 0.07896897368768074,
+        "interpretation": "Microsecond aggregation compresses 5000 raw fills into 557 unique timestamp matching events (-88.9%). Aggregated spectral radius drops to 0.5935 (SUBCRITICAL_STABLE). This empirical comparison demonstrates that measured point-process self-excitation is highly sensitive to the definition of the event unit (individual child execution vs. matching engine time slice), rather than establishing definitive causal attribution of trader behavior."
       }
     }
   },
@@ -358,6 +381,8 @@
       "is_rejected_sqrt_law": true,
       "power_law_wls": {
         "name": "Weighted Least Squares (weighted by tier sample count)",
+        "estimator": "Classical WLS (weights = tier count)",
+        "se_type": "Classical WLS SE (unadjusted for cross-tier residual autocorrelation)",
         "gamma_wls": -0.07189560579158398,
         "gamma_wls_se": 0.03455751938945975,
         "ci_95_lower": -0.13962834379492509,
@@ -365,14 +390,32 @@
         "r_squared_wls": 0.35108768880366714
       },
       "trade_level_fit": {
-        "name": "Trade-Level Log-Log HAC Regression (individual trades)",
+        "name": "Trade-Level Log-Log HAC (Positive Response Sub-Sample: R > 0)",
+        "estimator": "OLS with Newey-West HAC covariance",
+        "sample_type": "POSITIVE_RESPONSE_SUBSAMPLE",
+        "conditioning": "Strictly conditional on positive signed price displacement (R_i > 0)",
+        "caveat": "Evaluated strictly on the conditional positive-response sub-sample (R_i > 0); cannot serve as an unconditional full-sample validation because zero and adverse price moves (75,421 trades, 30.2% of sample) are dropped by the log transform.",
         "gamma_trade": 0.1159851742105193,
         "gamma_trade_se": 0.007781722347511047,
-        "r_squared_trade": 0.0072497768119805794
+        "r_squared_trade": 0.0072497768119805794,
+        "positive_trades_count": 174559,
+        "zero_trades_count": 61438,
+        "negative_trades_count": 13983,
+        "total_trades_count": 249980,
+        "positive_trades_pct": 69.8291863349068
       },
       "out_of_sample_validation": {
-        "train_window": "First 50% chronological sample",
-        "test_window": "Second 50% chronological sample",
+        "description": "50% chronological split of analyzed window",
+        "train_start_utc": "2026-07-02T06:45:37.700916Z",
+        "train_end_utc": "2026-07-02T07:44:08.309543Z",
+        "test_start_utc": "2026-07-02T07:44:08.309543Z",
+        "test_end_utc": "2026-07-02T08:48:36.372819Z",
+        "train_observations": 124990,
+        "test_observations": 124990,
+        "train_window": "2026-07-02T06:45:37.700916Z - 2026-07-02T07:44:08.309543Z",
+        "test_window": "2026-07-02T07:44:08.309543Z - 2026-07-02T08:48:36.372819Z",
+        "train_r2": 0.0050066477505491536,
+        "test_r2": -0.006122740585741804,
         "log_model_oos_r2": -0.006122740585741804
       },
       "sample_metadata": {
@@ -382,7 +425,7 @@
         "sample_start_utc": "2026-07-02T06:45:37.700916Z",
         "sample_end_utc": "2026-07-02T08:48:36.372819Z",
         "sampling_method": "CHRONOLOGICAL_TICK_RESPONSE",
-        "generation_timestamp_utc": "2026-10-20T07:23:40.143556+00:00",
+        "generation_timestamp_utc": "2026-10-20T08:26:12.367397+00:00",
         "status": "EXPLORATORY_RESEARCH"
       },
       "economic_tiers": [
@@ -569,53 +612,56 @@
       ]
     },
     "hawkes": {
-      "spectral_radius": 1.0080327558473314,
+      "spectral_radius": 1.0152885409860617,
       "stability_status": "SUPERCRITICAL_UNSTABLE",
-      "mu_buy": 1.2468433234078464,
-      "mu_sell": 1.221286402457369,
-      "branching_buy_to_buy": 1.0080131678021476,
-      "branching_sell_to_sell": 0.970315606587198,
-      "branching_buy_to_sell": 0.0010907204653914668,
-      "branching_sell_to_buy": 0.0006773552411992536,
-      "ks_buy_stat": 0.9008909897742925,
+      "mu_buy": 1.4843607204749527,
+      "mu_sell": 1.2539040419719005,
+      "branching_buy_to_buy": 1.0152885409860617,
+      "branching_sell_to_sell": 0.9449981173188915,
+      "branching_buy_to_sell": 0.0014098079492143244,
+      "branching_sell_to_buy": 0.0,
+      "ks_buy_stat": 0.8935232661859669,
       "ks_buy_p": 0.0,
-      "ks_sell_stat": 0.8938279428845916,
+      "ks_sell_stat": 0.8743992714528762,
       "ks_sell_p": 0.0,
-      "fitting_warnings": [],
-      "statistical_interpretation": "Spectral radius rho(Gamma) = 1.0080 (SUPERCRITICAL_UNSTABLE). Process is near or above criticality (rho >= 1), where linear branching theory implies potential explosion or non-stationarity. Self-excitation (1.008 buy, 0.970 sell) vs cross-excitation (0.001 / 0.001).",
+      "fitting_warnings": [
+        "Supercritical regime: Spectral radius rho = 1.0153 >= 1.0 indicates theoretical non-stationarity over infinite horizons; linear branching approximations may diverge.",
+        "Residual misspecification: Compensator residual KS test rejects Exp(1) (buy p=0.0000, sell p=0.0000); empirical trade arrivals exhibit higher-order clustering beyond standard exponential decay."
+      ],
+      "statistical_interpretation": "Spectral radius rho(Gamma) = 1.0153 (SUPERCRITICAL_UNSTABLE). Process is near or above criticality (rho >= 1), where linear branching theory implies potential explosion or non-stationarity. Self-excitation (1.015 buy, 0.945 sell) vs cross-excitation (0.000 / 0.001).",
       "jitter_sensitivity": {
         "jitter_1e-06": {
-          "spectral_radius": 1.008030328432647,
-          "buy_to_buy": 1.0080107105589988,
-          "sell_to_sell": 0.9703168400028577
+          "spectral_radius": 1.0152913218963255,
+          "buy_to_buy": 1.0152913218963255,
+          "sell_to_sell": 0.9449987502772096
         },
         "jitter_1e-07": {
-          "spectral_radius": 1.0080327558473314,
-          "buy_to_buy": 1.0080131678021476,
-          "sell_to_sell": 0.970315606587198
+          "spectral_radius": 1.0152885409860617,
+          "buy_to_buy": 1.0152885409860617,
+          "sell_to_sell": 0.9449981173188915
         },
         "jitter_1e-08": {
-          "spectral_radius": 1.0080313495372863,
-          "buy_to_buy": 1.0080117633072505,
-          "sell_to_sell": 0.9703158291726158
+          "spectral_radius": 1.0152915715152857,
+          "buy_to_buy": 1.0152915715152857,
+          "sell_to_sell": 0.9449980276862966
         }
       },
       "control_model": {
-        "raw_events_count": 10000,
-        "aggregated_events_count": 1013,
-        "compression_ratio_pct": 89.87,
-        "spectral_radius": 0.8824997140302671,
+        "raw_events_count": 5000,
+        "aggregated_events_count": 556,
+        "compression_ratio_pct": 88.88000000000001,
+        "spectral_radius": 0.8935149464727956,
         "stability_status": "SUBCRITICAL_STABLE",
         "branching_ratios": {
-          "buy_to_buy": 0.8824997140302671,
+          "buy_to_buy": 0.8935149464727956,
           "sell_to_buy": 0.0,
-          "buy_to_sell": 0.01002016515204175,
-          "sell_to_sell": 0.6705279135435182,
-          "spectral_radius": 0.8824997140302671,
+          "buy_to_sell": 0.010888415827847343,
+          "sell_to_sell": 0.46416425635809394,
+          "spectral_radius": 0.8935149464727956,
           "is_subcritical_stable": true
         },
-        "buy_ks_statistic": 0.36310160747457765,
-        "interpretation": "Microsecond aggregation compresses 10000 raw fills into 1013 unique timestamp matching events (-89.9%). Aggregated spectral radius drops to 0.8825 (SUBCRITICAL_STABLE). This empirical comparison demonstrates that measured point-process self-excitation is highly sensitive to the definition of the event unit (individual child execution vs. matching engine time slice), rather than establishing definitive causal attribution of trader behavior."
+        "buy_ks_statistic": 0.41057045988057056,
+        "interpretation": "Microsecond aggregation compresses 5000 raw fills into 556 unique timestamp matching events (-88.9%). Aggregated spectral radius drops to 0.8935 (SUBCRITICAL_STABLE). This empirical comparison demonstrates that measured point-process self-excitation is highly sensitive to the definition of the event unit (individual child execution vs. matching engine time slice), rather than establishing definitive causal attribution of trader behavior."
       }
     }
   },
@@ -668,6 +714,8 @@
       "is_rejected_sqrt_law": true,
       "power_law_wls": {
         "name": "Weighted Least Squares (weighted by tier sample count)",
+        "estimator": "Classical WLS (weights = tier count)",
+        "se_type": "Classical WLS SE (unadjusted for cross-tier residual autocorrelation)",
         "gamma_wls": -0.11562227839926255,
         "gamma_wls_se": 0.04744781286632833,
         "ci_95_lower": -0.20861999161726608,
@@ -675,14 +723,32 @@
         "r_squared_wls": 0.4260354470767892
       },
       "trade_level_fit": {
-        "name": "Trade-Level Log-Log HAC Regression (individual trades)",
+        "name": "Trade-Level Log-Log HAC (Positive Response Sub-Sample: R > 0)",
+        "estimator": "OLS with Newey-West HAC covariance",
+        "sample_type": "POSITIVE_RESPONSE_SUBSAMPLE",
+        "conditioning": "Strictly conditional on positive signed price displacement (R_i > 0)",
+        "caveat": "Evaluated strictly on the conditional positive-response sub-sample (R_i > 0); cannot serve as an unconditional full-sample validation because zero and adverse price moves (91,943 trades, 36.8% of sample) are dropped by the log transform.",
         "gamma_trade": 0.07741600508272208,
         "gamma_trade_se": 0.008658821323645987,
-        "r_squared_trade": 0.003588586452105025
+        "r_squared_trade": 0.003588586452105025,
+        "positive_trades_count": 158037,
+        "zero_trades_count": 73876,
+        "negative_trades_count": 18067,
+        "total_trades_count": 249980,
+        "positive_trades_pct": 63.219857588607084
       },
       "out_of_sample_validation": {
-        "train_window": "First 50% chronological sample",
-        "test_window": "Second 50% chronological sample",
+        "description": "50% chronological split of analyzed window",
+        "train_start_utc": "2026-07-03T05:37:15.255456Z",
+        "train_end_utc": "2026-07-03T07:08:48.987686Z",
+        "test_start_utc": "2026-07-03T07:08:48.987686Z",
+        "test_end_utc": "2026-07-03T08:30:10.032670Z",
+        "train_observations": 124990,
+        "test_observations": 124990,
+        "train_window": "2026-07-03T05:37:15.255456Z - 2026-07-03T07:08:48.987686Z",
+        "test_window": "2026-07-03T07:08:48.987686Z - 2026-07-03T08:30:10.032670Z",
+        "train_r2": 0.006779597758492462,
+        "test_r2": 0.005810547027767066,
         "log_model_oos_r2": 0.005810547027767066
       },
       "sample_metadata": {
@@ -692,7 +758,7 @@
         "sample_start_utc": "2026-07-03T05:37:15.255456Z",
         "sample_end_utc": "2026-07-03T08:30:10.032670Z",
         "sampling_method": "CHRONOLOGICAL_TICK_RESPONSE",
-        "generation_timestamp_utc": "2026-10-20T07:23:53.152943+00:00",
+        "generation_timestamp_utc": "2026-10-20T08:26:16.326187+00:00",
         "status": "EXPLORATORY_RESEARCH"
       },
       "economic_tiers": [
@@ -879,53 +945,55 @@
       ]
     },
     "hawkes": {
-      "spectral_radius": 0.9394014296096719,
+      "spectral_radius": 0.9647144874444153,
       "stability_status": "SUBCRITICAL_STABLE",
-      "mu_buy": 0.6541724608445502,
-      "mu_sell": 0.5823816878076098,
-      "branching_buy_to_buy": 0.9394014296096719,
-      "branching_sell_to_sell": 0.934190808700157,
-      "branching_buy_to_sell": 0.0011468054311039228,
+      "mu_buy": 0.6158059838044758,
+      "mu_sell": 0.5473999274969583,
+      "branching_buy_to_buy": 0.9647144874444153,
+      "branching_sell_to_sell": 0.927969654969907,
+      "branching_buy_to_sell": 0.0007503429411213304,
       "branching_sell_to_buy": 0.0,
-      "ks_buy_stat": 0.8288426046731289,
+      "ks_buy_stat": 0.8487227180669901,
       "ks_buy_p": 0.0,
-      "ks_sell_stat": 0.8509200541324554,
+      "ks_sell_stat": 0.8451588415024643,
       "ks_sell_p": 0.0,
-      "fitting_warnings": [],
-      "statistical_interpretation": "Spectral radius rho(Gamma) = 0.9394 (SUBCRITICAL_STABLE). Process is sub-critical and stationary. Self-excitation (0.939 buy, 0.934 sell) vs cross-excitation (0.000 / 0.001).",
+      "fitting_warnings": [
+        "Residual misspecification: Compensator residual KS test rejects Exp(1) (buy p=0.0000, sell p=0.0000); empirical trade arrivals exhibit higher-order clustering beyond standard exponential decay."
+      ],
+      "statistical_interpretation": "Spectral radius rho(Gamma) = 0.9647 (SUBCRITICAL_STABLE). Process is sub-critical and stationary. Self-excitation (0.965 buy, 0.928 sell) vs cross-excitation (0.000 / 0.001).",
       "jitter_sensitivity": {
         "jitter_1e-06": {
-          "spectral_radius": 0.939397506567806,
-          "buy_to_buy": 0.939397506567806,
-          "sell_to_sell": 0.9341909454252226
+          "spectral_radius": 0.9647102453083422,
+          "buy_to_buy": 0.9647102453083422,
+          "sell_to_sell": 0.9279688265810474
         },
         "jitter_1e-07": {
-          "spectral_radius": 0.9394014296096719,
-          "buy_to_buy": 0.9394014296096719,
-          "sell_to_sell": 0.934190808700157
+          "spectral_radius": 0.9647144874444153,
+          "buy_to_buy": 0.9647144874444153,
+          "sell_to_sell": 0.927969654969907
         },
         "jitter_1e-08": {
-          "spectral_radius": 0.9393995784932793,
-          "buy_to_buy": 0.9393995784932793,
-          "sell_to_sell": 0.9341908967492418
+          "spectral_radius": 0.9647146809041598,
+          "buy_to_buy": 0.9647146809041598,
+          "sell_to_sell": 0.9279699500380387
         }
       },
       "control_model": {
-        "raw_events_count": 10000,
-        "aggregated_events_count": 1630,
-        "compression_ratio_pct": 83.7,
-        "spectral_radius": 0.5634794024626238,
+        "raw_events_count": 5000,
+        "aggregated_events_count": 772,
+        "compression_ratio_pct": 84.56,
+        "spectral_radius": 0.553204960137494,
         "stability_status": "SUBCRITICAL_STABLE",
         "branching_ratios": {
-          "buy_to_buy": 0.561715469245915,
-          "sell_to_buy": 0.008562429597156262,
-          "buy_to_sell": 0.00637953209035385,
-          "sell_to_sell": 0.5325120767900733,
-          "spectral_radius": 0.5634794024626238,
+          "buy_to_buy": 0.5518750636282783,
+          "sell_to_buy": 0.0030095219660496433,
+          "buy_to_sell": 0.01649543511706383,
+          "sell_to_sell": 0.515876210133009,
+          "spectral_radius": 0.553204960137494,
           "is_subcritical_stable": true
         },
-        "buy_ks_statistic": 0.15011090208018135,
-        "interpretation": "Microsecond aggregation compresses 10000 raw fills into 1630 unique timestamp matching events (-83.7%). Aggregated spectral radius drops to 0.5635 (SUBCRITICAL_STABLE). This empirical comparison demonstrates that measured point-process self-excitation is highly sensitive to the definition of the event unit (individual child execution vs. matching engine time slice), rather than establishing definitive causal attribution of trader behavior."
+        "buy_ks_statistic": 0.1555854101301034,
+        "interpretation": "Microsecond aggregation compresses 5000 raw fills into 772 unique timestamp matching events (-84.6%). Aggregated spectral radius drops to 0.5532 (SUBCRITICAL_STABLE). This empirical comparison demonstrates that measured point-process self-excitation is highly sensitive to the definition of the event unit (individual child execution vs. matching engine time slice), rather than establishing definitive causal attribution of trader behavior."
       }
     }
   }

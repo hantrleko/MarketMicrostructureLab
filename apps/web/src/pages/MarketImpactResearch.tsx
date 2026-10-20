@@ -363,7 +363,9 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
                   {modelsData?.power_law_model?.wls_fit && (
                     <tr>
                       <td style={{ color: 'var(--color-gold)' }}>Power Law (WLS tier-weighted)</td>
-                      <td style={{ color: 'var(--color-gold)' }}>gamma = {modelsData.power_law_model.wls_fit.gamma_wls.toFixed(4)} (SE: {modelsData.power_law_model.wls_fit.gamma_wls_se.toFixed(4)})</td>
+                      <td style={{ color: 'var(--color-gold)' }}>
+                        gamma = {modelsData.power_law_model.wls_fit.gamma_wls.toFixed(4)} (Classical WLS SE: {modelsData.power_law_model.wls_fit.gamma_wls_se.toFixed(4)})
+                      </td>
                       <td>-</td>
                       <td>-</td>
                       <td>{modelsData.power_law_model.wls_fit.r_squared_wls.toFixed(4)}</td>
@@ -371,24 +373,44 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
                   )}
                   {modelsData?.power_law_model?.trade_level_fit && modelsData.power_law_model.trade_level_fit.gamma_trade !== 0 && (
                     <tr>
-                      <td style={{ color: '#38bdf8' }}>Power Law (Trade-Level HAC)</td>
-                      <td style={{ color: '#38bdf8' }}>gamma = {modelsData.power_law_model.trade_level_fit.gamma_trade.toFixed(4)} (SE: {modelsData.power_law_model.trade_level_fit.gamma_trade_se.toFixed(4)})</td>
+                      <td style={{ color: '#38bdf8' }}>Power Law (Trade-Level HAC, R &gt; 0 Sub-Sample)*</td>
+                      <td style={{ color: '#38bdf8' }}>
+                        gamma = {modelsData.power_law_model.trade_level_fit.gamma_trade.toFixed(4)} (HAC SE: {modelsData.power_law_model.trade_level_fit.gamma_trade_se.toFixed(4)})
+                      </td>
                       <td>-</td>
                       <td>-</td>
                       <td>{modelsData.power_law_model.trade_level_fit.r_squared_trade.toFixed(4)}</td>
                     </tr>
                   )}
-                  {modelsData?.power_law_model?.out_of_sample_validation && (
-                    <tr>
-                      <td style={{ color: '#a78bfa' }}>Out-of-Sample Validation (Log)</td>
-                      <td style={{ color: '#a78bfa' }}>Train: 00-12 UTC &bull; Test: 12-24 UTC</td>
-                      <td>-</td>
-                      <td>-</td>
-                      <td style={{ color: '#a78bfa', fontWeight: 600 }}>OOS R^2 = {modelsData.power_law_model.out_of_sample_validation.log_model_oos_r2.toFixed(4)}</td>
-                    </tr>
-                  )}
+                  {modelsData?.power_law_model?.out_of_sample_validation && (() => {
+                    const oos = modelsData.power_law_model.out_of_sample_validation;
+                    const trStart = oos.train_start_utc ? oos.train_start_utc.split('T')[1]?.slice(0, 5) : '';
+                    const trEnd = oos.train_end_utc ? oos.train_end_utc.split('T')[1]?.slice(0, 5) : '';
+                    const teStart = oos.test_start_utc ? oos.test_start_utc.split('T')[1]?.slice(0, 5) : '';
+                    const teEnd = oos.test_end_utc ? oos.test_end_utc.split('T')[1]?.slice(0, 5) : '';
+                    const trCnt = oos.train_observations ? `${(oos.train_observations / 1000).toFixed(0)}k` : '';
+                    const teCnt = oos.test_observations ? `${(oos.test_observations / 1000).toFixed(0)}k` : '';
+                    const label = (trStart && trEnd)
+                      ? `Train: ${trStart}-${trEnd} UTC (${trCnt}) • Test: ${teStart}-${teEnd} UTC (${teCnt})`
+                      : '50%/50% Chronological Split';
+
+                    return (
+                      <tr>
+                        <td style={{ color: '#a78bfa' }}>Out-of-Sample Validation (Log)</td>
+                        <td style={{ color: '#a78bfa' }}>{label}</td>
+                        <td>-</td>
+                        <td>-</td>
+                        <td style={{ color: '#a78bfa', fontWeight: 600 }}>OOS R^2 = {oos.log_model_oos_r2.toFixed(4)}</td>
+                      </tr>
+                    );
+                  })()}
                 </tbody>
               </table>
+              <div style={{ fontSize: '0.71rem', color: 'var(--text-dim)', marginTop: '8px', lineHeight: '1.4' }}>
+                • <strong>WLS SE:</strong> Classical weighted standard error (unadjusted for cross-tier residual autocorrelation).<br />
+                • <strong>*Trade-Level HAC Sub-Sample:</strong> Evaluated strictly conditional on positive price displacements (R &gt; 0). Zero and adverse tick responses are dropped by the logarithmic transform; this is an exploratory sub-sample check, not an unconditional full-sample validation.<br />
+                • <strong>OOS Validation:</strong> Evaluated on consecutive 50% chronological halves of the active analysis sample window.
+              </div>
             </div>
           </div>
         </div>

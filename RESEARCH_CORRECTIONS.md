@@ -41,9 +41,9 @@ This document details all methodological, statistical, and engineering correctio
   - **Conclusion**: Unweighted tier rejection of $\gamma = 0.5$ is labeled an exploratory finding; WLS and trade-level HAC estimation confirm that child trade size has negligible explanatory power ($R^2 < 0.01$) over subsequent 20-tick price changes.
 
 ### 2.3 Bivariate Hawkes Process & Control Model (2026-07-01)
-- **Raw Trades Spectral Radius**: $\rho(\Gamma_{\text{raw}}) = 0.9532$ (SUBCRITICAL_STABLE)
-- **Timestamp-Aggregated Sensitivity Check**: $\rho(\Gamma_{\text{agg}}) = 0.4925$ (SUBCRITICAL_STABLE)
-- **Self-Excitation Drop**: Buy $\to$ Buy drops from 0.9355 to 0.3857.
+- **Raw Trades Spectral Radius**: $\rho(\Gamma_{\text{raw}}) = 1.0050$ (SUPERCRITICAL_UNSTABLE)
+- **Timestamp-Aggregated Sensitivity Check**: $\rho(\Gamma_{\text{agg}}) = 0.5935$ (SUBCRITICAL_STABLE)
+- **Self-Excitation Drop**: Buy $\to$ Buy drops from 0.9054 to 0.3297.
 - **Conclusion**: Branching ratios show extreme sensitivity to timestamp collisions and event resolution. Aggregation demonstrates that high-frequency clustering estimates cannot be directly asserted as trader behavior mechanisms without accounting for exchange execution protocol details.
 
 ---

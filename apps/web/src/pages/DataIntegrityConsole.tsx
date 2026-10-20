@@ -220,7 +220,7 @@ export const DataIntegrityConsole: React.FC<DataIntegrityConsoleProps> = ({ curr
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ color: 'var(--text-dim)' }}>DERIVED OUTPUT LICENSE:</span>
-              <span style={{ color: 'var(--color-buy)' }}>CC BY-SA 4.0 (ShareAlike Covenant)</span>
+              <span style={{ color: 'var(--color-buy)' }}>CC BY-NC-SA 4.0 (NonCommercial ShareAlike)</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ color: 'var(--text-dim)' }}>CALCULATION ENGINE:</span>
@@ -279,7 +279,7 @@ export const DataIntegrityConsole: React.FC<DataIntegrityConsoleProps> = ({ curr
             <div>
               In compliance with the <strong style={{ color: '#fff' }}>Binance Public Data Terms and Conditions</strong>, this data and platform are strictly reserved for non-commercial academic research, pedagogical analysis, and personal econometric study.
               Commercial trading, monetization, or redistribution of proprietary signals is strictly prohibited.
-              All derived empirical statistics and visualizations are shared under the <strong style={{ color: 'var(--color-buy)' }}>Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)</strong> license. Any derivative works must cite MML and be distributed under identical terms.
+              All derived empirical statistics and visualizations are shared under the <strong style={{ color: 'var(--color-buy)' }}>Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0)</strong> license. Any derivative works must cite MML and be distributed under identical terms.
             </div>
           </div>
         </div>

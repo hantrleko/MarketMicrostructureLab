@@ -233,6 +233,12 @@ export const MarketReplay: React.FC<MarketReplayProps> = ({ date }) => {
     ]
   };
 
+  const clipStartUtc = trades.length > 0 ? (trades[0].event_time_utc?.split('T')[1]?.replace('Z', '') || '') : '';
+  const clipEndUtc = trades.length > 0 ? (trades[trades.length - 1].event_time_utc?.split('T')[1]?.replace('Z', '') || '') : '';
+  const clipDurationSec = trades.length > 1
+    ? ((Number(BigInt(trades[trades.length - 1].event_timestamp_ns) - BigInt(trades[0].event_timestamp_ns))) / 1e9).toFixed(3)
+    : '0.000';
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       {/* Session Jumper Bar */}
@@ -295,30 +301,32 @@ export const MarketReplay: React.FC<MarketReplayProps> = ({ date }) => {
         </div>
       </div>
 
-      {/* Sampling Coverage & Truncation Banner */}
-      {isTruncated && (
-        <div style={{
-          background: 'rgba(234, 179, 8, 0.08)',
-          border: '1px solid rgba(234, 179, 8, 0.3)',
-          borderRadius: '4px',
-          padding: '8px 14px',
-          fontSize: '0.78rem',
-          color: 'var(--color-gold)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '8px'
-        }}>
-          <span>
-            ⚠️ <strong>High-Density Slice:</strong> Total trades in this 60s window: <strong>{totalInWindow.toLocaleString()}</strong>.
-            Loaded the first <strong>{trades.length.toLocaleString()}</strong> trades ({((trades.length / Math.max(1, totalInWindow)) * 100).toFixed(1)}% event coverage) to guarantee 60fps rendering without browser event loop starvation.
-          </span>
-          <span className="mono" style={{ fontSize: '0.74rem' }}>
-            {playbackMode === 'REAL_CLOCK' ? `Monotonic Clock (${playbackSpeed}x Real Time)` : `Fixed Rate (${playbackSpeed * 10} Trades/Sec)`}
-          </span>
-        </div>
-      )}
+      {/* Sampling Coverage & Physical Span Banner */}
+      <div style={{
+        background: isTruncated ? 'rgba(234, 179, 8, 0.08)' : 'rgba(0, 229, 255, 0.05)',
+        border: `1px solid ${isTruncated ? 'rgba(234, 179, 8, 0.3)' : 'var(--border-color)'}`,
+        borderRadius: '4px',
+        padding: '8px 14px',
+        fontSize: '0.78rem',
+        color: isTruncated ? 'var(--color-gold)' : 'var(--text-main)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: '8px'
+      }}>
+        <span>
+          {isTruncated ? '⚠️' : 'ℹ️'} <strong>Loaded Replay Clip:</strong> Nominal Window: <strong>60s</strong> &bull; Actual Physical Span: <strong className="mono">{clipStartUtc || '00:00:00'} - {clipEndUtc || '00:00:24'} UTC</strong> (<strong className="mono">{clipDurationSec}s</strong> elapsed).
+          {isTruncated ? (
+            <span> Loaded first <strong>{trades.length.toLocaleString()}</strong> of <strong>{totalInWindow.toLocaleString()}</strong> window trades ({((trades.length / Math.max(1, totalInWindow)) * 100).toFixed(1)}% event coverage).</span>
+          ) : (
+            <span> Loaded all <strong>{trades.length.toLocaleString()}</strong> trades in window (100% coverage).</span>
+          )}
+        </span>
+        <span className="mono" style={{ fontSize: '0.74rem' }}>
+          {playbackMode === 'REAL_CLOCK' ? `Monotonic Clock (${playbackSpeed}x Real Time)` : `Fixed Rate (${playbackSpeed * 10} Trades/Sec)`}
+        </span>
+      </div>
 
       {/* Control Bar */}
       <div className="mml-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
@@ -432,7 +440,12 @@ export const MarketReplay: React.FC<MarketReplayProps> = ({ date }) => {
               Loading high-precision trade events from DuckDB Parquet layer...
             </div>
           ) : (
-            <ReactECharts option={chartOption} style={{ height: '420px', width: '100%' }} />
+            <>
+              <ReactECharts option={chartOption} style={{ height: '420px', width: '100%' }} />
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', marginTop: '8px', lineHeight: '1.4' }}>
+                * <strong>CVD Scope Notice:</strong> Cumulative Volume Delta (CVD) is calculated strictly as cumulative aggressive buy minus sell volume within this loaded replay clip (anchored to 0.0 BTC at clip onset {clipStartUtc} UTC), not the full 24-hour day cumulative sum. Physical market span covered: {clipDurationSec}s.
+              </div>
+            </>
           )}
         </div>
 

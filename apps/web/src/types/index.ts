@@ -170,6 +170,8 @@ export interface ModelFitStats {
   bic?: number;
   wls_fit?: {
     name?: string;
+    estimator?: string;
+    se_type?: string;
     gamma_wls: number;
     gamma_wls_se: number;
     ci_95_lower: number;
@@ -178,11 +180,29 @@ export interface ModelFitStats {
   };
   trade_level_fit?: {
     name?: string;
+    estimator?: string;
+    sample_type?: string;
+    conditioning?: string;
+    caveat?: string;
     gamma_trade: number;
     gamma_trade_se: number;
     r_squared_trade: number;
+    positive_trades_count?: number;
+    zero_trades_count?: number;
+    negative_trades_count?: number;
+    total_trades_count?: number;
+    positive_trades_pct?: number;
   };
   out_of_sample_validation?: {
+    description?: string;
+    train_start_utc?: string;
+    train_end_utc?: string;
+    test_start_utc?: string;
+    test_end_utc?: string;
+    train_observations?: number;
+    test_observations?: number;
+    train_r2?: number;
+    test_r2?: number;
     train_window: string;
     test_window: string;
     log_model_oos_r2: number;

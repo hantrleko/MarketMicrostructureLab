@@ -1,12 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import ReactECharts from 'echarts-for-react';
 import { fetchOrderBookStatus, controlOrderBook, fetchLiveOrderBook } from '../api/client';
-import { AlertCircle, Wifi, Cpu, Database, Play, Square, Activity, Layers } from 'lucide-react';
+import { OrderBookStatusResponse, OrderBookLadderResponse, DataSourceStatus } from '../types';
+import { AlertCircle, Wifi, Cpu, Database, Play, Square, Activity, Layers, ShieldAlert } from 'lucide-react';
 
 export const OrderBookLab: React.FC = () => {
-  const [obStatus, setObStatus] = useState<any>(null);
-  const [ladder, setLadder] = useState<any>(null);
+  const [obStatus, setObStatus] = useState<OrderBookStatusResponse | null>(null);
+  const [ladder, setLadder] = useState<OrderBookLadderResponse | null>(null);
   const [isLiveActive, setIsLiveActive] = useState<boolean>(false);
+  const [isSimulatedActive, setIsSimulatedActive] = useState<boolean>(false);
   const pollTimerRef = useRef<any>(null);
 
   // Poll initial status
@@ -14,66 +16,87 @@ export const OrderBookLab: React.FC = () => {
     fetchOrderBookStatus()
       .then((data) => {
         setObStatus(data);
-        if (data.is_running) {
+        if (data.is_running && data.status === 'SYNCHRONIZED') {
           setIsLiveActive(true);
         }
       })
       .catch((err) => console.error(err));
   }, []);
 
-  // Polling loop when live active
+  // Polling loop
   useEffect(() => {
-    if (isLiveActive) {
+    if (isLiveActive || isSimulatedActive) {
       pollTimerRef.current = setInterval(() => {
-        fetchLiveOrderBook(12)
+        fetchLiveOrderBook(12, isSimulatedActive)
           .then((lData) => {
             setLadder(lData);
-            setObStatus({
+            setObStatus((prev) => ({
+              phase: prev?.phase || 'Phase 2 (Market Depth & Local Order Book Sync)',
+              symbol: lData.symbol,
+              data_status: lData.data_status,
               status: lData.status,
               is_valid: lData.is_valid,
+              is_running: isLiveActive,
               last_update_id: lData.last_update_id,
               sync_errors: lData.sync_errors,
-              metrics: lData.metrics
-            });
+              disclaimer: prev?.disclaimer || ''
+            }));
           })
           .catch((err) => console.error(err));
-      }, 250); // 4Hz refresh for smooth quant terminal view
+      }, 250); // 4Hz refresh for responsive quant terminal view
     } else {
       if (pollTimerRef.current) clearInterval(pollTimerRef.current);
     }
     return () => {
       if (pollTimerRef.current) clearInterval(pollTimerRef.current);
     };
-  }, [isLiveActive]);
+  }, [isLiveActive, isSimulatedActive]);
 
-  const handleToggleSync = async () => {
+  const handleToggleLiveSync = async () => {
     try {
       if (isLiveActive) {
         await controlOrderBook('stop');
         setIsLiveActive(false);
       } else {
-        await controlOrderBook('start');
-        setIsLiveActive(true);
+        setIsSimulatedActive(false);
+        const res = await controlOrderBook('start');
+        if (res.status === 'SIMULATED_DEMO') {
+          // Backend not reachable, fall back to simulated demonstration
+          setIsSimulatedActive(true);
+        } else {
+          setIsLiveActive(true);
+        }
       }
     } catch (e) {
       console.error(e);
     }
   };
 
-  const metrics = ladder?.metrics || obStatus?.metrics;
+  const handleToggleSimulatedDemo = () => {
+    if (isSimulatedActive) {
+      setIsSimulatedActive(false);
+      setLadder(null);
+    } else {
+      setIsLiveActive(false);
+      setIsSimulatedActive(true);
+    }
+  };
+
+  const dataStatus: DataSourceStatus = ladder?.data_status || obStatus?.data_status || 'UNAVAILABLE';
+  const metrics = ladder?.metrics;
   const bids = ladder?.bids || [];
   const asks = ladder?.asks || [];
   const maxQty = Math.max(
     1,
-    ...bids.map((b: any) => b.qty),
-    ...asks.map((a: any) => a.qty)
+    ...bids.map((b) => b.qty),
+    ...asks.map((a) => a.qty)
   );
 
   // History for streaming OFI & Spread chart
   const history = ladder?.history || [];
-  const timeLabels = history.map((h: any) => h.time_str);
-  const spreadBps = history.map((h: any) => h.spread_bps);
-  const cumOfi = history.map((h: any) => h.cumulative_ofi);
+  const timeLabels = history.map((h) => h.time_str);
+  const spreadBps = history.map((h) => h.spread_bps);
+  const cumOfi = history.map((h) => h.cumulative_ofi);
 
   const chartOption = {
     backgroundColor: 'transparent',
@@ -144,11 +167,37 @@ export const OrderBookLab: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      {/* Simulation Warning Banner (When active) */}
+      {dataStatus === 'SIMULATED' && (
+        <div
+          style={{
+            background: 'rgba(255, 145, 0, 0.12)',
+            border: '1px solid var(--color-sell)',
+            borderRadius: '6px',
+            padding: '12px 18px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            color: '#f8fafc'
+          }}
+        >
+          <ShieldAlert size={22} color="var(--color-sell)" />
+          <div>
+            <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--color-sell)' }}>
+              RESEARCH INTEGRITY ALERT: SYNTHETIC SIMULATION MODE ACTIVE
+            </div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+              This L2 order book is generated locally for interactive terminal UI demonstration. Per MML research integrity rules, simulated order book data is <strong>NEVER mixed with empirical research statistics</strong> or stored in historical research layers.
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Live Control & Synchronization Header */}
       <div className="mml-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
           <button
-            onClick={handleToggleSync}
+            onClick={handleToggleLiveSync}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -158,12 +207,31 @@ export const OrderBookLab: React.FC = () => {
               fontWeight: 800,
               padding: '10px 22px',
               borderRadius: '5px',
-              fontSize: '0.9rem',
+              fontSize: '0.85rem',
               letterSpacing: '0.04em'
             }}
           >
             {isLiveActive ? <Square size={16} /> : <Play size={16} />}
-            {isLiveActive ? 'STOP LIVE SYNC' : 'START LIVE L2 SYNC'}
+            {isLiveActive ? 'STOP LIVE L2 SYNC' : 'START LIVE L2 SYNC (LOCAL API)'}
+          </button>
+
+          <button
+            onClick={handleToggleSimulatedDemo}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              background: isSimulatedActive ? 'var(--color-sell)' : 'var(--bg-dark)',
+              border: '1px solid var(--border-color)',
+              color: isSimulatedActive ? '#fff' : 'var(--text-muted)',
+              fontWeight: 600,
+              padding: '10px 18px',
+              borderRadius: '5px',
+              fontSize: '0.82rem'
+            }}
+          >
+            <Activity size={15} color={isSimulatedActive ? '#fff' : 'var(--color-gold)'} />
+            {isSimulatedActive ? 'STOP SIMULATION' : 'SIMULATE PREVIEW (DEMO)'}
           </button>
 
           <div>
@@ -178,22 +246,48 @@ export const OrderBookLab: React.FC = () => {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>STATUS:</span>
+            <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>DATA STATUS:</span>
+            <span
+              style={{
+                fontSize: '0.74rem',
+                fontWeight: 700,
+                padding: '2px 8px',
+                borderRadius: '3px',
+                background:
+                  dataStatus === 'LIVE_VERIFIED'
+                    ? 'rgba(0, 229, 255, 0.15)'
+                    : dataStatus === 'SIMULATED'
+                    ? 'rgba(255, 145, 0, 0.15)'
+                    : 'rgba(100, 116, 139, 0.2)',
+                color:
+                  dataStatus === 'LIVE_VERIFIED'
+                    ? 'var(--color-buy)'
+                    : dataStatus === 'SIMULATED'
+                    ? 'var(--color-sell)'
+                    : 'var(--text-dim)',
+                border: `1px solid ${
+                  dataStatus === 'LIVE_VERIFIED'
+                    ? 'var(--color-buy)'
+                    : dataStatus === 'SIMULATED'
+                    ? 'var(--color-sell)'
+                    : 'var(--border-color)'
+                }`
+              }}
+            >
+              {dataStatus}
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>ENGINE STATUS:</span>
             <span className={obStatus?.status === 'SYNCHRONIZED' ? 'badge-buy' : 'badge-gold'}>
-              {obStatus?.status || 'IDLE'}
+              {obStatus?.status || 'STANDBY'}
             </span>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>SEQ ERRORS:</span>
             <span className="mono badge-buy">{obStatus?.sync_errors ?? 0}</span>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>LAST UPDATE ID:</span>
-            <span className="mono" style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-              {obStatus?.last_update_id || '---'}
-            </span>
           </div>
         </div>
       </div>
@@ -203,7 +297,7 @@ export const OrderBookLab: React.FC = () => {
         <div className="mml-card">
           <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>BID-ASK SPREAD</div>
           <div className="mono" style={{ fontSize: '1.4rem', fontWeight: 800, color: '#fff', marginTop: '4px' }}>
-            {metrics?.is_valid ? `$${metrics.spread.toFixed(2)} (${metrics.spread_bps.toFixed(3)} bps)` : '---'}
+            {metrics?.is_valid || isSimulatedActive ? `$${metrics?.spread.toFixed(2)} (${metrics?.spread_bps.toFixed(3)} bps)` : '---'}
           </div>
           <div style={{ fontSize: '0.72rem', color: 'var(--color-buy)', marginTop: '4px' }}>
             Best: ${metrics?.best_bid?.toFixed(2) || '0'} / ${metrics?.best_ask?.toFixed(2) || '0'}
@@ -213,7 +307,7 @@ export const OrderBookLab: React.FC = () => {
         <div className="mml-card">
           <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>MICROPRICE</div>
           <div className="mono" style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--color-buy)', marginTop: '4px' }}>
-            {metrics?.is_valid ? `$${metrics.microprice.toFixed(2)}` : '---'}
+            {metrics?.is_valid || isSimulatedActive ? `$${metrics?.microprice.toFixed(2)}` : '---'}
           </div>
           <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '4px' }}>
             Mid: ${metrics?.mid_price?.toFixed(2) || '0'}
@@ -222,8 +316,8 @@ export const OrderBookLab: React.FC = () => {
 
         <div className="mml-card">
           <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>TOP 5 BOOK IMBALANCE</div>
-          <div className="mono" style={{ fontSize: '1.4rem', fontWeight: 800, color: metrics?.book_imbalance > 0 ? 'var(--color-buy)' : 'var(--color-sell)', marginTop: '4px' }}>
-            {metrics?.is_valid ? metrics.book_imbalance.toFixed(3) : '---'}
+          <div className="mono" style={{ fontSize: '1.4rem', fontWeight: 800, color: (metrics?.book_imbalance || 0) > 0 ? 'var(--color-buy)' : 'var(--color-sell)', marginTop: '4px' }}>
+            {metrics?.is_valid || isSimulatedActive ? metrics?.book_imbalance.toFixed(3) : '---'}
           </div>
           <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '4px' }}>
             (Depth_B5 - Depth_A5) / Sum
@@ -247,26 +341,26 @@ export const OrderBookLab: React.FC = () => {
         <div className="mml-card">
           <div className="mml-card-title">
             <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Layers size={14} color="var(--color-buy)" /> L2 DEPTH LADDER (REAL-TIME)
+              <Layers size={14} color="var(--color-buy)" /> L2 DEPTH LADDER
             </span>
-            <span className="mono" style={{ fontSize: '0.72rem', color: 'var(--color-gold)' }}>
-              100ms TICK
+            <span className="mono" style={{ fontSize: '0.72rem', color: dataStatus === 'SIMULATED' ? 'var(--color-sell)' : 'var(--color-gold)' }}>
+              {dataStatus === 'SIMULATED' ? 'SIMULATED 100ms' : dataStatus === 'LIVE_VERIFIED' ? 'LIVE 100ms TICK' : 'STANDBY'}
             </span>
           </div>
 
-          {!isLiveActive ? (
+          {!isLiveActive && !isSimulatedActive ? (
             <div style={{ height: '420px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', color: 'var(--text-dim)', textAlign: 'center', padding: '20px' }}>
               <AlertCircle size={32} color="var(--color-gold)" />
-              <div>Live WebSocket stream is currently stopped.</div>
-              <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>
-                Click <strong>"START LIVE L2 SYNC"</strong> above to establish real-time WebSocket connection to Binance and synchronize L2 order book.
+              <div>Live WebSocket stream is currently in STANDBY.</div>
+              <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', maxWidth: '340px' }}>
+                For authentic live L2 book synchronization, run the local Python FastAPI collector with <code>uvicorn apps.api.main:app</code>. Or click <strong>"SIMULATE PREVIEW"</strong> to inspect ladder rendering behavior.
               </div>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', fontSize: '0.78rem' }}>
               {/* ASKS (Reversed so lowest ask is at bottom near spread) */}
               <div style={{ display: 'flex', flexDirection: 'column-reverse', gap: '2px' }}>
-                {asks.map((ask: any, idx: number) => {
+                {asks.map((ask, idx) => {
                   const pct = Math.min(100, (ask.qty / maxQty) * 100);
                   return (
                     <div
@@ -330,7 +424,7 @@ export const OrderBookLab: React.FC = () => {
 
               {/* BIDS */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                {bids.map((bid: any, idx: number) => {
+                {bids.map((bid, idx) => {
                   const pct = Math.min(100, (bid.qty / maxQty) * 100);
                   return (
                     <div

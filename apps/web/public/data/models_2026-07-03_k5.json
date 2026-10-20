@@ -1,0 +1,221 @@
+{
+  "symbol": "BTCUSDT",
+  "sample_size": 249995,
+  "horizon_lag": 5,
+  "binned_empirical": [
+    {
+      "bin": 1,
+      "label": "Sub-Lot (<0.00009)",
+      "mean_volume": 4.5509838998211096e-05,
+      "min_volume": 1e-05,
+      "max_volume": 8e-05,
+      "unique_quantities_count": 8,
+      "mean_response_bps": 0.006626602230017431,
+      "se_bps": 0.0008593871889894046,
+      "count": 2795,
+      "pct_of_sample": 1.118022360447209,
+      "is_point_mass": false
+    },
+    {
+      "bin": 2,
+      "label": "Minimum Lot (0.00009)",
+      "mean_volume": 9e-05,
+      "min_volume": 9e-05,
+      "max_volume": 9e-05,
+      "unique_quantities_count": 1,
+      "mean_response_bps": 0.02207605114086412,
+      "se_bps": 0.0001449641442876832,
+      "count": 163555,
+      "pct_of_sample": 65.42330846616933,
+      "is_point_mass": true
+    },
+    {
+      "bin": 3,
+      "label": "Micro (0.00009 - 0.0002]",
+      "mean_volume": 0.0001410795836131632,
+      "min_volume": 0.0001,
+      "max_volume": 0.0002,
+      "unique_quantities_count": 11,
+      "mean_response_bps": 0.017167054598025946,
+      "se_bps": 0.00047324573672732803,
+      "count": 17868,
+      "pct_of_sample": 7.147342946858936,
+      "is_point_mass": false
+    },
+    {
+      "bin": 4,
+      "label": "Small-1 (0.0002 - 0.0005]",
+      "mean_volume": 0.00034635582540955436,
+      "min_volume": 0.00021,
+      "max_volume": 0.0005,
+      "unique_quantities_count": 30,
+      "mean_response_bps": 0.00929240895663251,
+      "se_bps": 0.0005265200398744484,
+      "count": 8729,
+      "pct_of_sample": 3.4916698333966676,
+      "is_point_mass": false
+    },
+    {
+      "bin": 5,
+      "label": "Small-2 (0.0005 - 0.001]",
+      "mean_volume": 0.0007623010967098704,
+      "min_volume": 0.00051,
+      "max_volume": 0.001,
+      "unique_quantities_count": 50,
+      "mean_response_bps": 0.009404532271031168,
+      "se_bps": 0.0005339279639155478,
+      "count": 5015,
+      "pct_of_sample": 2.0060401208024157,
+      "is_point_mass": false
+    },
+    {
+      "bin": 6,
+      "label": "Medium-1 (0.001 - 0.005]",
+      "mean_volume": 0.0031059786754906015,
+      "min_volume": 0.00101,
+      "max_volume": 0.005,
+      "unique_quantities_count": 400,
+      "mean_response_bps": 0.012656349510374454,
+      "se_bps": 0.0005085858776085304,
+      "count": 21759,
+      "pct_of_sample": 8.70377407548151,
+      "is_point_mass": false
+    },
+    {
+      "bin": 7,
+      "label": "Medium-2 (0.005 - 0.01]",
+      "mean_volume": 0.0072118176504967855,
+      "min_volume": 0.00501,
+      "max_volume": 0.01,
+      "unique_quantities_count": 500,
+      "mean_response_bps": 0.020370409605938212,
+      "se_bps": 0.0008830524988333525,
+      "count": 10266,
+      "pct_of_sample": 4.106482129642592,
+      "is_point_mass": false
+    },
+    {
+      "bin": 8,
+      "label": "Upper (0.01 - 0.05]",
+      "mean_volume": 0.02189680377174443,
+      "min_volume": 0.01001,
+      "max_volume": 0.05,
+      "unique_quantities_count": 2721,
+      "mean_response_bps": 0.011907516146648854,
+      "se_bps": 0.0005730708658713514,
+      "count": 12302,
+      "pct_of_sample": 4.920898417968359,
+      "is_point_mass": false
+    },
+    {
+      "bin": 9,
+      "label": "Large (0.05 - 0.2]",
+      "mean_volume": 0.10830538488150838,
+      "min_volume": 0.05002,
+      "max_volume": 0.2,
+      "unique_quantities_count": 3044,
+      "mean_response_bps": 0.005184124507134822,
+      "se_bps": 0.0006982734871811534,
+      "count": 5781,
+      "pct_of_sample": 2.3124462489249784,
+      "is_point_mass": false
+    },
+    {
+      "bin": 10,
+      "label": "Block (>0.2)",
+      "mean_volume": 0.5631029766233766,
+      "min_volume": 0.20015,
+      "max_volume": 18.263,
+      "unique_quantities_count": 1285,
+      "mean_response_bps": 0.011064086353930956,
+      "se_bps": 0.0025594254071979743,
+      "count": 1925,
+      "pct_of_sample": 0.7700154003080061,
+      "is_point_mass": false
+    }
+  ],
+  "linear_model": {
+    "name": "Linear (R = alpha + beta * Q)",
+    "alpha": 0.01902948125276611,
+    "alpha_se": 0.00024146991958055443,
+    "beta": -0.005044053349330511,
+    "beta_se": 0.0017629486516465372,
+    "beta_t_stat": -2.861145924255666,
+    "beta_p_value": 0.004221127143384665,
+    "r_squared": 7.86533861193428e-05,
+    "aic": -678846.866767715,
+    "bic": -678826.0083753216
+  },
+  "logarithmic_model": {
+    "name": "Logarithmic (R = alpha + beta * ln(Q))",
+    "alpha": 0.005156755826581753,
+    "alpha_se": 0.0009511819475438906,
+    "beta": -0.001679289874604251,
+    "beta_se": 0.0001060244111903713,
+    "beta_t_stat": -15.838709743825083,
+    "beta_p_value": 1.6823750341893336e-56,
+    "r_squared": 0.002899854116436673,
+    "aic": -679553.2052306843,
+    "bic": -679532.3468382909
+  },
+  "power_law_model": {
+    "name": "Power Law (R = alpha * Q^gamma)",
+    "alpha": 0.009375692412751315,
+    "gamma": -0.03291716694402186,
+    "gamma_se": 0.050693335670394225,
+    "ci_95_lower": -0.13227610485799454,
+    "ci_95_upper": 0.06644177096995083,
+    "r_squared_binned": 0.05006640650071259,
+    "hypothesis_test_sqrt_law": {
+      "null_hypothesis": "H0: gamma = 0.5 (Square-Root Law for Child Trades)",
+      "gamma_estimate": -0.03291716694402186,
+      "standard_error": 0.050693335670394225,
+      "confidence_interval_95": [
+        -0.13227610485799454,
+        0.06644177096995083
+      ],
+      "t_statistic": -10.512568563430607,
+      "p_value": 0.0,
+      "is_rejected_at_5pct": true,
+      "interpretation": "Estimated power-law exponent gamma = -0.0329 (95% CI: [-0.1323, 0.0664]) is statistically indistinguishable from zero and significantly different from 0.5 (p < 0.001). This finding strictly characterizes individual child-order tick responses. It does NOT constitute an empirical refutation of the classical Square-Root Law of Meta-Orders (which governs cumulative parent-order execution over hours or days), nor does it directly prove specific unobserved microstructure mechanisms (such as book replenishment or adverse selection ratios)."
+    }
+  },
+  "time_chunk_stability": [
+    {
+      "chunk_index": 1,
+      "observations": 62498,
+      "log_alpha": 0.0059305434532671815,
+      "log_beta": -0.0018878734598285652,
+      "log_r2": 0.0017222724950074486,
+      "power_gamma": 0.013340211521385648,
+      "power_gamma_se": 0.05713312694770307
+    },
+    {
+      "chunk_index": 2,
+      "observations": 62498,
+      "log_alpha": 0.00902591706174894,
+      "log_beta": -0.0012021362416407225,
+      "log_r2": 0.0015349297156490582,
+      "power_gamma": 0.0014205951595571698,
+      "power_gamma_se": 0.05382602464161535
+    },
+    {
+      "chunk_index": 3,
+      "observations": 62498,
+      "log_alpha": 0.004816133223629794,
+      "log_beta": -0.0015855030242122859,
+      "log_r2": 0.00444617238528866,
+      "power_gamma": -0.014195308297982878,
+      "power_gamma_se": 0.07856190354079781
+    },
+    {
+      "chunk_index": 4,
+      "observations": 62501,
+      "log_alpha": 0.0022963655425468255,
+      "log_beta": -0.0018634089236619614,
+      "log_r2": 0.005074217850371987,
+      "power_gamma": -0.08733984057284143,
+      "power_gamma_se": 0.058335001529343684
+    }
+  ]
+}

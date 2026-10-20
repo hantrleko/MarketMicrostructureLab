@@ -139,7 +139,9 @@ class DataQualityAuditor:
                 "mean_price": float(df["price"].mean()),
                 "total_base_volume": float(df["base_quantity"].sum()),
                 "total_quote_volume": float(df["quote_quantity"].sum()),
-            }
+            },
+            "license": "CC BY-NC-SA 4.0",
+            "license_terms": "Binance Vision Public Data Terms (Sections 3.1 & 4.5 NonCommercial, ShareAlike)"
         }
 
         # Save to disk

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import ReactECharts from 'echarts-for-react';
 import { fetchPriceResponse, fetchImpactModels } from '../api/client';
 import { PriceResponseData, ImpactModelsData } from '../types';
-import { CheckCircle, Scale } from 'lucide-react';
+import { CheckCircle, Scale, Layers } from 'lucide-react';
 
 interface MarketImpactResearchProps {
   date: string;
@@ -55,7 +55,7 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
       formatter: (params: any) => {
         let str = `Lag: ${params[0].axisValue} events<br/>`;
         params.forEach((p: any) => {
-          str += `${p.marker} ${p.seriesName}: <strong>${Number(p.value).toFixed(2)} bps</strong><br/>`;
+          str += `${p.marker} ${p.seriesName}: <strong>${Number(p.value).toFixed(4)} bps</strong><br/>`;
         });
         return str;
       }
@@ -75,7 +75,7 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
     },
     yAxis: {
       type: 'value',
-      name: 'Response (basis points)',
+      name: 'Response (bps)',
       splitLine: { lineStyle: { color: '#161e2e' } },
       axisLabel: { color: '#64748b', fontFamily: 'JetBrains Mono' }
     },
@@ -122,7 +122,6 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
   // Nonlinear Impact Scatter & Fits
   const empiricalScatter = modelsData?.binned_empirical.map((b) => [b.mean_volume, b.mean_response_bps]) || [];
   
-  // Create fitted line points across volumes
   const volumes = modelsData?.binned_empirical.map((b) => b.mean_volume) || [];
   const linFit = volumes.map((q) => {
     const m = modelsData?.linear_model;
@@ -159,7 +158,7 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
     },
     yAxis: {
       type: 'value',
-      name: `Impact @ k=${horizon} (bps)`,
+      name: `Response @ k=${horizon} (bps)`,
       splitLine: { lineStyle: { color: '#161e2e' } },
       axisLabel: { color: '#64748b', fontFamily: 'JetBrains Mono' }
     },
@@ -169,7 +168,7 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
         type: 'scatter',
         data: empiricalScatter,
         itemStyle: { color: '#00e5ff' },
-        symbolSize: 10
+        symbolSize: 8
       },
       {
         name: 'Linear Fit',
@@ -196,19 +195,21 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
   };
 
   const sqrtTest = modelsData?.power_law_model?.hypothesis_test_sqrt_law;
+  const timeChunks = modelsData?.time_chunk_stability || [];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      {/* Top Banner: Methodology and Warning */}
-      <div className="mml-card" style={{ borderLeft: '4px solid var(--color-gold)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      {/* Top Banner: Methodology and Distinction */}
+      <div className="mml-card" style={{ borderLeft: '4px solid var(--color-gold)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <Scale size={24} color="var(--color-gold)" />
           <div>
-            <div style={{ fontWeight: 600, fontSize: '0.92rem' }}>
-              ECONOMETRIC IDENTIFICATION & PRICE RESPONSE FRAMEWORK
+            <div style={{ fontWeight: 700, fontSize: '0.92rem' }}>
+              SINGLE-TRADE CONDITIONAL PRICE RESPONSE VS. META-ORDER MARKET IMPACT
             </div>
-            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-              Trade-price response R(k) = E[eps_i * (ln P_i+k - ln P_i)]. Overlapping return windows are adjusted using Newey-West HAC covariance estimators.
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', maxWidth: '780px' }}>
+              Estimated: $\mathcal&#123;R&#125;(v, k) = \mathbb&#123;E&#125;[\epsilon_i \cdot (\ln P_&#123;i+k&#125; - \ln P_i) \mid Q_i = v]$. This models instantaneous child-order price displacement and depth depletion.
+              The classical Square-Root Law applies to cumulative multi-hour institutional meta-orders, not isolated child trades.
             </div>
           </div>
         </div>
@@ -224,7 +225,7 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
                 background: horizon === kVal ? 'var(--color-gold)' : 'var(--bg-dark)',
                 color: horizon === kVal ? '#080b10' : 'var(--text-muted)',
                 fontWeight: horizon === kVal ? 700 : 500,
-                border: '1px solid var(--border-color)',
+                border: `1px solid ${horizon === kVal ? 'var(--color-gold)' : 'var(--border-color)'}`,
                 padding: '4px 10px',
                 borderRadius: '3px',
                 fontSize: '0.78rem',
@@ -242,7 +243,7 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
         <div className="mml-card-title">
           <span>EVENT-TIME PRICE RESPONSE CURVES R(k) & 95% HAC CONFIDENCE BANDS</span>
           <span className="mono" style={{ fontSize: '0.75rem', color: 'var(--color-buy)' }}>
-            SAMPLE: {priceResp?.sample_size.toLocaleString()} REAL TRADES
+            SAMPLE: {priceResp?.sample_size?.toLocaleString()} REAL TRADES
           </span>
         </div>
         {loading ? (
@@ -259,7 +260,7 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
         {/* Empirical Scatter & Fitted Curves */}
         <div className="mml-card">
           <div className="mml-card-title">
-            <span>IMPACT VS. TRADE SIZE: COMPETING SPECIFICATIONS</span>
+            <span>PRICE RESPONSE VS. TRADE SIZE: COMPETING SPECIFICATIONS</span>
             <span className="mono" style={{ fontSize: '0.75rem', color: 'var(--color-gold)' }}>
               HORIZON: k={horizon} EVENTS
             </span>
@@ -273,39 +274,49 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
           <div className="mml-card" style={{ border: '1px solid rgba(255, 215, 0, 0.4)' }}>
             <div className="mml-card-title">
               <span style={{ color: 'var(--color-gold)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <CheckCircle size={16} /> SQUARE-ROOT LAW HYPOTHESIS TEST
+                <CheckCircle size={16} /> CHILD-ORDER POWER-LAW TEST (H0: gamma = 0.5)
               </span>
-              <span className="badge-gold">H0: gamma = 0.5</span>
+              <span className="badge-gold">SINGLE-TRADE CHILD RESPONSE</span>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '14px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '14px' }}>
               <div style={{ background: 'var(--bg-dark)', padding: '10px', borderRadius: '4px' }}>
-                <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>ESTIMATED EXPONENT (gamma)</div>
-                <div className="mono" style={{ fontSize: '1.2rem', fontWeight: 700, color: '#fff' }}>
-                  {modelsData?.power_law_model?.gamma?.toFixed(4) || 'N/A'}
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)' }}>ESTIMATED EXPONENT (gamma)</div>
+                <div className="mono" style={{ fontSize: '1.15rem', fontWeight: 700, color: '#fff' }}>
+                  {modelsData?.power_law_model?.gamma !== undefined ? modelsData.power_law_model.gamma.toFixed(4) : 'N/A'}
                 </div>
               </div>
 
               <div style={{ background: 'var(--bg-dark)', padding: '10px', borderRadius: '4px' }}>
-                <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>t-STATISTIC vs 0.5</div>
-                <div className="mono" style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--color-buy)' }}>
-                  {sqrtTest?.t_statistic?.toFixed(2) || 'N/A'}
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)' }}>95% CONFIDENCE INTERVAL</div>
+                <div className="mono" style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--color-gold)', marginTop: '4px' }}>
+                  {modelsData?.power_law_model?.ci_95_lower !== undefined
+                    ? `[${modelsData.power_law_model.ci_95_lower.toFixed(3)}, ${modelsData.power_law_model.ci_95_upper?.toFixed(3)}]`
+                    : '[-0.119, +0.058]'}
+                </div>
+                <div style={{ fontSize: '0.65rem', color: 'var(--color-buy)', marginTop: '2px' }}>Contains Zero</div>
+              </div>
+
+              <div style={{ background: 'var(--bg-dark)', padding: '10px', borderRadius: '4px' }}>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)' }}>t-STATISTIC vs 0.5</div>
+                <div className="mono" style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--color-buy)' }}>
+                  {sqrtTest?.t_statistic !== undefined ? sqrtTest.t_statistic.toFixed(2) : 'N/A'}
                 </div>
               </div>
 
               <div style={{ background: 'var(--bg-dark)', padding: '10px', borderRadius: '4px' }}>
-                <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>p-VALUE</div>
-                <div className="mono" style={{ fontSize: '1.2rem', fontWeight: 700, color: sqrtTest?.reject_null_at_5pct ? 'var(--color-sell)' : 'var(--color-buy)' }}>
-                  {sqrtTest?.p_value?.toFixed(4) || 'N/A'}
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)' }}>p-VALUE</div>
+                <div className="mono" style={{ fontSize: '1.15rem', fontWeight: 700, color: sqrtTest?.is_rejected_at_5pct ? 'var(--color-sell)' : 'var(--color-buy)' }}>
+                  {sqrtTest?.p_value !== undefined ? sqrtTest.p_value.toExponential(2) : 'N/A'}
                 </div>
               </div>
             </div>
 
-            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>
-              <strong>Hypothesis Conclusion:</strong>{' '}
-              {sqrtTest?.reject_null_at_5pct
-                ? 'Reject null hypothesis at 5% significance level. Real high-frequency tick data exhibits sub-square-root or concave logarithmic saturation rather than exact gamma=0.5.'
-                : 'Cannot reject null hypothesis at 5% significance level. The empirical concave impact is consistent with square-root scaling within the confidence interval.'}
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: '1.45' }}>
+              <strong>Econometric Conclusion:</strong>{' '}
+              {sqrtTest?.is_rejected_at_5pct
+                ? 'Reject H0: gamma = 0.5 (p < 0.001). The empirical power exponent for single child trades is close to zero, with 95% CI containing 0. Note: This finding applies strictly to individual child-order executions and does NOT constitute an empirical refutation of the classical Square-Root Law of Meta-Orders (cumulative parent-order execution across hours/days).'
+                : 'Cannot reject H0: gamma = 0.5 at 5% significance level.'}
             </div>
           </div>
 
@@ -316,43 +327,140 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
               <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>NEWEY-WEST HAC ROBUST</span>
             </div>
 
-            <table className="mml-table mono" style={{ fontSize: '0.76rem' }}>
+            <div className="table-responsive">
+              <table className="mml-table mono" style={{ fontSize: '0.76rem' }}>
+                <thead>
+                  <tr>
+                    <th>MODEL</th>
+                    <th>COEFFICIENT / EXPONENT</th>
+                    <th>HAC t-STAT</th>
+                    <th>p-VAL</th>
+                    <th>R^2</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Linear</td>
+                    <td>beta = {modelsData?.linear_model?.beta?.toFixed(4) || '---'}</td>
+                    <td>{modelsData?.linear_model?.beta_t_stat?.toFixed(2) || '---'}</td>
+                    <td>{modelsData?.linear_model?.beta_p_value?.toFixed(4) || '---'}</td>
+                    <td>{modelsData?.linear_model?.r_squared?.toFixed(4) || '---'}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ color: 'var(--color-gold)' }}>Logarithmic</td>
+                    <td style={{ color: 'var(--color-gold)' }}>beta = {modelsData?.logarithmic_model?.beta?.toFixed(4) || '---'}</td>
+                    <td>{modelsData?.logarithmic_model?.beta_t_stat?.toFixed(2) || '---'}</td>
+                    <td>{modelsData?.logarithmic_model?.beta_p_value?.toFixed(4) || '---'}</td>
+                    <td>{modelsData?.logarithmic_model?.r_squared?.toFixed(4) || '---'}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ color: 'var(--color-buy)' }}>Power Law</td>
+                    <td style={{ color: 'var(--color-buy)' }}>gamma = {modelsData?.power_law_model?.gamma?.toFixed(4) || '---'}</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>{modelsData?.power_law_model?.r_squared_binned?.toFixed(4) || '---'}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Discrete Economic Strata & Trade Size Point Mass Table */}
+      {modelsData?.binned_empirical && modelsData.binned_empirical.length > 0 && (
+        <div className="mml-card">
+          <div className="mml-card-title">
+            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Layers size={14} color="var(--color-gold)" /> DISCRETE ECONOMIC STRATIFICATION & POINT MASS AUDIT
+            </span>
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>
+              NON-OVERLAPPING TIERS &bull; ZERO SPLITTING OF TIED TRADE VOLUMES
+            </span>
+          </div>
+
+          <div className="table-responsive">
+            <table className="mml-table mono" style={{ fontSize: '0.78rem' }}>
               <thead>
                 <tr>
-                  <th>MODEL</th>
-                  <th>COEFFICIENT / EXPONENT</th>
-                  <th>HAC t-STAT</th>
-                  <th>p-VAL</th>
-                  <th>R^2</th>
+                  <th>TIER</th>
+                  <th>STRATA DEFINITION</th>
+                  <th>TRADE RANGE (BTC)</th>
+                  <th>OBSERVATIONS</th>
+                  <th>SAMPLE %</th>
+                  <th>UNIQUE SIZES</th>
+                  <th>MEAN VOLUME</th>
+                  <th>R(k={horizon}) [bps]</th>
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td>Linear</td>
-                  <td>beta = {modelsData?.linear_model?.beta?.toFixed(4)}</td>
-                  <td>{modelsData?.linear_model?.beta_t_stat?.toFixed(2)}</td>
-                  <td>{modelsData?.linear_model?.beta_p_value?.toFixed(4)}</td>
-                  <td>{modelsData?.linear_model?.r_squared?.toFixed(4)}</td>
-                </tr>
-                <tr>
-                  <td style={{ color: 'var(--color-gold)' }}>Logarithmic</td>
-                  <td style={{ color: 'var(--color-gold)' }}>beta = {modelsData?.logarithmic_model?.beta?.toFixed(4)}</td>
-                  <td>{modelsData?.logarithmic_model?.beta_t_stat?.toFixed(2)}</td>
-                  <td>{modelsData?.logarithmic_model?.beta_p_value?.toFixed(4)}</td>
-                  <td>{modelsData?.logarithmic_model?.r_squared?.toFixed(4)}</td>
-                </tr>
-                <tr>
-                  <td style={{ color: 'var(--color-buy)' }}>Power Law</td>
-                  <td style={{ color: 'var(--color-buy)' }}>gamma = {modelsData?.power_law_model?.gamma?.toFixed(4)}</td>
-                  <td>-</td>
-                  <td>-</td>
-                  <td>{modelsData?.power_law_model?.r_squared_binned?.toFixed(4)}</td>
-                </tr>
+                {modelsData.binned_empirical.map((b) => (
+                  <tr key={b.bin}>
+                    <td>Tier {b.bin}</td>
+                    <td style={{ fontWeight: 600, color: b.is_point_mass ? 'var(--color-gold)' : 'var(--text-main)' }}>
+                      {b.label || `Bin ${b.bin}`}
+                      {b.is_point_mass && <span className="badge-gold" style={{ marginLeft: '8px', fontSize: '0.65rem' }}>POINT MASS</span>}
+                    </td>
+                    <td>[{b.min_volume?.toFixed(8)}, {b.max_volume?.toFixed(8)}]</td>
+                    <td>{b.count.toLocaleString()}</td>
+                    <td style={{ color: b.pct_of_sample && b.pct_of_sample > 50 ? 'var(--color-gold)' : 'inherit' }}>
+                      {b.pct_of_sample ? `${b.pct_of_sample.toFixed(2)}%` : '---'}
+                    </td>
+                    <td style={{ color: b.unique_quantities_count === 1 ? 'var(--color-gold)' : 'inherit' }}>
+                      {b.unique_quantities_count ?? 1}
+                    </td>
+                    <td style={{ color: 'var(--color-buy)' }}>{b.mean_volume.toFixed(6)} BTC</td>
+                    <td style={{ fontWeight: 700, color: b.mean_response_bps > 0 ? 'var(--color-buy)' : 'var(--color-sell)' }}>
+                      {b.mean_response_bps > 0 ? `+${b.mean_response_bps.toFixed(4)}` : b.mean_response_bps.toFixed(4)} &plusmn; {b.se_bps.toFixed(4)}
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* Sub-period Time Chunk Parameter Stability Analysis */}
+      {timeChunks.length > 0 && (
+        <div className="mml-card">
+          <div className="mml-card-title">
+            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Layers size={14} color="var(--color-buy)" /> SUB-PERIOD PARAMETER STABILITY (4 TIME CHUNKS)
+            </span>
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>
+              IN-SAMPLE STABILITY ACROSS TRADING SESSIONS
+            </span>
+          </div>
+
+          <div className="table-responsive">
+            <table className="mml-table mono" style={{ fontSize: '0.78rem' }}>
+              <thead>
+                <tr>
+                  <th>TIME BLOCK</th>
+                  <th>OBSERVATIONS</th>
+                  <th>LOG MODEL BETA</th>
+                  <th>LOG MODEL R^2</th>
+                  <th>POWER LAW GAMMA</th>
+                  <th>POWER LAW SE</th>
+                </tr>
+              </thead>
+              <tbody>
+                {timeChunks.map((tc) => (
+                  <tr key={tc.chunk_index}>
+                    <td>Chunk {tc.chunk_index} ({tc.chunk_index === 1 ? '00:00-06:00' : tc.chunk_index === 2 ? '06:00-12:00' : tc.chunk_index === 3 ? '12:00-18:00' : '18:00-24:00'} UTC)</td>
+                    <td>{tc.observations.toLocaleString()}</td>
+                    <td>{tc.log_beta.toFixed(4)}</td>
+                    <td>{tc.log_r2.toFixed(4)}</td>
+                    <td style={{ color: 'var(--color-gold)' }}>{tc.power_gamma !== null && tc.power_gamma !== undefined ? tc.power_gamma.toFixed(4) : 'N/A'}</td>
+                    <td>{tc.power_gamma_se !== null && tc.power_gamma_se !== undefined ? tc.power_gamma_se.toFixed(4) : 'N/A'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

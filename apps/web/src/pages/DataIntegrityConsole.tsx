@@ -111,52 +111,54 @@ export const DataIntegrityConsole: React.FC<DataIntegrityConsoleProps> = ({ curr
           <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>STORAGE: DUCKDB + PARQUET</span>
         </div>
 
-        <table className="mml-table mono">
-          <thead>
-            <tr>
-              <th>SYMBOL</th>
-              <th>DATE</th>
-              <th>STATUS</th>
-              <th>RECORDS</th>
-              <th>TIMESTAMP UNIT</th>
-              <th>PRICE RANGE</th>
-              <th>BASE VOLUME</th>
-              <th>SHA256 CHECKSUM VERIFICATION</th>
-              <th>AUDIT</th>
-            </tr>
-          </thead>
-          <tbody>
-            {datasets.map((d) => (
-              <tr key={d.date}>
-                <td style={{ fontWeight: 600, color: '#fff' }}>{d.symbol}</td>
-                <td style={{ color: 'var(--color-gold)' }}>{d.date}</td>
-                <td>
-                  <span className={d.status === 'NORMALIZED' ? 'badge-buy' : 'badge-sell'}>
-                    {d.status}
-                  </span>
-                </td>
-                <td>{d.records.toLocaleString()}</td>
-                <td style={{ color: 'var(--color-buy)' }}>{d.timestamp_unit} (Microsecond)</td>
-                <td>${d.min_price?.toFixed(1)} - ${d.max_price?.toFixed(1)}</td>
-                <td>{d.total_base_volume?.toFixed(2)} BTC</td>
-                <td style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>
-                  {d.official_sha256 ? `${d.official_sha256.slice(0, 16)}... [MATCH]` : 'N/A'}
-                </td>
-                <td>
-                  {d.audit_passed ? (
-                    <span style={{ color: 'var(--color-buy)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <CheckCircle2 size={14} /> PASSED
-                    </span>
-                  ) : (
-                    <span style={{ color: 'var(--color-sell)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <AlertTriangle size={14} /> FAILED
-                    </span>
-                  )}
-                </td>
+        <div className="table-responsive">
+          <table className="mml-table mono">
+            <thead>
+              <tr>
+                <th>SYMBOL</th>
+                <th>DATE</th>
+                <th>STATUS</th>
+                <th>RECORDS</th>
+                <th>TIMESTAMP UNIT</th>
+                <th>PRICE RANGE</th>
+                <th>BASE VOLUME</th>
+                <th>SHA256 CHECKSUM VERIFICATION</th>
+                <th>AUDIT</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {datasets.map((d) => (
+                <tr key={d.date}>
+                  <td style={{ fontWeight: 600, color: '#fff' }}>{d.symbol}</td>
+                  <td style={{ color: 'var(--color-gold)' }}>{d.date}</td>
+                  <td>
+                    <span className={d.status === 'NORMALIZED' ? 'badge-buy' : 'badge-sell'}>
+                      {d.status}
+                    </span>
+                  </td>
+                  <td>{d.records.toLocaleString()}</td>
+                  <td style={{ color: 'var(--color-buy)' }}>{d.timestamp_unit} (Microsecond)</td>
+                  <td>${d.min_price?.toFixed(1)} - ${d.max_price?.toFixed(1)}</td>
+                  <td>{d.total_base_volume?.toFixed(2)} BTC</td>
+                  <td style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>
+                    {d.official_sha256 ? `${d.official_sha256.slice(0, 16)}... [MATCH]` : 'N/A'}
+                  </td>
+                  <td>
+                    {d.audit_passed ? (
+                      <span style={{ color: 'var(--color-buy)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <CheckCircle2 size={14} /> PASSED
+                      </span>
+                    ) : (
+                      <span style={{ color: 'var(--color-sell)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <AlertTriangle size={14} /> FAILED
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Granular Audit Checklist */}
@@ -217,8 +219,12 @@ export const DataIntegrityConsole: React.FC<DataIntegrityConsoleProps> = ({ curr
               <span style={{ color: 'var(--color-gold)' }}>Binance Non-Commercial Terms & Conditions</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: 'var(--text-dim)' }}>NORMALIZER VERSION:</span>
-              <span className="mono">v1.0.0 (Polars Columnar Pipeline)</span>
+              <span style={{ color: 'var(--text-dim)' }}>DERIVED OUTPUT LICENSE:</span>
+              <span style={{ color: 'var(--color-buy)' }}>CC BY-SA 4.0 (ShareAlike Covenant)</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ color: 'var(--text-dim)' }}>CALCULATION ENGINE:</span>
+              <span className="mono">MML Core v1.1.0 (Polars + DuckDB)</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ color: 'var(--text-dim)' }}>AUDIT TIMESTAMP (UTC):</span>
@@ -226,7 +232,54 @@ export const DataIntegrityConsole: React.FC<DataIntegrityConsoleProps> = ({ curr
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ color: 'var(--text-dim)' }}>INTERPOLATION POLICY:</span>
-              <span style={{ color: 'var(--color-buy)', fontWeight: 600 }}>STRICT FORBIDDEN (No synthetic trades)</span>
+              <span style={{ color: 'var(--color-buy)', fontWeight: 600 }}>STRICT FORBIDDEN (Zero synthetic trades)</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ color: 'var(--text-dim)' }}>TIE-BREAKING ALGORITHM:</span>
+              <span className="mono" style={{ color: 'var(--text-main)' }}>Sub-Microsecond Monotonic Jitter (1e-7 s)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Legal & Academic Provenance Disclosure */}
+      <div className="mml-card" style={{ borderTop: '3px solid var(--color-gold)' }}>
+        <div className="mml-card-title">
+          <span>RESEARCH PROVENANCE, DATA GOVERNANCE & OPEN-ACCESS LICENSING DISCLOSURE</span>
+          <span className="badge-gold">LEGAL & REPRODUCIBILITY COMPLIANCE</span>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px', fontSize: '0.82rem', lineHeight: '1.6', color: 'var(--text-muted)' }}>
+          <div>
+            <div style={{ fontWeight: 700, color: '#fff', marginBottom: '6px', textTransform: 'uppercase' }}>
+              1. Official Source & Cryptographic Lineage
+            </div>
+            <div>
+              All primary tick records originate directly from the official <strong style={{ color: '#fff' }}>Binance Vision Public Data Archive</strong> (<code style={{ color: 'var(--color-gold)' }}>data.binance.vision</code>) under canonical daily spot partitions.
+              Raw zip archives (<code style={{ color: 'var(--text-dim)' }}>BTCUSDT-trades-2026-07-0[1-3].zip</code>) are cryptographically validated against official <code style={{ color: 'var(--text-dim)' }}>.CHECKSUM</code> SHA-256 digests prior to ingestion.
+              100% of the 10,621,476 verified trades are preserved without loss, downsampling, or synthetic interpolation.
+            </div>
+          </div>
+
+          <div>
+            <div style={{ fontWeight: 700, color: '#fff', marginBottom: '6px', textTransform: 'uppercase' }}>
+              2. Scientific Methodology & Estimator Integrity
+            </div>
+            <div>
+              Calculations adhere strictly to empirical market microstructure standards. Single-trade price responses <code style={{ color: 'var(--color-buy)' }}>R(v, k)</code> are rigorously separated from institutional meta-order impact laws.
+              Quantiles employ non-overlapping rank-based partitioning (<code style={{ color: 'var(--text-dim)' }}>scipy.stats.rankdata</code>) eliminating empty bins and zero-fill distortions.
+              Statistical inference incorporates Newey-West HAC heteroskedasticity and autocorrelation robust standard errors across bandwidths <code style={{ color: 'var(--text-dim)' }}>b &isin; &#123;5, 10, 20, 30, 50&#125;</code> and Hawkes Random Time Change residual diagnostics.
+            </div>
+          </div>
+
+          <div>
+            <div style={{ fontWeight: 700, color: '#fff', marginBottom: '6px', textTransform: 'uppercase' }}>
+              3. Licensing & Non-Commercial Covenant
+            </div>
+            <div>
+              In compliance with the <strong style={{ color: '#fff' }}>Binance Public Data Terms and Conditions</strong>, this data and platform are strictly reserved for non-commercial academic research, pedagogical analysis, and personal econometric study.
+              Commercial trading, monetization, or redistribution of proprietary signals is strictly prohibited.
+              All derived empirical statistics and visualizations are shared under the <strong style={{ color: 'var(--color-buy)' }}>Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)</strong> license. Any derivative works must cite MML and be distributed under identical terms.
             </div>
           </div>
         </div>

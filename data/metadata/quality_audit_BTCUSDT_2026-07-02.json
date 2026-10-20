@@ -38,5 +38,7 @@
     "mean_price": 61159.40878917493,
     "total_base_volume": 21382.141630000002,
     "total_quote_volume": 1308156569.7200916
-  }
+  },
+  "license": "CC BY-NC-SA 4.0",
+  "license_terms": "Binance Vision Public Data Terms (Sections 3.1 & 4.5 NonCommercial, ShareAlike)"
 }

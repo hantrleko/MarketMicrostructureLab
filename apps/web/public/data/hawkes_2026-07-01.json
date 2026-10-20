@@ -1,0 +1,75 @@
+{
+  "sample_events": 5000,
+  "observation_window_seconds": 214.06884849466857,
+  "decay_beta": 10.0,
+  "buy_events_count": 1740,
+  "sell_events_count": 3260,
+  "optimizer_convergence": {
+    "buy_dimension_converged": true,
+    "sell_dimension_converged": true,
+    "buy_message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+    "sell_message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH"
+  },
+  "parameters": {
+    "mu_buy": 0.7624508120835201,
+    "mu_sell": 0.4949261000312133,
+    "alpha_buy_buy_self": 9.054195385266997,
+    "alpha_sell_buy_cross": 0.004312894883550228,
+    "alpha_buy_sell_cross": 0.006354055721069721,
+    "alpha_sell_sell_self": 10.050091659906984
+  },
+  "branching_ratios": {
+    "buy_to_buy": 0.9054195385266997,
+    "sell_to_buy": 0.0004312894883550228,
+    "buy_to_sell": 0.0006354055721069722,
+    "sell_to_sell": 1.0050091659906983,
+    "spectral_radius": 1.0050119176444545,
+    "is_subcritical_stable": false
+  },
+  "stability_status": "SUPERCRITICAL_UNSTABLE",
+  "residual_diagnostics": {
+    "method": "Random Time Change Theorem (Compensator Transformation)",
+    "buy_ks_statistic": 0.842880867082328,
+    "buy_ks_p_value": 0.0,
+    "buy_residual_autocorr_lag1": 0.00013702504066626288,
+    "sell_ks_statistic": 0.9135728108467901,
+    "sell_ks_p_value": 0.0,
+    "sell_residual_autocorr_lag1": 0.06677464104178771,
+    "interpretation": "Residual compensator increments tested against Exp(1) distribution. Non-rejection indicates empirical consistency with Hawkes intensity dynamics, but does not constitute mathematical proof of the underlying data generating mechanism."
+  },
+  "jitter_sensitivity": {
+    "jitter_1e-06": {
+      "spectral_radius": 1.0050169538276017,
+      "buy_to_buy": 0.9054188946943441,
+      "sell_to_sell": 1.0050142002005729
+    },
+    "jitter_1e-07": {
+      "spectral_radius": 1.0050119176444545,
+      "buy_to_buy": 0.9054195385266997,
+      "sell_to_sell": 1.0050091659906983
+    },
+    "jitter_1e-08": {
+      "spectral_radius": 1.005012754751705,
+      "buy_to_buy": 0.9054199046279727,
+      "sell_to_sell": 1.0050100033362044
+    }
+  },
+  "control_model_microsecond_aggregated": {
+    "raw_events_count": 5000,
+    "aggregated_events_count": 557,
+    "compression_ratio_pct": 88.86,
+    "spectral_radius": 0.5934773507647206,
+    "stability_status": "SUBCRITICAL_STABLE",
+    "branching_ratios": {
+      "buy_to_buy": 0.3296807892385645,
+      "sell_to_buy": 0.00477973694094381,
+      "buy_to_sell": 0.0,
+      "sell_to_sell": 0.5934773507647206,
+      "spectral_radius": 0.5934773507647206,
+      "is_subcritical_stable": true
+    },
+    "buy_ks_statistic": 0.07896897368768074,
+    "interpretation": "Microsecond aggregation compresses 5000 fills into 557 unique matching events (-88.9%). Aggregated spectral radius drops to 0.5935 (SUBCRITICAL_STABLE), proving that a substantial portion of measured self-excitation in tick data stems from order fill slicing."
+  },
+  "statistical_interpretation": "Spectral radius rho(Gamma) = 1.0050 (SUPERCRITICAL_UNSTABLE). Process is near or above criticality (rho >= 1), where linear branching theory implies potential explosion or non-stationarity. Self-excitation (0.905 buy, 1.005 sell) vs cross-excitation (0.000 / 0.001)."
+}

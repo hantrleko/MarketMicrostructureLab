@@ -1,0 +1,27 @@
+{
+  "timestamp": "2026-10-17T13:52:48.258Z",
+  "viewports": {
+    "desktop": {
+      "testedPages": [
+        "Market Replay",
+        "Order Flow Observatory",
+        "Market Impact Research",
+        "Data Integrity Console",
+        "Order Book Lab"
+      ],
+      "status": "PASSED"
+    },
+    "mobile": {
+      "testedPages": [
+        "Market Replay",
+        "Order Flow Observatory",
+        "Market Impact Research",
+        "Data Integrity Console",
+        "Order Book Lab"
+      ],
+      "status": "PASSED"
+    }
+  },
+  "consoleErrors": [],
+  "failedRequests": []
+}

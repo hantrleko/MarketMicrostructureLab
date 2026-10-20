@@ -4,8 +4,9 @@ Adheres strictly to Binance Diff Depth documentation:
 1. Buffers depth updates from WebSocket.
 2. Fetches REST snapshot.
 3. Aligns updates by sequence IDs (U <= lastUpdateId + 1 <= u).
-4. Maintains full local book and computes real-time OFI, microprice, and depth imbalance.
-5. In case of sequence gap, invalidates and resynchronizes.
+4. Handles overlapping and expired frames according to Binance official spec.
+5. In case of sequence gap, invalidates and resynchronizes with state reset.
+6. Preserves OFI continuity by resetting previous top-of-book anchors on reconnect.
 """
 
 import asyncio
@@ -33,6 +34,7 @@ class LiveOrderBookCollector:
         
         # Microstructure history buffer (rolling 100 snapshots)
         self.metrics_history: List[Dict[str, Any]] = []
+        self.reconnect_history: List[Dict[str, Any]] = []
         
         # Previous top-of-book for OFI calculation
         self._prev_best_bid: Optional[tuple] = None
@@ -47,14 +49,21 @@ class LiveOrderBookCollector:
         self._stop_event.clear()
         self._thread = threading.Thread(target=self._run_loop, daemon=True)
         self._thread.start()
-        print("[+] LiveOrderBookCollector background thread started.")
+
+    def reset_state(self):
+        """Resets book and OFI anchors on reconnect or state clearance"""
+        with self.lock:
+            self.book.reset()
+            self._prev_best_bid = None
+            self._prev_best_ask = None
+            self.cumulative_ofi = 0.0
 
     def stop(self):
         self.is_running = False
         self._stop_event.set()
         if self._thread:
             self._thread.join(timeout=3.0)
-        print("[*] LiveOrderBookCollector stopped.")
+        self.reset_state()
 
     def _fetch_snapshot(self) -> Dict[str, Any]:
         req = urllib.request.Request(self.REST_SNAPSHOT_URL, headers={"User-Agent": "MML-L2/1.0"})
@@ -66,9 +75,9 @@ class LiveOrderBookCollector:
 
     def _calculate_ofi(self, best_bid: tuple, best_ask: tuple) -> float:
         """
-        Calculates quote-based Order Flow Imbalance (OFI):
-        Cont et al. (2014) formulation:
+        Calculates quote-based Order Flow Imbalance (OFI) (Cont et al., 2014):
         delta_W = I_{b_t >= b_{t-1}} q_b,t - I_{b_t <= b_{t-1}} q_b,t-1 - I_{a_t <= a_{t-1}} q_a,t + I_{a_t >= a_{t-1}} q_a,t-1
+        Requires valid contiguous top-of-book anchors.
         """
         if not self._prev_best_bid or not self._prev_best_ask:
             self._prev_best_bid = best_bid
@@ -116,13 +125,18 @@ class LiveOrderBookCollector:
 
         while not self._stop_event.is_set():
             try:
-                print(f"[*] Connecting to {self.WS_URL}...")
-                async with websockets.connect(self.WS_URL, ssl=ctx) as ws:
-                    with self.lock:
-                        self.book.start_buffering()
+                # Reset previous state and OFI anchors on reconnection
+                with self.lock:
+                    self.book.start_buffering()
+                    self._prev_best_bid = None
+                    self._prev_best_ask = None
+                    self.reconnect_history.append({
+                        "timestamp": time.time(),
+                        "time_str": time.strftime("%H:%M:%S", time.gmtime()),
+                        "event": "RECONNECT_ATTEMPT"
+                    })
 
-                    # 1. Start concurrent buffer reader task
-                    print("[*] Starting concurrent WebSocket buffer reader...")
+                async with websockets.connect(self.WS_URL, ssl=ctx) as ws:
                     buffering = True
 
                     async def buffer_reader():
@@ -133,23 +147,20 @@ class LiveOrderBookCollector:
                                     self.book.buffer_event(json.loads(raw_msg))
                             except asyncio.CancelledError:
                                 break
-                            except Exception as ex:
-                                print(f"[!] Buffer reader error: {ex}")
+                            except Exception:
                                 break
 
                     reader_task = asyncio.create_task(buffer_reader())
                     
                     # Accumulate initial events
-                    await asyncio.sleep(0.5)
+                    await asyncio.sleep(0.4)
 
-                    # Fetch REST snapshot concurrently in separate thread
-                    print("[*] Fetching REST snapshot while stream is buffered...")
+                    # Fetch REST snapshot concurrently
                     snapshot = await asyncio.to_thread(self._fetch_snapshot)
 
-                    # Accumulate events post-snapshot
-                    await asyncio.sleep(0.5)
+                    # Accumulate post-snapshot events
+                    await asyncio.sleep(0.4)
 
-                    # Stop buffer reader
                     buffering = False
                     reader_task.cancel()
                     try:
@@ -157,16 +168,14 @@ class LiveOrderBookCollector:
                     except asyncio.CancelledError:
                         pass
 
-                    # Apply snapshot against buffer
                     with self.lock:
                         synced = self.book.apply_snapshot(snapshot)
 
                     if not synced:
-                        print("[!] Initial sync failed. Retrying in 1s...")
                         await asyncio.sleep(1.0)
                         continue
 
-                    # 2. Continuous stream processing
+                    # Continuous stream processing
                     while not self._stop_event.is_set():
                         msg = await asyncio.wait_for(ws.recv(), timeout=5.0)
                         data = json.loads(msg)
@@ -174,10 +183,11 @@ class LiveOrderBookCollector:
                         with self.lock:
                             ok = self.book.process_diff_event(data)
                             if not ok:
-                                print("[!] Sequence broken. Restarting synchronization...")
+                                # Sequence broken: reset OFI anchor and break to resynchronize
+                                self._prev_best_bid = None
+                                self._prev_best_ask = None
                                 break
 
-                            # Calculate metrics and OFI
                             bb = self.book.get_best_bid()
                             ba = self.book.get_best_ask()
                             if bb and ba:
@@ -204,7 +214,9 @@ class LiveOrderBookCollector:
                                     self.metrics_history.pop(0)
 
             except Exception as e:
-                print(f"[!] WebSocket loop error: {e}. Reconnecting in 2s...")
+                with self.lock:
+                    self._prev_best_bid = None
+                    self._prev_best_ask = None
                 await asyncio.sleep(2.0)
 
     def get_ladder(self, depth: int = 15) -> Dict[str, Any]:
@@ -219,10 +231,13 @@ class LiveOrderBookCollector:
 
             return {
                 "symbol": self.symbol,
+                "data_status": "LIVE_VERIFIED" if metrics.is_valid else "UNAVAILABLE",
                 "status": self.book.status,
                 "is_valid": metrics.is_valid,
                 "last_update_id": metrics.last_update_id,
                 "sync_errors": self.book.sync_errors_count,
+                "gaps_recorded": list(self.book.gap_history[-10:]),
+                "reconnects_recorded": list(self.reconnect_history[-10:]),
                 "metrics": metrics.model_dump(),
                 "bids": bids_ladder,
                 "asks": asks_ladder,

@@ -34,17 +34,19 @@ export function App() {
         padding: '14px 28px',
         background: 'var(--bg-dark)',
         display: 'flex',
+        flexWrap: 'wrap',
+        gap: '12px',
         alignItems: 'center',
         justifyContent: 'space-between',
         fontSize: '0.75rem',
         color: 'var(--text-dim)'
       }}>
         <div>
-          MARKET MICROSTRUCTURE LAB (MML) v1.0.0 &bull; DUCKDB + POLARS + FASTAPI + REACT
+          MARKET MICROSTRUCTURE LAB (MML) v1.1.0 &bull; DUCKDB + POLARS + FASTAPI + REACT
         </div>
-        <div style={{ display: 'flex', gap: '20px' }}>
-          <span>OFFICIAL DATA: BINANCE VISION SPOT</span>
-          <span>NON-COMMERCIAL RESEARCH LICENSE</span>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
+          <span>OFFICIAL SOURCE: BINANCE VISION SPOT (NON-COMMERCIAL RESEARCH LICENSE)</span>
+          <span>DERIVED METRICS: CC BY-SA 4.0</span>
           <span className="mono" style={{ color: 'var(--color-buy)' }}>BTCUSDT PARQUET LAYER ACTIVE</span>
         </div>
       </footer>

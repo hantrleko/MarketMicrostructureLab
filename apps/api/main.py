@@ -254,13 +254,12 @@ def get_replay_window(
     target_start_ns = base_ns + (start_second * 1_000_000_000)
     target_end_ns = target_start_ns + (duration_seconds * 1_000_000_000)
 
-    window_df = (
-        df.filter(
-            (pl.col("event_timestamp_ns") >= target_start_ns) &
-            (pl.col("event_timestamp_ns") <= target_end_ns)
-        )
-        .slice(0, limit)
+    filtered_df = df.filter(
+        (pl.col("event_timestamp_ns") >= target_start_ns) &
+        (pl.col("event_timestamp_ns") <= target_end_ns)
     )
+    total_in_window = len(filtered_df)
+    window_df = filtered_df.slice(0, limit)
 
     trades = []
     for r in window_df.iter_rows(named=True):
@@ -281,7 +280,10 @@ def get_replay_window(
         "date": date,
         "start_second": start_second,
         "duration_seconds": duration_seconds,
-        "total_in_window": len(trades),
+        "total_in_window": total_in_window,
+        "returned_count": len(trades),
+        "is_truncated": total_in_window > len(trades),
+        "limit": limit,
         "trades": trades
     }
 
@@ -292,16 +294,20 @@ def get_orderbook_status():
     Returns Phase 2 L2 Order Book engine status.
     Adheres strictly to the master brief: no synthetic order books allowed.
     """
-    metrics = local_orderbook.compute_metrics()
+    is_live = bool(live_collector.is_running and live_collector.book.status == "SYNCHRONIZED")
+    metrics = live_collector.book.compute_metrics() if live_collector.is_running else local_orderbook.compute_metrics()
     return {
         "phase": "Phase 2 (Market Depth & Local Order Book Sync)",
         "symbol": local_orderbook.symbol,
-        "status": live_collector.book.status if live_collector.is_running else local_orderbook.status,
-        "is_valid": live_collector.book.status == "SYNCHRONIZED" if live_collector.is_running else False,
+        "data_status": "LIVE_VERIFIED" if is_live else "UNAVAILABLE",
+        "status": live_collector.book.status if live_collector.is_running else "IDLE",
+        "is_valid": is_live,
         "is_running": live_collector.is_running,
-        "last_update_id": live_collector.book.prev_u if live_collector.is_running else metrics.last_update_id,
+        "last_update_id": live_collector.book.prev_u if live_collector.is_running else 0,
         "sync_errors": live_collector.book.sync_errors_count if live_collector.is_running else 0,
-        "disclaimer": "L2 metrics are only computed when live WebSocket Diff Depth stream is actively synchronized with REST snapshots. Synthetic or backfilled order books are strictly forbidden."
+        "gap_history": live_collector.book.gap_history[-10:] if live_collector.is_running else [],
+        "reconnect_history": live_collector.reconnect_history[-10:] if live_collector.is_running else [],
+        "disclaimer": "L2 metrics are strictly computed only when live WebSocket Diff Depth stream is actively synchronized with REST snapshots. Synthetic or backfilled order books are strictly forbidden."
     }
 
 

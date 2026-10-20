@@ -1,5 +1,7 @@
 export type AggressorSide = 'BUY' | 'SELL';
 
+export type DataSourceStatus = 'STATIC_VERIFIED' | 'LIVE_VERIFIED' | 'SIMULATED' | 'UNAVAILABLE';
+
 export interface DatasetItem {
   symbol: string;
   date: string;
@@ -27,6 +29,18 @@ export interface ReplayTrade {
   is_buyer_maker: boolean;
   aggressor_side: AggressorSide;
   direction: number;
+}
+
+export interface ReplayWindowResponse {
+  symbol: string;
+  date: string;
+  start_second: number;
+  duration_seconds: number;
+  total_in_window: number;
+  returned_count: number;
+  is_truncated: boolean;
+  limit: number;
+  trades: ReplayTrade[];
 }
 
 export interface FlowBucket {
@@ -96,6 +110,7 @@ export interface ResponseCurvePoint {
   lag_events: number;
   response_bps: number;
   hac_std_err: number;
+  hac_bandwidth_sensitivity?: Record<string, number>;
   ci_lower_95: number;
   ci_upper_95: number;
   t_stat: number;
@@ -103,23 +118,35 @@ export interface ResponseCurvePoint {
   buy_response_bps: number;
   sell_response_bps: number;
   asymmetry_bps: number;
-  quintile_q1_bps: number;
-  quintile_q2_bps: number;
-  quintile_q3_bps: number;
-  quintile_q4_bps: number;
-  quintile_q5_bps: number;
+  quintile_q1_bps: number | null;
+  quintile_q2_bps: number | null;
+  quintile_q3_bps: number | null;
+  quintile_q4_bps: number | null;
+  quintile_q5_bps: number | null;
 }
 
 export interface PriceResponseData {
   symbol: string;
   sample_size: number;
-  quintile_thresholds_qty: number[];
+  quintile_bounds?: Array<{
+    quintile: number;
+    min_qty: number;
+    max_qty: number;
+    mean_qty: number;
+    count: number;
+  }>;
   curves: ResponseCurvePoint[];
 }
 
 export interface EmpiricalBinPoint {
   bin: number;
+  label?: string;
   mean_volume: number;
+  min_volume?: number;
+  max_volume?: number;
+  unique_quantities_count?: number;
+  pct_of_sample?: number;
+  is_point_mass?: boolean;
   mean_response_bps: number;
   se_bps: number;
   count: number;
@@ -135,26 +162,97 @@ export interface ModelFitStats {
   beta_p_value?: number;
   gamma?: number;
   gamma_se?: number;
+  ci_95_lower?: number;
+  ci_95_upper?: number;
   r_squared?: number;
   r_squared_binned?: number;
   aic?: number;
   bic?: number;
   hypothesis_test_sqrt_law?: {
     null_hypothesis: string;
-    estimated_gamma: number;
+    gamma_estimate: number;
+    standard_error: number;
+    confidence_interval_95?: [number, number];
     t_statistic: number;
     p_value: number;
-    reject_null_at_5pct: boolean;
+    is_rejected_at_5pct: boolean;
+    interpretation: string;
   };
+}
+
+export interface HawkesData {
+  sample_events: number;
+  observation_window_seconds: number;
+  decay_beta: number;
+  buy_events_count: number;
+  sell_events_count: number;
+  stability_status: 'SUBCRITICAL_STABLE' | 'SUPERCRITICAL_UNSTABLE';
+  optimizer_convergence?: {
+    buy_dimension_converged: boolean;
+    sell_dimension_converged: boolean;
+  };
+  parameters: {
+    mu_buy: number;
+    mu_sell: number;
+    alpha_buy_buy_self: number;
+    alpha_sell_buy_cross: number;
+    alpha_buy_sell_cross: number;
+    alpha_sell_sell_self: number;
+  };
+  branching_ratios: {
+    buy_to_buy: number;
+    sell_to_buy: number;
+    buy_to_sell: number;
+    sell_to_sell: number;
+    spectral_radius: number;
+    is_subcritical_stable: boolean;
+  };
+  residual_diagnostics: {
+    method: string;
+    buy_ks_statistic: number;
+    buy_ks_p_value: number;
+    buy_residual_autocorr_lag1?: number;
+    sell_ks_statistic: number;
+    sell_ks_p_value: number;
+    sell_residual_autocorr_lag1?: number;
+    interpretation: string;
+  };
+  jitter_sensitivity?: Record<string, {
+    spectral_radius: number;
+    buy_to_buy: number;
+    sell_to_sell: number;
+  }>;
+  control_model_microsecond_aggregated?: {
+    raw_events_count: number;
+    aggregated_events_count: number;
+    compression_ratio_pct: number;
+    spectral_radius: number;
+    stability_status: string;
+    branching_ratios?: {
+      buy_to_buy: number;
+      sell_to_sell: number;
+    };
+    interpretation?: string;
+  };
+  statistical_interpretation: string;
 }
 
 export interface ImpactModelsData {
   horizon_events: number;
   observations: number;
+  specification_note?: string;
   binned_empirical: EmpiricalBinPoint[];
   linear_model: ModelFitStats;
   logarithmic_model: ModelFitStats;
   power_law_model: ModelFitStats;
+  time_chunk_stability?: Array<{
+    chunk_index: number;
+    observations: number;
+    log_beta: number;
+    log_r2: number;
+    power_gamma?: number | null;
+    power_gamma_se?: number | null;
+  }>;
 }
 
 export interface QualityAuditReport {
@@ -198,4 +296,51 @@ export interface QualityAuditReport {
     total_base_volume: number;
     total_quote_volume: number;
   };
+}
+
+export interface OrderBookStatusResponse {
+  phase: string;
+  symbol: string;
+  data_status: DataSourceStatus;
+  status: string;
+  is_valid: boolean;
+  is_running: boolean;
+  last_update_id: number;
+  sync_errors: number;
+  gap_history?: any[];
+  reconnect_history?: any[];
+  disclaimer: string;
+}
+
+export interface OrderBookLadderResponse {
+  symbol: string;
+  data_status: DataSourceStatus;
+  status: string;
+  is_valid: boolean;
+  last_update_id: number;
+  sync_errors: number;
+  gaps_recorded?: any[];
+  reconnects_recorded?: any[];
+  metrics: {
+    is_valid: boolean;
+    status: string;
+    last_update_id: number;
+    event_time_utc: string;
+    best_bid: number;
+    best_ask: number;
+    mid_price: number;
+    microprice: number;
+    spread: number;
+    spread_bps: number;
+    bid_depth_top5: number;
+    ask_depth_top5: number;
+    book_imbalance: number;
+  };
+  bids: Array<{ price: number; qty: number; total: number }>;
+  asks: Array<{ price: number; qty: number; total: number }>;
+  history: Array<{
+    time_str: string;
+    spread_bps: number;
+    cumulative_ofi: number;
+  }>;
 }

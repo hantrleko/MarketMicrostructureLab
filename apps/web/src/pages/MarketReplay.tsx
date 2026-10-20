@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import ReactECharts from 'echarts-for-react';
-import { Play, Pause, SkipForward, RotateCcw, FastForward, Clock, Zap } from 'lucide-react';
+import { Play, Pause, SkipForward, RotateCcw, FastForward, Clock, Zap, Timer } from 'lucide-react';
 import { fetchReplayWindow } from '../api/client';
 import { ReplayTrade } from '../types';
 
@@ -12,13 +12,24 @@ export const MarketReplay: React.FC<MarketReplayProps> = ({ date }) => {
   const [startSecond, setStartSecond] = useState<number>(0);
   const [durationSeconds] = useState<number>(60);
   const [trades, setTrades] = useState<ReplayTrade[]>([]);
+  const [totalInWindow, setTotalInWindow] = useState<number>(0);
+  const [isTruncated, setIsTruncated] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   
   // Playback state
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1);
+  const [playbackMode, setPlaybackMode] = useState<'EVENT_INDEX' | 'REAL_CLOCK'>('EVENT_INDEX');
   const timerRef = useRef<any>(null);
+
+  // Available pre-indexed intraday market sessions
+  const sessions = [
+    { label: '00:00 UTC (Day Open)', offset: 0 },
+    { label: '08:00 UTC (London Open)', offset: 28800 },
+    { label: '14:00 UTC (US Influx)', offset: 50400 },
+    { label: '20:00 UTC (Late Liquidity)', offset: 72000 }
+  ];
 
   // Load trade window
   useEffect(() => {
@@ -27,10 +38,12 @@ export const MarketReplay: React.FC<MarketReplayProps> = ({ date }) => {
     setIsPlaying(false);
     setCurrentIndex(0);
 
-    fetchReplayWindow('BTCUSDT', date, startSecond, durationSeconds, 2500)
+    fetchReplayWindow('BTCUSDT', date, startSecond, durationSeconds, 2000)
       .then((data) => {
         if (isMounted) {
           setTrades(data.trades);
+          setTotalInWindow(data.total_in_window || data.trades.length);
+          setIsTruncated(Boolean(data.is_truncated));
           setLoading(false);
         }
       })
@@ -48,31 +61,55 @@ export const MarketReplay: React.FC<MarketReplayProps> = ({ date }) => {
   // Playback loop
   useEffect(() => {
     if (isPlaying && trades.length > 0) {
-      const intervalMs = Math.max(20, Math.floor(100 / playbackSpeed));
-      timerRef.current = setInterval(() => {
-        setCurrentIndex((prev) => {
-          if (prev >= trades.length - 1) {
+      if (playbackMode === 'EVENT_INDEX') {
+        // Event-index stepping at constant frame rates
+        const intervalMs = Math.max(16, Math.floor(100 / playbackSpeed));
+        timerRef.current = setInterval(() => {
+          setCurrentIndex((prev) => {
+            if (prev >= trades.length - 1) {
+              setIsPlaying(false);
+              return prev;
+            }
+            return prev + 1;
+          });
+        }, intervalMs);
+      } else {
+        // Real-clock playback proportional to microsecond timestamps
+        let timeoutId: any = null;
+        const playNext = (idx: number) => {
+          if (idx >= trades.length - 1) {
             setIsPlaying(false);
-            return prev;
+            return;
           }
-          return prev + 1;
-        });
-      }, intervalMs);
+          const curNs = BigInt(trades[idx].event_timestamp_ns);
+          const nextNs = BigInt(trades[idx + 1].event_timestamp_ns);
+          const deltaNs = Number(nextNs - curNs);
+          // Scale microsecond delta by speed (clamped between 2ms and 1500ms)
+          const delayMs = Math.min(1500, Math.max(2, (deltaNs / 1_000_000) / (playbackSpeed * 10)));
+          timeoutId = setTimeout(() => {
+            setCurrentIndex(idx + 1);
+            playNext(idx + 1);
+          }, delayMs);
+        };
+        playNext(currentIndex);
+
+        return () => {
+          if (timeoutId) clearTimeout(timeoutId);
+        };
+      }
     } else {
       if (timerRef.current) clearInterval(timerRef.current);
     }
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isPlaying, trades, playbackSpeed]);
+  }, [isPlaying, trades, playbackSpeed, playbackMode]);
 
   const currentTrade = trades[currentIndex] || trades[0];
 
   // Prepare chart series up to currentIndex
   const visibleTrades = trades.slice(0, Math.max(1, currentIndex + 1));
   
-  // Chart data:
-  // Scatter points: [time_str, price, qty, aggressor_side]
   const buyScatter = visibleTrades
     .filter((t) => t.direction === 1)
     .map((t) => [t.event_time_utc.split('T')[1].replace('Z', ''), t.price, t.base_quantity]);
@@ -81,13 +118,11 @@ export const MarketReplay: React.FC<MarketReplayProps> = ({ date }) => {
     .filter((t) => t.direction === -1)
     .map((t) => [t.event_time_utc.split('T')[1].replace('Z', ''), t.price, t.base_quantity]);
 
-  // Price line
   const priceLine = visibleTrades.map((t) => [
     t.event_time_utc.split('T')[1].replace('Z', ''),
     t.price
   ]);
 
-  // Calculate cumulative CVD for visible
   let runningCvd = 0;
   const cvdSeries = visibleTrades.map((t) => {
     runningCvd += t.direction * t.base_quantity;
@@ -191,6 +226,66 @@ export const MarketReplay: React.FC<MarketReplayProps> = ({ date }) => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      {/* Session Jumper Bar */}
+      <div className="mml-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <Clock size={16} color="var(--color-gold)" />
+          <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)' }}>
+            PRE-INDEXED INTRADAY WINDOWS:
+          </span>
+          {sessions.map((s) => (
+            <button
+              key={s.offset}
+              onClick={() => setStartSecond(s.offset)}
+              style={{
+                background: startSecond === s.offset ? 'var(--color-buy)' : 'var(--bg-dark)',
+                color: startSecond === s.offset ? '#080b10' : 'var(--text-muted)',
+                fontWeight: startSecond === s.offset ? 700 : 500,
+                border: '1px solid var(--border-color)',
+                padding: '5px 12px',
+                borderRadius: '4px',
+                fontSize: '0.78rem',
+                fontFamily: 'var(--font-mono)'
+              }}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '0.76rem', color: 'var(--text-dim)' }}>PLAYBACK MODE:</span>
+          <button
+            onClick={() => setPlaybackMode('EVENT_INDEX')}
+            style={{
+              background: playbackMode === 'EVENT_INDEX' ? 'var(--color-gold)' : 'transparent',
+              color: playbackMode === 'EVENT_INDEX' ? '#080b10' : 'var(--text-muted)',
+              border: `1px solid ${playbackMode === 'EVENT_INDEX' ? 'var(--color-gold)' : 'var(--border-color)'}`,
+              padding: '4px 8px',
+              borderRadius: '3px',
+              fontSize: '0.74rem',
+              fontWeight: 600
+            }}
+          >
+            <Zap size={12} style={{ display: 'inline', marginRight: '4px' }} /> EVENT-STEPPING
+          </button>
+          <button
+            onClick={() => setPlaybackMode('REAL_CLOCK')}
+            style={{
+              background: playbackMode === 'REAL_CLOCK' ? 'var(--color-buy)' : 'transparent',
+              color: playbackMode === 'REAL_CLOCK' ? '#080b10' : 'var(--text-muted)',
+              border: `1px solid ${playbackMode === 'REAL_CLOCK' ? 'var(--color-buy)' : 'var(--border-color)'}`,
+              padding: '4px 8px',
+              borderRadius: '3px',
+              fontSize: '0.74rem',
+              fontWeight: 600
+            }}
+          >
+            <Timer size={12} style={{ display: 'inline', marginRight: '4px' }} /> REAL-CLOCK
+          </button>
+        </div>
+      </div>
+
       {/* Control Bar */}
       <div className="mml-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -271,22 +366,19 @@ export const MarketReplay: React.FC<MarketReplayProps> = ({ date }) => {
           </div>
         </div>
 
-        {/* Offset Slider (into the day) */}
+        {/* Verification & Window Counts Display */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <Clock size={16} color="var(--text-dim)" />
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>TIME OFFSET:</span>
-          <input
-            type="range"
-            min="0"
-            max="86000"
-            step="60"
-            value={startSecond}
-            onChange={(e) => setStartSecond(Number(e.target.value))}
-            style={{ width: '180px', accentColor: 'var(--color-buy)' }}
-          />
-          <span className="mono" style={{ fontSize: '0.85rem', color: 'var(--color-gold)' }}>
-            +{Math.floor(startSecond / 3600)}h {Math.floor((startSecond % 3600) / 60)}m
-          </span>
+          <div className="mono" style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+            DISPLAYED: <strong style={{ color: '#fff' }}>{visibleTrades.length}</strong> / {trades.length}
+          </div>
+          <div className="mono" style={{ fontSize: '0.8rem', color: 'var(--color-gold)' }}>
+            WINDOW EVENTS (60s): <strong>{totalInWindow.toLocaleString()}</strong>
+          </div>
+          {isTruncated && (
+            <span className="badge-gold" style={{ fontSize: '0.7rem' }}>
+              SLICE TRUNCATED AT {trades.length}
+            </span>
+          )}
         </div>
       </div>
 
@@ -297,102 +389,89 @@ export const MarketReplay: React.FC<MarketReplayProps> = ({ date }) => {
           <div className="mml-card-title">
             <span>TICK-LEVEL PRICE TRAJECTORY & CVD</span>
             <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
-              WINDOW: {visibleTrades.length} / {trades.length} TRADES
+              WINDOW: {visibleTrades.length} / {trades.length} DISPLAYED ({totalInWindow} IN 60s)
             </span>
           </div>
 
           {loading ? (
-            <div style={{ height: '480px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-dim)' }}>
-              Loading real tick events from Parquet layer...
+            <div style={{ height: '420px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-dim)' }}>
+              Loading high-precision trade events from DuckDB Parquet layer...
             </div>
           ) : (
-            <ReactECharts option={chartOption} style={{ height: '480px', width: '100%' }} />
+            <ReactECharts option={chartOption} style={{ height: '420px', width: '100%' }} />
           )}
         </div>
 
-        {/* Live Inspector Panel */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {/* Current Event Card */}
-          <div className="mml-card">
-            <div className="mml-card-title">
-              <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Zap size={14} color="var(--color-gold)" /> INSPECTOR
-              </span>
-              <span className={`badge-${currentTrade?.direction === 1 ? 'buy' : 'sell'}`}>
-                {currentTrade?.aggressor_side || 'IDLE'}
+        {/* Real-Time Event Telemetry Card */}
+        <div className="mml-card" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div className="mml-card-title">
+            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Clock size={14} color="var(--color-gold)" /> TICK TELEMETRY
+            </span>
+            <span className="mono" style={{ color: currentTrade?.direction === 1 ? 'var(--color-buy)' : 'var(--color-sell)' }}>
+              {currentTrade?.aggressor_side || '---'}
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.82rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px' }}>
+              <span style={{ color: 'var(--text-dim)' }}>EVENT TIME (UTC):</span>
+              <span className="mono">{currentTrade?.event_time_utc?.split('T')[1] || '---'}</span>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px' }}>
+              <span style={{ color: 'var(--text-dim)' }}>TIMESTAMP (NS):</span>
+              <span className="mono" style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                {currentTrade?.event_timestamp_ns || '---'}
               </span>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.82rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--text-dim)' }}>UTC TIMESTAMP:</span>
-                <span className="mono" style={{ color: 'var(--text-main)', fontSize: '0.75rem' }}>
-                  {currentTrade?.event_time_utc || 'N/A'}
-                </span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--text-dim)' }}>PRICE (USDT):</span>
-                <span className="mono" style={{ fontSize: '1rem', fontWeight: 700, color: currentTrade?.direction === 1 ? 'var(--color-buy)' : 'var(--color-sell)' }}>
-                  ${currentTrade?.price?.toFixed(2) || '0.00'}
-                </span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--text-dim)' }}>SIZE (BTC):</span>
-                <span className="mono" style={{ fontWeight: 600 }}>
-                  {currentTrade?.base_quantity?.toFixed(4) || '0.0000'}
-                </span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--text-dim)' }}>NOTIONAL (USDT):</span>
-                <span className="mono">
-                  ${currentTrade?.quote_quantity?.toFixed(2) || '0.00'}
-                </span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--text-dim)' }}>TRADE ID:</span>
-                <span className="mono" style={{ color: 'var(--text-muted)' }}>
-                  {currentTrade?.trade_id || 'N/A'}
-                </span>
-              </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px' }}>
+              <span style={{ color: 'var(--text-dim)' }}>TRADE ID:</span>
+              <span className="mono" style={{ color: 'var(--color-gold)' }}>
+                {currentTrade?.trade_id || '---'}
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px' }}>
+              <span style={{ color: 'var(--text-dim)' }}>EXECUTION PRICE:</span>
+              <span className="mono" style={{ fontWeight: 700, color: '#fff', fontSize: '1rem' }}>
+                ${currentTrade?.price ? currentTrade.price.toFixed(2) : '0.00'}
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px' }}>
+              <span style={{ color: 'var(--text-dim)' }}>CLIP SIZE:</span>
+              <span className="mono" style={{ fontWeight: 700 }}>
+                {currentTrade?.base_quantity ? currentTrade.base_quantity.toFixed(4) : '0.0000'} BTC
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px' }}>
+              <span style={{ color: 'var(--text-dim)' }}>NOTIONAL (USD):</span>
+              <span className="mono">
+                ${currentTrade?.quote_quantity ? currentTrade.quote_quantity.toFixed(2) : '0.00'}
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px' }}>
+              <span style={{ color: 'var(--text-dim)' }}>IS BUYER MAKER:</span>
+              <span className="mono" style={{ color: currentTrade?.is_buyer_maker ? 'var(--color-sell)' : 'var(--color-buy)' }}>
+                {currentTrade?.is_buyer_maker ? 'TRUE (SELL AGGRESSOR)' : 'FALSE (BUY AGGRESSOR)'}
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px' }}>
+              <span style={{ color: 'var(--text-dim)' }}>CUMULATIVE CVD:</span>
+              <span className="mono" style={{ fontWeight: 700, color: runningCvd >= 0 ? 'var(--color-buy)' : 'var(--color-sell)' }}>
+                {runningCvd.toFixed(4)} BTC
+              </span>
             </div>
           </div>
 
-          {/* Recent Trades Tape */}
-          <div className="mml-card" style={{ flex: 1, overflow: 'hidden' }}>
-            <div className="mml-card-title">
-              <span>LIVE TRADE TAPE</span>
-              <span style={{ fontSize: '0.72rem', color: 'var(--color-gold)' }}>MICROSECOND ORDER</span>
-            </div>
-
-            <div style={{ maxHeight: '250px', overflowY: 'auto' }}>
-              <table className="mml-table mono" style={{ fontSize: '0.75rem' }}>
-                <thead>
-                  <tr>
-                    <th>TIME</th>
-                    <th>PRICE</th>
-                    <th>QTY</th>
-                    <th>SIDE</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {visibleTrades.slice(-12).reverse().map((t, idx) => (
-                    <tr key={t.trade_id + '_' + idx}>
-                      <td style={{ color: 'var(--text-dim)' }}>
-                        {t.event_time_utc.split('T')[1].replace('Z', '').slice(0, 11)}
-                      </td>
-                      <td style={{ color: t.direction === 1 ? 'var(--color-buy)' : 'var(--color-sell)', fontWeight: 600 }}>
-                        {t.price.toFixed(1)}
-                      </td>
-                      <td>{t.base_quantity.toFixed(3)}</td>
-                      <td>
-                        <span style={{ color: t.direction === 1 ? 'var(--color-buy)' : 'var(--color-sell)' }}>
-                          {t.aggressor_side}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          <div style={{ marginTop: 'auto', paddingTop: '10px', borderTop: '1px solid var(--border-color)' }}>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', lineHeight: 1.4 }}>
+              <strong>Zero Backfill Guarantee:</strong> All trade events reflect actual discrete matches executed on Binance Spot match engine. 64-bit int precision preserved.
             </div>
           </div>
         </div>

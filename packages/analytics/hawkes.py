@@ -95,6 +95,7 @@ class BivariateHawkesModel:
             "branching_ratios": res_primary["branching_ratios"],
             "stability_status": res_primary["stability_status"],
             "residual_diagnostics": res_primary["residual_diagnostics"],
+            "fitting_warnings": res_primary.get("fitting_warnings", []),
             "jitter_sensitivity": jitter_sens,
             "control_model_microsecond_aggregated": control_model,
             "statistical_interpretation": res_primary["interpretation"]
@@ -161,6 +162,18 @@ class BivariateHawkesModel:
         ks_buy = self._run_ks_diagnostic(comp_buy)
         ks_sell = self._run_ks_diagnostic(comp_sell)
 
+        fitting_warnings = []
+        if spectral_radius >= 1.0:
+            fitting_warnings.append(
+                f"Supercritical regime: Spectral radius rho = {spectral_radius:.4f} >= 1.0 indicates "
+                "theoretical non-stationarity over infinite horizons; linear branching approximations may diverge."
+            )
+        if ks_buy["ks_p_value"] < 0.05 or ks_sell["ks_p_value"] < 0.05:
+            fitting_warnings.append(
+                f"Residual misspecification: Compensator residual KS test rejects Exp(1) (buy p={ks_buy['ks_p_value']:.4f}, sell p={ks_sell['ks_p_value']:.4f}); "
+                "empirical trade arrivals exhibit higher-order clustering beyond standard exponential decay."
+            )
+
         interpretation = (
             f"Spectral radius rho(Gamma) = {spectral_radius:.4f} ({stability_status}). "
             f"{'Process is sub-critical and stationary.' if is_stable else 'Process is near or above criticality (rho >= 1), where linear branching theory implies potential explosion or non-stationarity.'} "
@@ -173,6 +186,7 @@ class BivariateHawkesModel:
             "n_sell": n_sell,
             "spectral_radius": spectral_radius,
             "stability_status": stability_status,
+            "fitting_warnings": fitting_warnings,
             "convergence": {
                 "buy_dimension_converged": bool(res_buy.success),
                 "sell_dimension_converged": bool(res_sell.success),
@@ -259,9 +273,10 @@ class BivariateHawkesModel:
                 "branching_ratios": res_agg["branching_ratios"],
                 "buy_ks_statistic": res_agg["residual_diagnostics"]["buy_ks_statistic"],
                 "interpretation": (
-                    f"Microsecond aggregation compresses {n_raw} fills into {n_agg} unique matching events (-{compression_pct:.1f}%). "
-                    f"Aggregated spectral radius drops to {res_agg['spectral_radius']:.4f} ({res_agg['stability_status']}), "
-                    "proving that a substantial portion of measured self-excitation in tick data stems from order fill slicing."
+                    f"Microsecond aggregation compresses {n_raw} raw fills into {n_agg} unique timestamp matching events (-{compression_pct:.1f}%). "
+                    f"Aggregated spectral radius drops to {res_agg['spectral_radius']:.4f} ({res_agg['stability_status']}). "
+                    "This empirical comparison demonstrates that measured point-process self-excitation is highly sensitive to the definition of the event unit "
+                    "(individual child execution vs. matching engine time slice), rather than establishing definitive causal attribution of trader behavior."
                 )
             }
         except Exception as e:

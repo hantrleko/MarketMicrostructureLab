@@ -89,6 +89,8 @@ class LocalOrderBook:
                 self.asks[p] = q
 
         if not self.buffer:
+            # When buffer is empty, initialize baseline sequence to lastUpdateId.
+            # The next incoming diff event must bridge lastUpdateId + 1 (U <= lastUpdateId + 1 <= u).
             self.prev_u = self.last_update_id
             self.status = "SYNCHRONIZED"
             self.last_sync_timestamp = time.time()

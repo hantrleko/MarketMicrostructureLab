@@ -1,4 +1,4 @@
-import { chromium } from 'playwright';
+import { chromium } from '../apps/web/node_modules/playwright/index.mjs';
 import http from 'http';
 import fs from 'fs';
 import path from 'path';

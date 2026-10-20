@@ -128,39 +128,49 @@ def test_v11_orderbook_expired_event_and_reconnect():
     ob = LocalOrderBook("BTCUSDT")
     ob.start_buffering()
 
+    # 1. Buffer bridging event: U <= 101 <= u
+    ob.buffer_event({
+        "U": 98,
+        "u": 105,
+        "b": [["60000.5", "2.0"]],
+        "a": [["60001.5", "1.5"]]
+    })
+
     # Snapshot at 100
-    ob.apply_snapshot({
+    synced = ob.apply_snapshot({
         "lastUpdateId": 100,
         "bids": [["60000.0", "1.0"]],
         "asks": [["60001.0", "1.0"]]
     })
-    assert ob.prev_u == 100
+    assert synced is True
+    assert ob.status == "SYNCHRONIZED"
+    assert ob.prev_u == 105
 
-    # Expired event: u <= 100
+    # Expired event: u <= 105
     expired = ob.process_diff_event({
         "U": 90,
-        "u": 99,
+        "u": 104,
         "b": [["59999.0", "1.0"]],
         "a": []
     })
     assert expired is True  # Dropped without desync
     assert ob.status == "SYNCHRONIZED"
-    assert ob.prev_u == 100
+    assert ob.prev_u == 105
 
-    # Valid contiguous event: U <= 101 <= u
+    # Valid contiguous event: U <= 106 <= u
     valid = ob.process_diff_event({
-        "U": 98,
-        "u": 105,
+        "U": 105,
+        "u": 109,
         "b": [["60000.5", "2.0"]],
         "a": []
     })
     assert valid is True
-    assert ob.prev_u == 105
+    assert ob.prev_u == 109
 
-    # Sequence gap: next expects U <= 106, provide U = 110
+    # Sequence gap: next expects U <= 110, provide U = 115
     gapped = ob.process_diff_event({
-        "U": 110,
-        "u": 115,
+        "U": 115,
+        "u": 120,
         "b": [],
         "a": []
     })
@@ -238,4 +248,79 @@ def test_v11_licensing_compliance():
     report_path = Path("research/reports/MML_BTCUSDT_MICROSTRUCTURE_REPORT.md")
     report_text = report_path.read_text(encoding="utf-8")
     assert "CC BY-NC-SA 4.0" in report_text
+
+
+def test_v11_wls_and_trade_level_impact_estimation():
+    np.random.seed(42)
+    n = 1500
+    quantities = np.random.uniform(0.001, 1.0, n)
+    prices = 60000.0 + np.cumsum(np.random.normal(0, 1, n))
+    directions = np.random.choice([1, -1], n)
+    timestamps = [f"2026-07-01 00:00:{i % 60:02d}" for i in range(n)]
+    ts_ns = [1782864000000000000 + i * 1_000_000_000 for i in range(n)]
+
+    df = pl.DataFrame({
+        "event_time_utc": timestamps,
+        "event_timestamp_ns": ts_ns,
+        "price": prices,
+        "quantity": quantities,
+        "direction": directions
+    })
+
+    model = NonlinearImpactModel()
+    res = model.fit_impact_models(df, horizon_lag=5, sample_size=n)
+
+    pow_model = res["power_law_model"]
+    assert "wls_fit" in pow_model
+    assert "trade_level_fit" in pow_model
+    assert "out_of_sample_validation" in pow_model
+
+    wls = pow_model["wls_fit"]
+    assert "gamma_wls" in wls
+    assert "gamma_wls_se" in wls
+    assert "r_squared_wls" in wls
+
+    trade = pow_model["trade_level_fit"]
+    assert "gamma_trade" in trade
+    assert "gamma_trade_se" in trade
+    assert "r_squared_trade" in trade
+
+    oos = pow_model["out_of_sample_validation"]
+    assert "log_model_oos_r2" in oos
+
+    # Time chunk stability has true UTC or block labels
+    assert "time_chunk_stability" in res
+    assert len(res["time_chunk_stability"]) == 4
+    for chunk in res["time_chunk_stability"]:
+        assert "chunk_index" in chunk
+        assert "label" in chunk
+        assert "observations" in chunk
+
+
+def test_v11_hawkes_fitting_warnings():
+    hawkes = BivariateHawkesModel(beta=10.0)
+    # Generate data that produces warnings
+    ts_ns = np.array([1782864000000000000 + i * 10_000_000 for i in range(200)], dtype=np.int64)
+    dirs = np.array([1] * 100 + [-1] * 100)
+    df = pl.DataFrame({
+        "event_timestamp_ns": ts_ns,
+        "direction": dirs
+    })
+    res = hawkes.fit_trades(df, sample_size=200)
+    assert "fitting_warnings" in res
+    assert isinstance(res["fitting_warnings"], list)
+    assert "statistical_interpretation" in res
+
+
+def test_v11_ci_sample_fixture():
+    fixture_path = Path("data/fixtures/sample_trades_2026-07-01.parquet")
+    assert fixture_path.exists(), "Sample fixture must exist for lightweight CI testing"
+    df = pl.read_parquet(fixture_path)
+    assert len(df) == 5000
+    assert "trade_id" in df.columns
+    assert "price" in df.columns
+    assert "base_quantity" in df.columns
+    assert "direction" in df.columns
+    assert "event_timestamp_ns" in df.columns
+
 

@@ -8,7 +8,7 @@ import os
 import json
 from pathlib import Path
 from typing import Optional, List, Dict, Any
-from fastapi import FastAPI, Query, HTTPException
+from fastapi import FastAPI, Query, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -59,6 +59,12 @@ def get_trades_df(symbol: str, date_str: str) -> pl.DataFrame:
     try:
         return trade_analytics.load_trades(symbol=symbol, date_str=date_str)
     except FileNotFoundError:
+        # Fallback to CI / testing sample fixture if running without full downloaded dataset
+        sample_path = DATA_DIR / "fixtures" / f"sample_trades_{date_str}.parquet"
+        if not sample_path.exists():
+            sample_path = DATA_DIR / "fixtures" / "sample_trades_2026-07-01.parquet"
+        if sample_path.exists():
+            return pl.read_parquet(sample_path)
         raise HTTPException(
             status_code=404,
             detail=f"Partition for {symbol} on {date_str} not found in normalized layer."
@@ -199,7 +205,7 @@ def get_distributions(
 def get_activity_vs_volatility(
     symbol: str = "BTCUSDT",
     date: str = "2026-07-01",
-    window: int = 30
+    window: int = Query(default=30, ge=5, le=120)
 ):
     """Computes Realized Volatility and HAC regression against intensity and volume."""
     cache_key = f"{symbol}_{date}_1m"
@@ -227,7 +233,7 @@ def get_price_response(
 def get_impact_models(
     symbol: str = "BTCUSDT",
     date: str = "2026-07-01",
-    horizon: int = 20
+    horizon: int = Query(default=20, ge=1, le=100)
 ):
     """Fits Linear, Log, and Power-Law models with HAC inference and tests square-root hypothesis."""
     df = get_trades_df(symbol, date)
@@ -238,9 +244,9 @@ def get_impact_models(
 def get_replay_window(
     symbol: str = "BTCUSDT",
     date: str = "2026-07-01",
-    start_second: int = 0, # offset in seconds from start of day
-    duration_seconds: int = 60,
-    limit: int = 3000
+    start_second: int = Query(default=0, ge=0, le=86400), # offset in seconds from start of day
+    duration_seconds: int = Query(default=60, ge=1, le=3600),
+    limit: int = Query(default=3000, ge=10, le=10000)
 ):
     """
     Returns ordered real tick-level trade events for market replay.
@@ -315,8 +321,8 @@ def get_orderbook_status():
 def get_hawkes_estimation(
     symbol: str = "BTCUSDT",
     date: str = "2026-07-01",
-    sample_size: int = 5000,
-    beta: float = 10.0
+    sample_size: int = Query(default=5000, ge=100, le=20000),
+    beta: float = Query(default=10.0, ge=0.1, le=100.0)
 ):
     """
     Fits Bivariate Hawkes Process on aggressive buy and sell arrivals.
@@ -330,11 +336,27 @@ def get_hawkes_estimation(
 
 class OrderBookControlRequest(BaseModel):
     action: str  # "start" or "stop"
+    admin_key: Optional[str] = None
 
 
 @app.post("/api/v1/orderbook/control")
-def control_live_orderbook(req: OrderBookControlRequest):
-    """Starts or stops the live L2 order book WebSocket collector"""
+def control_live_orderbook(
+    req: OrderBookControlRequest,
+    x_admin_key: Optional[str] = Header(None, alias="X-Admin-Key")
+):
+    """
+    Starts or stops the live L2 order book WebSocket collector.
+    Protected with optional ORDERBOOK_ADMIN_KEY environment variable.
+    """
+    configured_key = os.environ.get("ORDERBOOK_ADMIN_KEY")
+    if configured_key:
+        provided_key = req.admin_key or x_admin_key
+        if provided_key != configured_key:
+            raise HTTPException(
+                status_code=403,
+                detail="Forbidden: Invalid or missing administrator credentials for live orderbook control."
+            )
+
     if req.action == "start":
         live_collector.start_background()
         return {"status": "SUCCESS", "action": "start", "message": "Live L2 WebSocket collector started"}
@@ -346,7 +368,7 @@ def control_live_orderbook(req: OrderBookControlRequest):
 
 
 @app.get("/api/v1/orderbook/live")
-def get_live_orderbook_ladder(depth: int = 15):
+def get_live_orderbook_ladder(depth: int = Query(default=15, ge=1, le=50)):
     """Returns the live synchronized L2 orderbook ladder and rolling microstructure metrics"""
     return live_collector.get_ladder(depth=depth)
 

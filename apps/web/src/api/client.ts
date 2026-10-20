@@ -14,6 +14,36 @@ import {
 
 const API_BASE = '/api/v1';
 
+export type DataLayerState = 'STATIC' | 'LOCAL' | 'LIVE' | 'SIMULATED';
+
+// Detect if deployed on static host (e.g. GitHub Pages) or static mode enabled
+export const isStaticDeployment = 
+  typeof window !== 'undefined' && (
+    window.location.hostname.includes('github.io') ||
+    window.location.protocol === 'file:' ||
+    (import.meta as any).env?.VITE_STATIC_MODE === 'true'
+  );
+
+let currentDataLayer: DataLayerState = isStaticDeployment ? 'STATIC' : 'LOCAL';
+const listeners: Set<(state: DataLayerState) => void> = new Set();
+
+export function subscribeDataLayerState(listener: (state: DataLayerState) => void): () => void {
+  listeners.add(listener);
+  listener(currentDataLayer);
+  return () => listeners.delete(listener);
+}
+
+export function setDataLayerState(state: DataLayerState) {
+  if (currentDataLayer !== state) {
+    currentDataLayer = state;
+    listeners.forEach((l) => l(state));
+  }
+}
+
+export function getDataLayerState(): DataLayerState {
+  return currentDataLayer;
+}
+
 function getStaticDataUrl(filename: string): string {
   const base = import.meta.env.BASE_URL || './';
   const cleanBase = base.endsWith('/') ? base : `${base}/`;
@@ -21,13 +51,29 @@ function getStaticDataUrl(filename: string): string {
 }
 
 async function safeFetch<T>(apiEndpoint: string, fallbackFilename: string): Promise<T> {
+  // If in static deployment mode, load pre-computed static JSON directly (no failed /api 404s)
+  if (currentDataLayer === 'STATIC') {
+    const staticUrl = getStaticDataUrl(fallbackFilename);
+    const staticRes = await fetch(staticUrl);
+    if (!staticRes.ok) {
+      throw new Error(`Failed to load static fixture from ${staticUrl}`);
+    }
+    return await staticRes.json();
+  }
+
+  // Otherwise probe local backend API first with timeout
   try {
-    const res = await fetch(`${API_BASE}/${apiEndpoint}`);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2000);
+    const res = await fetch(`${API_BASE}/${apiEndpoint}`, { signal: controller.signal });
+    clearTimeout(timeoutId);
     if (res.ok) {
+      setDataLayerState('LOCAL');
       return await res.json();
     }
   } catch (e) {
-    // API not reachable, falling back to static fixtures
+    // Backend API unreachable -> gracefully switch to STATIC archive mode
+    setDataLayerState('STATIC');
   }
 
   const staticUrl = getStaticDataUrl(fallbackFilename);

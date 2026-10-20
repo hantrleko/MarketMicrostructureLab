@@ -58,51 +58,60 @@ export const MarketReplay: React.FC<MarketReplayProps> = ({ date }) => {
     };
   }, [date, startSecond, durationSeconds]);
 
-  // Playback loop
+  // Playback loop with true monotonic wall-clock proportional pacing
   useEffect(() => {
-    if (isPlaying && trades.length > 0) {
-      if (playbackMode === 'EVENT_INDEX') {
-        // Event-index stepping at constant frame rates
-        const intervalMs = Math.max(16, Math.floor(100 / playbackSpeed));
-        timerRef.current = setInterval(() => {
-          setCurrentIndex((prev) => {
-            if (prev >= trades.length - 1) {
-              setIsPlaying(false);
-              return prev;
-            }
-            return prev + 1;
-          });
-        }, intervalMs);
-      } else {
-        // Real-clock playback proportional to microsecond timestamps
-        let timeoutId: any = null;
-        const playNext = (idx: number) => {
-          if (idx >= trades.length - 1) {
-            setIsPlaying(false);
-            return;
-          }
-          const curNs = BigInt(trades[idx].event_timestamp_ns);
-          const nextNs = BigInt(trades[idx + 1].event_timestamp_ns);
-          const deltaNs = Number(nextNs - curNs);
-          // Scale microsecond delta by speed (clamped between 2ms and 1500ms)
-          const delayMs = Math.min(1500, Math.max(2, (deltaNs / 1_000_000) / (playbackSpeed * 10)));
-          timeoutId = setTimeout(() => {
-            setCurrentIndex(idx + 1);
-            playNext(idx + 1);
-          }, delayMs);
-        };
-        playNext(currentIndex);
-
-        return () => {
-          if (timeoutId) clearTimeout(timeoutId);
-        };
-      }
-    } else {
+    if (!isPlaying || trades.length === 0) {
       if (timerRef.current) clearInterval(timerRef.current);
+      return;
     }
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
+
+    if (playbackMode === 'EVENT_INDEX') {
+      // Constant rate stepping (Trades per second): 1x = 10 tps, 2x = 20 tps, 5x = 50 tps, 10x = 100 tps
+      const tradesPerSec = playbackSpeed * 10;
+      const intervalMs = Math.max(16, Math.floor(1000 / tradesPerSec));
+      timerRef.current = setInterval(() => {
+        setCurrentIndex((prev) => {
+          if (prev >= trades.length - 1) {
+            setIsPlaying(false);
+            return prev;
+          }
+          return prev + 1;
+        });
+      }, intervalMs);
+      return () => {
+        if (timerRef.current) clearInterval(timerRef.current);
+      };
+    } else {
+      // True proportional wall-clock playback using monotonic performance.now()
+      let animFrameId: number;
+      const startWallMs = performance.now();
+      const initialIdx = currentIndex >= trades.length - 1 ? 0 : currentIndex;
+      const startMarketNs = BigInt(trades[initialIdx].event_timestamp_ns);
+
+      const loop = (now: number) => {
+        // elapsed market nanoseconds = elapsed wall milliseconds * playbackSpeed * 1,000,000
+        const elapsedWallMs = (now - startWallMs) * playbackSpeed;
+        const targetMarketNs = startMarketNs + BigInt(Math.floor(elapsedWallMs * 1_000_000));
+
+        let nextIdx = initialIdx;
+        while (nextIdx < trades.length - 1 && BigInt(trades[nextIdx + 1].event_timestamp_ns) <= targetMarketNs) {
+          nextIdx++;
+        }
+
+        setCurrentIndex(nextIdx);
+
+        if (nextIdx >= trades.length - 1) {
+          setIsPlaying(false);
+        } else {
+          animFrameId = requestAnimationFrame(loop);
+        }
+      };
+
+      animFrameId = requestAnimationFrame(loop);
+      return () => {
+        if (animFrameId) cancelAnimationFrame(animFrameId);
+      };
+    }
   }, [isPlaying, trades, playbackSpeed, playbackMode]);
 
   const currentTrade = trades[currentIndex] || trades[0];
@@ -267,7 +276,7 @@ export const MarketReplay: React.FC<MarketReplayProps> = ({ date }) => {
               fontWeight: 600
             }}
           >
-            <Zap size={12} style={{ display: 'inline', marginRight: '4px' }} /> EVENT-STEPPING
+            <Zap size={12} style={{ display: 'inline', marginRight: '4px' }} /> CONSTANT RATE (TPS)
           </button>
           <button
             onClick={() => setPlaybackMode('REAL_CLOCK')}
@@ -281,10 +290,35 @@ export const MarketReplay: React.FC<MarketReplayProps> = ({ date }) => {
               fontWeight: 600
             }}
           >
-            <Timer size={12} style={{ display: 'inline', marginRight: '4px' }} /> REAL-CLOCK
+            <Timer size={12} style={{ display: 'inline', marginRight: '4px' }} /> PROPORTIONAL CLOCK
           </button>
         </div>
       </div>
+
+      {/* Sampling Coverage & Truncation Banner */}
+      {isTruncated && (
+        <div style={{
+          background: 'rgba(234, 179, 8, 0.08)',
+          border: '1px solid rgba(234, 179, 8, 0.3)',
+          borderRadius: '4px',
+          padding: '8px 14px',
+          fontSize: '0.78rem',
+          color: 'var(--color-gold)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '8px'
+        }}>
+          <span>
+            ⚠️ <strong>High-Density Slice:</strong> Total trades in this 60s window: <strong>{totalInWindow.toLocaleString()}</strong>.
+            Loaded the first <strong>{trades.length.toLocaleString()}</strong> trades ({((trades.length / Math.max(1, totalInWindow)) * 100).toFixed(1)}% event coverage) to guarantee 60fps rendering without browser event loop starvation.
+          </span>
+          <span className="mono" style={{ fontSize: '0.74rem' }}>
+            {playbackMode === 'REAL_CLOCK' ? `Monotonic Clock (${playbackSpeed}x Real Time)` : `Fixed Rate (${playbackSpeed * 10} Trades/Sec)`}
+          </span>
+        </div>
+      )}
 
       {/* Control Bar */}
       <div className="mml-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>

@@ -56,6 +56,7 @@ data/normalized/**/*.parquet
 !data/raw/*.CHECKSUM
 !data/normalized/.gitkeep
 !data/metadata/*.json
+!data/fixtures/*.parquet
 
 # IDE / OS
 .idea/

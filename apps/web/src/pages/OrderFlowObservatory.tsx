@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import ReactECharts from 'echarts-for-react';
 import { fetchFlowBuckets, fetchAutocorrelation, fetchDistributions, fetchHawkes } from '../api/client';
 import { FlowBucket, AutocorrResult, TradeSizeDistribution, DurationDistribution } from '../types';
-import { ShieldCheck, Info } from 'lucide-react';
+import { ShieldCheck, Info, AlertTriangle } from 'lucide-react';
 
 interface OrderFlowObservatoryProps {
   date: string;
@@ -381,16 +381,35 @@ export const OrderFlowObservatory: React.FC<OrderFlowObservatoryProps> = ({ date
           </div>
         </div>
 
+        {/* Model Fitting Warnings Banner */}
+        {((hawkes?.fitting_warnings && hawkes.fitting_warnings.length > 0) || (hawkes?.branching_ratios?.spectral_radius >= 1.0)) && (
+          <div style={{ background: 'rgba(255, 145, 0, 0.1)', border: '1px solid var(--color-sell)', borderRadius: '4px', padding: '10px 14px', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-sell)', fontWeight: 600, fontSize: '0.8rem', marginBottom: '4px' }}>
+              <AlertTriangle size={16} />
+              <span>MODEL CALIBRATION & SPECIFICATION WARNING</span>
+            </div>
+            <div style={{ fontSize: '0.74rem', color: '#f8fafc', lineHeight: '1.4' }}>
+              {hawkes?.fitting_warnings ? (
+                hawkes.fitting_warnings.map((w: string, idx: number) => (
+                  <div key={idx} style={{ marginBottom: '2px' }}>• {w}</div>
+                ))
+              ) : (
+                <div>• Spectral radius exceeds stationary threshold (&ge; 1.0). Empirical self-excitation is borderline supercritical; results must be treated as descriptive clustering rather than stationary infinite-horizon dynamics.</div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Control Model Comparison Banner */}
         {hawkes?.control_model_microsecond_aggregated && (
           <div style={{ background: 'rgba(255, 215, 0, 0.05)', border: '1px solid rgba(255, 215, 0, 0.3)', borderRadius: '4px', padding: '10px 14px', marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
             <div style={{ fontSize: '0.78rem' }}>
               <span className="badge-gold" style={{ marginRight: '8px' }}>CONTROL MODEL</span>
-              <strong>Microsecond-Aggregated Trades:</strong> Compression of simultaneous fills: <strong>-{hawkes.control_model_microsecond_aggregated.compression_ratio_pct?.toFixed(1)}%</strong>.
+              <strong>Timestamp-Aggregated Sensitivity:</strong> Simultaneous millisecond compression: <strong>-{hawkes.control_model_microsecond_aggregated.compression_ratio_pct?.toFixed(1)}%</strong>.
               Aggregated Spectral Radius: <strong className="mono" style={{ color: 'var(--color-buy)' }}>{hawkes.control_model_microsecond_aggregated.spectral_radius?.toFixed(4)}</strong> ({hawkes.control_model_microsecond_aggregated.stability_status}).
             </div>
             <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
-              Proves ~40-45% of raw self-excitation stems from matching engine execution splits.
+              Empirical sensitivity comparison: demonstrates branching ratio dependence on time resolution, rather than causal proof of order fragmentation.
             </div>
           </div>
         )}
@@ -402,15 +421,15 @@ export const OrderFlowObservatory: React.FC<OrderFlowObservatoryProps> = ({ date
             <span><strong>Random Time Change Theorem (Compensator Diagnostic):</strong></span>
           </div>
           <div style={{ display: 'flex', gap: '16px', fontSize: '0.76rem' }}>
-            <span>BUY KS STAT: <strong className="mono">{hawkes?.residual_diagnostics?.buy_ks_statistic?.toFixed(4) || '---'}</strong> (p={hawkes?.residual_diagnostics?.buy_ks_p_value?.toFixed(4) || '---'})</span>
-            <span>SELL KS STAT: <strong className="mono">{hawkes?.residual_diagnostics?.sell_ks_statistic?.toFixed(4) || '---'}</strong> (p={hawkes?.residual_diagnostics?.sell_ks_p_value?.toFixed(4) || '---'})</span>
+            <span>BUY KS STAT: <strong className="mono">{hawkes?.residual_diagnostics?.buy_ks_statistic?.toFixed(4) || '---'}</strong> (p={hawkes?.residual_diagnostics?.buy_ks_p_value !== undefined ? hawkes.residual_diagnostics.buy_ks_p_value.toFixed(4) : '---'})</span>
+            <span>SELL KS STAT: <strong className="mono">{hawkes?.residual_diagnostics?.sell_ks_statistic?.toFixed(4) || '---'}</strong> (p={hawkes?.residual_diagnostics?.sell_ks_p_value !== undefined ? hawkes.residual_diagnostics.sell_ks_p_value.toFixed(4) : '---'})</span>
           </div>
         </div>
 
         <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>
           <strong>Hawkes Statistical Interpretation:</strong>{' '}
           {hawkes?.statistical_interpretation ||
-            'Spectral radius rho(Gamma) describes point process stability. The control model proves that true event arrivals operate comfortably within the stationary subcritical regime.'}
+            'Spectral radius rho(Gamma) describes point process stability. Aggregated vs. raw comparison indicates high sensitivity to timestamp collisions; KS rejection highlights missing microstructure features (e.g., volume marks, power-law kernels).'}
         </div>
       </div>
     </div>

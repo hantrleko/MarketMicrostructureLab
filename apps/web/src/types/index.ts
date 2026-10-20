@@ -168,10 +168,32 @@ export interface ModelFitStats {
   r_squared_binned?: number;
   aic?: number;
   bic?: number;
+  wls_fit?: {
+    name?: string;
+    gamma_wls: number;
+    gamma_wls_se: number;
+    ci_95_lower: number;
+    ci_95_upper: number;
+    r_squared_wls: number;
+  };
+  trade_level_fit?: {
+    name?: string;
+    gamma_trade: number;
+    gamma_trade_se: number;
+    r_squared_trade: number;
+  };
+  out_of_sample_validation?: {
+    train_window: string;
+    test_window: string;
+    log_model_oos_r2: number;
+  };
   hypothesis_test_sqrt_law?: {
+    status?: string;
     null_hypothesis: string;
     gamma_estimate: number;
+    gamma_estimate_wls?: number;
     standard_error: number;
+    standard_error_wls?: number;
     confidence_interval_95?: [number, number];
     t_statistic: number;
     p_value: number;
@@ -187,6 +209,7 @@ export interface HawkesData {
   buy_events_count: number;
   sell_events_count: number;
   stability_status: 'SUBCRITICAL_STABLE' | 'SUPERCRITICAL_UNSTABLE';
+  fitting_warnings?: string[];
   optimizer_convergence?: {
     buy_dimension_converged: boolean;
     sell_dimension_converged: boolean;
@@ -241,13 +264,28 @@ export interface ImpactModelsData {
   horizon_events: number;
   observations: number;
   specification_note?: string;
+  sample_metadata?: {
+    symbol?: string;
+    horizon_lag?: number;
+    total_observations?: number;
+    sample_start_utc?: string;
+    sample_end_utc?: string;
+    sampling_method?: string;
+    generation_timestamp_utc?: string;
+    status?: string;
+    disclaimer?: string;
+  };
   binned_empirical: EmpiricalBinPoint[];
   linear_model: ModelFitStats;
   logarithmic_model: ModelFitStats;
   power_law_model: ModelFitStats;
   time_chunk_stability?: Array<{
     chunk_index: number;
+    label?: string;
+    start_time_utc?: string;
+    end_time_utc?: string;
     observations: number;
+    log_alpha?: number;
     log_beta: number;
     log_r2: number;
     power_gamma?: number | null;

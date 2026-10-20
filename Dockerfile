@@ -36,7 +36,6 @@ RUN pip install --no-cache-dir \
 # Copy application code
 COPY packages/ ./packages/
 COPY apps/ ./apps/
-COPY config/ ./config/
 COPY scripts/ ./scripts/
 COPY data/metadata/ ./data/metadata/
 COPY research/ ./research/

@@ -69,7 +69,7 @@
       "is_subcritical_stable": true
     },
     "buy_ks_statistic": 0.1555854101301034,
-    "interpretation": "Microsecond aggregation compresses 5000 fills into 772 unique matching events (-84.6%). Aggregated spectral radius drops to 0.5532 (SUBCRITICAL_STABLE), proving that a substantial portion of measured self-excitation in tick data stems from order fill slicing."
+    "interpretation": "Microsecond aggregation compresses 5000 raw fills into 772 unique timestamp matching events (-84.6%). Aggregated spectral radius drops to 0.5532 (SUBCRITICAL_STABLE). This empirical comparison demonstrates that measured point-process self-excitation is highly sensitive to the definition of the event unit (individual child execution vs. matching engine time slice), rather than establishing definitive causal attribution of trader behavior."
   },
   "statistical_interpretation": "Spectral radius rho(Gamma) = 0.9647 (SUBCRITICAL_STABLE). Process is sub-critical and stationary. Self-excitation (0.965 buy, 0.928 sell) vs cross-excitation (0.000 / 0.001)."
 }

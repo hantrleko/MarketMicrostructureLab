@@ -1,4 +1,4 @@
-# Research Integrity Audit & Empirical Corrections (MML V1.1.1)
+# Research Integrity Audit & Empirical Corrections (MML V1.1.2)
 
 This document details all methodological, statistical, and engineering corrections implemented across MML V1.1 and V1.1.1.
 
@@ -27,21 +27,24 @@ This document details all methodological, statistical, and engineering correctio
 - $R(20) = 0.1133 \text{ bps}$ (Newey-West HAC SE: $0.0010$, $t = 109.4$)
 - $R(50) = 0.2747 \text{ bps}$ (Newey-West HAC SE: $0.0023$, $t = 121.5$)
 
-### 2.2 Nonlinear Model Comparison at $k=20$ (2026-07-01)
+### 2.2 Nonlinear Model Comparison & Robustness Suite at $k=20$ (2026-07-01)
 - **Linear Model**: $R^2 = 0.0007$, $\hat{\beta} = -0.0678$
 - **Logarithmic Model**: $R^2 = 0.0047$, $\hat{\beta} = -0.0058$
-- **Power-Law Model**: $\hat{\gamma} = -0.0305 \pm 0.0452$ (95% CI: [-0.1190, 0.0581])
-- **Square-Root Law Hypothesis Test**:
+- **Power-Law Model (Tier Binned OLS)**: $\hat{\gamma} = -0.0305 \pm 0.0452$ (95% CI: [-0.1557, 0.0080])
+- **Power-Law Model (Weighted Least Squares, WLS)**: $\hat{\gamma}_{\text{WLS}} = -0.0739 \pm 0.0418$ ($R^2 = 0.2810$)
+- **Trade-Level HAC Regression**: $\hat{\gamma}_{\text{trade}} = 0.1272$ (HAC SE: $0.0068$, $R^2 = 0.008609$)
+- **Out-of-Sample (OOS) Cross-Validation**: Logarithmic Test $R^2 = 0.0031$ (50%/50% chronological split)
+- **Square-Root Law Hypothesis Test (Exploratory Finding)**:
   - $H_0: \gamma = 0.5$
-  - $t = -11.74$
+  - $t = -13.74$
   - $p\text{-value} = 0.0000e+00$
-  - **Conclusion**: Strictly rejected ($p < 0.001$) for single child trades; 95% CI contains 0.
+  - **Conclusion**: Unweighted tier rejection of $\gamma = 0.5$ is labeled an exploratory finding; WLS and trade-level HAC estimation confirm that child trade size has negligible explanatory power ($R^2 < 0.01$) over subsequent 20-tick price changes.
 
 ### 2.3 Bivariate Hawkes Process & Control Model (2026-07-01)
 - **Raw Trades Spectral Radius**: $\rho(\Gamma_{\text{raw}}) = 0.9532$ (SUBCRITICAL_STABLE)
-- **Microsecond-Aggregated Control Model**: $\rho(\Gamma_{\text{agg}}) = 0.4925$ (SUBCRITICAL_STABLE)
+- **Timestamp-Aggregated Sensitivity Check**: $\rho(\Gamma_{\text{agg}}) = 0.4925$ (SUBCRITICAL_STABLE)
 - **Self-Excitation Drop**: Buy $\to$ Buy drops from 0.9355 to 0.3857.
-- **Conclusion**: Matching engine fill slicing accounts for ~45% of the raw branching ratio. Microsecond aggregated trading is safely subcritical.
+- **Conclusion**: Branching ratios show extreme sensitivity to timestamp collisions and event resolution. Aggregation demonstrates that high-frequency clustering estimates cannot be directly asserted as trader behavior mechanisms without accounting for exchange execution protocol details.
 
 ---
 

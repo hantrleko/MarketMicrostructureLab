@@ -2,6 +2,16 @@
   "symbol": "BTCUSDT",
   "sample_size": 249980,
   "horizon_lag": 20,
+  "sample_metadata": {
+    "symbol": "BTCUSDT",
+    "horizon_lag": 20,
+    "total_observations": 249980,
+    "sample_start_utc": "2026-07-03T05:37:15.255456Z",
+    "sample_end_utc": "2026-07-03T08:30:10.032670Z",
+    "sampling_method": "CHRONOLOGICAL_TICK_RESPONSE",
+    "generation_timestamp_utc": "2026-10-20T07:24:59.051281+00:00",
+    "status": "EXPLORATORY_RESEARCH"
+  },
   "binned_empirical": [
     {
       "bin": 1,
@@ -166,56 +176,138 @@
     "ci_95_lower": -0.10229709356578184,
     "ci_95_upper": 0.09005741354497551,
     "r_squared_binned": 0.001940501500126146,
+    "wls_fit": {
+      "name": "Weighted Least Squares (weighted by tier sample count)",
+      "gamma_wls": -0.11562227839926255,
+      "gamma_wls_se": 0.04744781286632833,
+      "ci_95_lower": -0.20861999161726608,
+      "ci_95_upper": -0.022624565181259035,
+      "r_squared_wls": 0.4260354470767892
+    },
+    "trade_level_fit": {
+      "name": "Trade-Level Log-Log HAC Regression (individual trades)",
+      "gamma_trade": 0.07741600508272208,
+      "gamma_trade_se": 0.008658821323645987,
+      "r_squared_trade": 0.003588586452105025
+    },
+    "out_of_sample_validation": {
+      "train_window": "First 50% chronological sample",
+      "test_window": "Second 50% chronological sample",
+      "log_model_oos_r2": 0.005810547027767066
+    },
+    "rejects_square_root_half": true,
+    "ci_contains_zero": true,
     "hypothesis_test_sqrt_law": {
+      "status": "EXPLORATORY_RESEARCH",
       "null_hypothesis": "H0: gamma = 0.5 (Square-Root Law for Child Trades)",
       "gamma_estimate": -0.006119840010403166,
+      "gamma_estimate_wls": -0.11562227839926255,
       "standard_error": 0.049070027324172795,
+      "standard_error_wls": 0.04744781286632833,
       "confidence_interval_95": [
-        -0.10229709356578184,
-        0.09005741354497551
+        -0.20861999161726608,
+        -0.022624565181259035
       ],
-      "t_statistic": -10.314235952362703,
+      "t_statistic": -12.974724043310818,
       "p_value": 0.0,
       "is_rejected_at_5pct": true,
-      "interpretation": "Estimated power-law exponent gamma = -0.0061 (95% CI: [-0.1023, 0.0901]) is statistically indistinguishable from zero and significantly different from 0.5 (p < 0.001). This finding strictly characterizes individual child-order tick responses. It does NOT constitute an empirical refutation of the classical Square-Root Law of Meta-Orders (which governs cumulative parent-order execution over hours or days), nor does it directly prove specific unobserved microstructure mechanisms (such as book replenishment or adverse selection ratios)."
+      "interpretation": "Exploratory single child-order estimation: WLS power-law exponent gamma = -0.1156 (95% CI: [-0.2086, -0.0226]) and OLS exponent gamma = -0.0061 (95% CI: [-0.1023, 0.0901]) are statistically indistinguishable from zero and reject 0.5 (p < 0.001). This finding strictly characterizes individual child-order conditional price response R(v, k). It does NOT constitute an empirical refutation of the classical Square-Root Law of Meta-Orders (which governs cumulative parent-order execution over hours or days), nor does it directly prove specific unobserved microstructure mechanisms (such as book replenishment or adverse selection ratios)."
+    }
+  },
+  "power_law_fit": {
+    "name": "Power Law (R = alpha * Q^gamma)",
+    "alpha": 0.04616639992186514,
+    "gamma": -0.006119840010403166,
+    "gamma_se": 0.049070027324172795,
+    "ci_95_lower": -0.10229709356578184,
+    "ci_95_upper": 0.09005741354497551,
+    "r_squared_binned": 0.001940501500126146,
+    "wls_fit": {
+      "name": "Weighted Least Squares (weighted by tier sample count)",
+      "gamma_wls": -0.11562227839926255,
+      "gamma_wls_se": 0.04744781286632833,
+      "ci_95_lower": -0.20861999161726608,
+      "ci_95_upper": -0.022624565181259035,
+      "r_squared_wls": 0.4260354470767892
+    },
+    "trade_level_fit": {
+      "name": "Trade-Level Log-Log HAC Regression (individual trades)",
+      "gamma_trade": 0.07741600508272208,
+      "gamma_trade_se": 0.008658821323645987,
+      "r_squared_trade": 0.003588586452105025
+    },
+    "out_of_sample_validation": {
+      "train_window": "First 50% chronological sample",
+      "test_window": "Second 50% chronological sample",
+      "log_model_oos_r2": 0.005810547027767066
+    },
+    "rejects_square_root_half": true,
+    "ci_contains_zero": true,
+    "hypothesis_test_sqrt_law": {
+      "status": "EXPLORATORY_RESEARCH",
+      "null_hypothesis": "H0: gamma = 0.5 (Square-Root Law for Child Trades)",
+      "gamma_estimate": -0.006119840010403166,
+      "gamma_estimate_wls": -0.11562227839926255,
+      "standard_error": 0.049070027324172795,
+      "standard_error_wls": 0.04744781286632833,
+      "confidence_interval_95": [
+        -0.20861999161726608,
+        -0.022624565181259035
+      ],
+      "t_statistic": -12.974724043310818,
+      "p_value": 0.0,
+      "is_rejected_at_5pct": true,
+      "interpretation": "Exploratory single child-order estimation: WLS power-law exponent gamma = -0.1156 (95% CI: [-0.2086, -0.0226]) and OLS exponent gamma = -0.0061 (95% CI: [-0.1023, 0.0901]) are statistically indistinguishable from zero and reject 0.5 (p < 0.001). This finding strictly characterizes individual child-order conditional price response R(v, k). It does NOT constitute an empirical refutation of the classical Square-Root Law of Meta-Orders (which governs cumulative parent-order execution over hours or days), nor does it directly prove specific unobserved microstructure mechanisms (such as book replenishment or adverse selection ratios)."
     }
   },
   "time_chunk_stability": [
     {
       "chunk_index": 1,
+      "label": "Block 1 (Chronological)",
+      "start_time_utc": "2026-07-03T05:37:15.255456Z",
+      "end_time_utc": "2026-07-03T06:23:05.450381Z",
       "observations": 62495,
       "log_alpha": 0.032626464020454896,
       "log_beta": -0.006720516130552119,
       "log_r2": 0.005789640031318433,
-      "power_gamma": 0.06508855395332816,
-      "power_gamma_se": 0.05241326789727563
+      "power_gamma": -0.09917229070218392,
+      "power_gamma_se": 0.05857142246861383
     },
     {
       "chunk_index": 2,
+      "label": "Block 2 (Chronological)",
+      "start_time_utc": "2026-07-03T06:23:05.450381Z",
+      "end_time_utc": "2026-07-03T07:08:48.987686Z",
       "observations": 62495,
       "log_alpha": 0.026480202855267164,
       "log_beta": -0.005990996513483392,
       "log_r2": 0.007620923491797549,
-      "power_gamma": -0.03702370582973863,
-      "power_gamma_se": 0.06446498536426831
+      "power_gamma": -0.12110277303020597,
+      "power_gamma_se": 0.058679593351226536
     },
     {
       "chunk_index": 3,
+      "label": "Block 3 (Chronological)",
+      "start_time_utc": "2026-07-03T07:08:48.987686Z",
+      "end_time_utc": "2026-07-03T07:49:04.593136Z",
       "observations": 62495,
       "log_alpha": 0.02286154391053352,
       "log_beta": -0.005931630880134962,
       "log_r2": 0.011812601434987968,
-      "power_gamma": 0.004867466064231385,
-      "power_gamma_se": 0.053412447367772384
+      "power_gamma": -0.11228510436281885,
+      "power_gamma_se": 0.04461196343794735
     },
     {
       "chunk_index": 4,
+      "label": "Block 4 (Chronological)",
+      "start_time_utc": "2026-07-03T07:49:04.593136Z",
+      "end_time_utc": "2026-07-03T08:30:10.032670Z",
       "observations": 62495,
       "log_alpha": 0.008618914448929,
       "log_beta": -0.007555405844172193,
       "log_r2": 0.01602733303609083,
-      "power_gamma": -0.08956039911678332,
-      "power_gamma_se": 0.041592824000466676
+      "power_gamma": -0.13710792070338862,
+      "power_gamma_se": 0.04068061366212946
     }
   ]
 }

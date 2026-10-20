@@ -354,12 +354,39 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
                     <td>{modelsData?.logarithmic_model?.r_squared?.toFixed(4) || '---'}</td>
                   </tr>
                   <tr>
-                    <td style={{ color: 'var(--color-buy)' }}>Power Law</td>
+                    <td style={{ color: 'var(--color-buy)' }}>Power Law (OLS binned)</td>
                     <td style={{ color: 'var(--color-buy)' }}>gamma = {modelsData?.power_law_model?.gamma?.toFixed(4) || '---'}</td>
                     <td>-</td>
                     <td>-</td>
                     <td>{modelsData?.power_law_model?.r_squared_binned?.toFixed(4) || '---'}</td>
                   </tr>
+                  {modelsData?.power_law_model?.wls_fit && (
+                    <tr>
+                      <td style={{ color: 'var(--color-gold)' }}>Power Law (WLS tier-weighted)</td>
+                      <td style={{ color: 'var(--color-gold)' }}>gamma = {modelsData.power_law_model.wls_fit.gamma_wls.toFixed(4)} (SE: {modelsData.power_law_model.wls_fit.gamma_wls_se.toFixed(4)})</td>
+                      <td>-</td>
+                      <td>-</td>
+                      <td>{modelsData.power_law_model.wls_fit.r_squared_wls.toFixed(4)}</td>
+                    </tr>
+                  )}
+                  {modelsData?.power_law_model?.trade_level_fit && modelsData.power_law_model.trade_level_fit.gamma_trade !== 0 && (
+                    <tr>
+                      <td style={{ color: '#38bdf8' }}>Power Law (Trade-Level HAC)</td>
+                      <td style={{ color: '#38bdf8' }}>gamma = {modelsData.power_law_model.trade_level_fit.gamma_trade.toFixed(4)} (SE: {modelsData.power_law_model.trade_level_fit.gamma_trade_se.toFixed(4)})</td>
+                      <td>-</td>
+                      <td>-</td>
+                      <td>{modelsData.power_law_model.trade_level_fit.r_squared_trade.toFixed(4)}</td>
+                    </tr>
+                  )}
+                  {modelsData?.power_law_model?.out_of_sample_validation && (
+                    <tr>
+                      <td style={{ color: '#a78bfa' }}>Out-of-Sample Validation (Log)</td>
+                      <td style={{ color: '#a78bfa' }}>Train: 00-12 UTC &bull; Test: 12-24 UTC</td>
+                      <td>-</td>
+                      <td>-</td>
+                      <td style={{ color: '#a78bfa', fontWeight: 600 }}>OOS R^2 = {modelsData.power_law_model.out_of_sample_validation.log_model_oos_r2.toFixed(4)}</td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -438,17 +465,23 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
               <thead>
                 <tr>
                   <th>TIME BLOCK</th>
+                  <th>TIMESTAMP RANGE (UTC)</th>
                   <th>OBSERVATIONS</th>
                   <th>LOG MODEL BETA</th>
                   <th>LOG MODEL R^2</th>
-                  <th>POWER LAW GAMMA</th>
+                  <th>POWER LAW GAMMA (WLS)</th>
                   <th>POWER LAW SE</th>
                 </tr>
               </thead>
               <tbody>
                 {timeChunks.map((tc) => (
                   <tr key={tc.chunk_index}>
-                    <td>Chunk {tc.chunk_index} ({tc.chunk_index === 1 ? '00:00-06:00' : tc.chunk_index === 2 ? '06:00-12:00' : tc.chunk_index === 3 ? '12:00-18:00' : '18:00-24:00'} UTC)</td>
+                    <td style={{ color: 'var(--color-buy)', fontWeight: 600 }}>{tc.label || `Chunk ${tc.chunk_index}`}</td>
+                    <td style={{ color: 'var(--text-dim)' }}>
+                      {tc.start_time_utc && tc.end_time_utc
+                        ? `${tc.start_time_utc.split('T')[1]?.slice(0, 8)} → ${tc.end_time_utc.split('T')[1]?.slice(0, 8)}`
+                        : '---'}
+                    </td>
                     <td>{tc.observations.toLocaleString()}</td>
                     <td>{tc.log_beta.toFixed(4)}</td>
                     <td>{tc.log_r2.toFixed(4)}</td>

@@ -294,6 +294,21 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
               const wlsCiUpper = wlsFit?.ci_95_upper !== undefined ? wlsFit.ci_95_upper : sqrtTest?.confidence_interval_95?.[1];
               const wlsT = sqrtTest?.t_statistic_wls !== undefined ? sqrtTest.t_statistic_wls : sqrtTest?.t_statistic;
 
+              const wlsContainsZero = wlsCiLower !== undefined && wlsCiUpper !== undefined && wlsCiLower <= 0 && wlsCiUpper >= 0;
+              const olsContainsZero = olsCiLower !== undefined && olsCiUpper !== undefined && olsCiLower <= 0 && olsCiUpper >= 0;
+
+              const ciSummary = (() => {
+                if (wlsContainsZero && olsContainsZero) {
+                  return 'both 95% confidence intervals encompass zero';
+                } else if (!wlsContainsZero && olsContainsZero) {
+                  return 'unweighted tier OLS 95% CI encompasses zero while tier-weighted WLS 95% CI is strictly negative, reflecting stratum weighting sensitivity to the minimum-order point mass';
+                } else if (!wlsContainsZero && !olsContainsZero) {
+                  return 'both 95% confidence intervals exclude zero';
+                } else {
+                  return 'tier-weighted WLS CI encompasses zero while unweighted OLS CI excludes zero';
+                }
+              })();
+
               return (
                 <>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '14px' }}>
@@ -319,10 +334,12 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
                           <div style={{ fontSize: '0.65rem', color: 'var(--text-dim)' }}>95% WLS CI</div>
                           <div className="mono" style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-gold)', marginTop: '2px' }}>
                             {wlsCiLower !== undefined && wlsCiUpper !== undefined
-                              ? `[${wlsCiLower.toFixed(3)}, ${wlsCiUpper.toFixed(3)}]`
+                              ? `[${wlsCiLower.toFixed(3)}, ${wlsCiUpper > 0 ? '+' : ''}${wlsCiUpper.toFixed(3)}]`
                               : '[-0.156, +0.008]'}
                           </div>
-                          <div style={{ fontSize: '0.62rem', color: 'var(--color-buy)' }}>Contains Zero</div>
+                          <div style={{ fontSize: '0.62rem', color: wlsContainsZero ? 'var(--color-buy)' : '#ffb74d', fontWeight: 600 }}>
+                            {wlsContainsZero ? 'Contains Zero' : 'Excludes Zero (gamma < 0)'}
+                          </div>
                         </div>
                         <div>
                           <div style={{ fontSize: '0.65rem', color: 'var(--text-dim)' }}>t-STAT vs 0.5</div>
@@ -356,10 +373,12 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
                           <div style={{ fontSize: '0.65rem', color: 'var(--text-dim)' }}>95% OLS CI</div>
                           <div className="mono" style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-gold)', marginTop: '2px' }}>
                             {olsCiLower !== undefined && olsCiUpper !== undefined
-                              ? `[${olsCiLower.toFixed(3)}, ${olsCiUpper.toFixed(3)}]`
+                              ? `[${olsCiLower.toFixed(3)}, ${olsCiUpper > 0 ? '+' : ''}${olsCiUpper.toFixed(3)}]`
                               : '[-0.119, +0.058]'}
                           </div>
-                          <div style={{ fontSize: '0.62rem', color: 'var(--color-buy)' }}>Contains Zero</div>
+                          <div style={{ fontSize: '0.62rem', color: olsContainsZero ? 'var(--color-buy)' : '#ffb74d', fontWeight: 600 }}>
+                            {olsContainsZero ? 'Contains Zero' : 'Excludes Zero'}
+                          </div>
                         </div>
                         <div>
                           <div style={{ fontSize: '0.65rem', color: 'var(--text-dim)' }}>t-STAT vs 0.5</div>
@@ -373,7 +392,7 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
                   </div>
 
                   <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: '1.45' }}>
-                    <strong>Econometric Conclusion:</strong> Both tier-weighted WLS (t = {wlsT !== undefined ? wlsT.toFixed(2) : '-13.74'}) and unweighted tier OLS (t = {olsT !== undefined ? olsT.toFixed(2) : '-11.74'}) reject H0: gamma = 0.5 (p &lt; 0.001), while their respective 95% confidence intervals encompass zero. This demonstrates that child order size has negligible explanatory power over short-term price response R(v, k). <em>Note: This finding strictly characterizes single child-order responses and does NOT refute the classical Square-Root Law of Meta-Orders (cumulative parent-order execution across hours/days).</em>
+                    <strong>Econometric Conclusion:</strong> Both tier-weighted WLS (t = {wlsT !== undefined ? wlsT.toFixed(2) : '-13.74'}) and unweighted tier OLS (t = {olsT !== undefined ? olsT.toFixed(2) : '-11.74'}) reject H0: gamma = 0.5 (p &lt; 0.001) for horizon k={horizon}. Power-law exponent estimates vary across dates and specifications ({ciSummary}), with low explanatory power across child models (in-sample and OOS R² &lt; 0.02). <em>Note: Single child-order conditional price response R(v, k) does NOT refute the classical Square-Root Law of Meta-Orders (I(Q) ~ sigma*sqrt(Q/V)), which governs cumulative parent orders algorithmically executed over hours or days.</em>
                   </div>
                 </>
               );
@@ -480,11 +499,27 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
                   })()}
                 </tbody>
               </table>
-              <div style={{ fontSize: '0.71rem', color: 'var(--text-dim)', marginTop: '8px', lineHeight: '1.4' }}>
-                • <strong>Standard Error Specifications:</strong> Explicitly designated by row above. WLS standard errors are classical weighted SEs, unadjusted for cross-tier residual autocorrelation; Trade-Level and Price Response R(k) standard errors employ Newey-West HAC robust covariance.<br />
-                • <strong>*Trade-Level Sub-Sample:</strong> Evaluated strictly conditional on positive price displacements (R &gt; 0). Excludes 70,574 zero and adverse tick responses (28.2% of sample on 2026-07-01; 71.8% positive trades kept) which are dropped by ln(R). This is an exploratory sub-sample check, not an unconditional full-sample validation.<br />
-                • <strong>OOS Validation:</strong> Evaluated on consecutive 50% chronological halves of active estimation window.
-              </div>
+              {(() => {
+                const tradeFit = modelsData?.power_law_model?.trade_level_fit;
+                const totalTrades = tradeFit?.total_trades_count ?? 0;
+                const zeroCount = tradeFit?.zero_trades_count ?? 0;
+                const negCount = tradeFit?.negative_trades_count ?? 0;
+                const excludedCount = zeroCount + negCount;
+                const posPct = tradeFit?.positive_trades_pct ?? 0;
+                const excludedPct = totalTrades > 0 ? (100.0 - posPct) : 0;
+
+                const excludedText = excludedCount > 0
+                  ? `${excludedCount.toLocaleString()} zero and adverse tick responses (${excludedPct.toFixed(2)}% of ${totalTrades.toLocaleString()} sampled trades on ${date} at k=${horizon}; ${posPct.toFixed(2)}% positive trades kept)`
+                  : `zero and adverse tick responses on ${date} at k=${horizon}`;
+
+                return (
+                  <div style={{ fontSize: '0.71rem', color: 'var(--text-dim)', marginTop: '8px', lineHeight: '1.4' }}>
+                    • <strong>Standard Error Specifications:</strong> Explicitly designated by row above. WLS standard errors are classical weighted SEs, unadjusted for cross-tier residual autocorrelation; Trade-Level and Price Response R(k) standard errors employ Newey-West HAC robust covariance.<br />
+                    • <strong>*Trade-Level Sub-Sample:</strong> Evaluated strictly conditional on positive price displacements (R &gt; 0). Excludes {excludedText} which are dropped by ln(R). This is an exploratory sub-sample check, not an unconditional full-sample validation.<br />
+                    • <strong>OOS Validation:</strong> Evaluated on consecutive 50% chronological halves of active estimation window.
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </div>

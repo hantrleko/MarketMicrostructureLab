@@ -106,7 +106,7 @@
         "sample_start_utc": "2026-07-01T05:49:54.563429Z",
         "sample_end_utc": "2026-07-01T07:48:27.491649Z",
         "sampling_method": "CHRONOLOGICAL_TICK_RESPONSE",
-        "generation_timestamp_utc": "2026-10-20T08:59:03.882722+00:00",
+        "generation_timestamp_utc": "2026-10-20T09:31:15.937673+00:00",
         "status": "EXPLORATORY_RESEARCH"
       },
       "economic_tiers": [
@@ -453,7 +453,7 @@
         "sample_start_utc": "2026-07-02T06:45:37.700916Z",
         "sample_end_utc": "2026-07-02T08:48:36.372819Z",
         "sampling_method": "CHRONOLOGICAL_TICK_RESPONSE",
-        "generation_timestamp_utc": "2026-10-20T08:59:17.784728+00:00",
+        "generation_timestamp_utc": "2026-10-20T09:31:19.540666+00:00",
         "status": "EXPLORATORY_RESEARCH"
       },
       "economic_tiers": [
@@ -800,7 +800,7 @@
         "sample_start_utc": "2026-07-03T05:37:15.255456Z",
         "sample_end_utc": "2026-07-03T08:30:10.032670Z",
         "sampling_method": "CHRONOLOGICAL_TICK_RESPONSE",
-        "generation_timestamp_utc": "2026-10-20T08:59:29.337571+00:00",
+        "generation_timestamp_utc": "2026-10-20T09:31:22.833421+00:00",
         "status": "EXPLORATORY_RESEARCH"
       },
       "economic_tiers": [

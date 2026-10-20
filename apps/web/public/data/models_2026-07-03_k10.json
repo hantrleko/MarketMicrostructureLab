@@ -9,7 +9,7 @@
     "sample_start_utc": "2026-07-03T05:37:15.255456Z",
     "sample_end_utc": "2026-07-03T08:30:15.108467Z",
     "sampling_method": "CHRONOLOGICAL_TICK_RESPONSE",
-    "generation_timestamp_utc": "2026-10-20T09:00:22.525556+00:00",
+    "generation_timestamp_utc": "2026-10-20T09:31:49.671318+00:00",
     "status": "EXPLORATORY_RESEARCH"
   },
   "binned_empirical": [
@@ -269,7 +269,7 @@
         "p_value": 0.0,
         "is_rejected_at_5pct": true
       },
-      "interpretation": "Exploratory single child-order estimation: WLS power-law exponent gamma = -0.1112 (Classical WLS SE: 0.0473, 95% WLS CI: [-0.2040, -0.0185], t = -12.92) and binned OLS exponent gamma = -0.0147 (Classical OLS SE: 0.0476, 95% OLS CI: [-0.1081, 0.0787], t = -10.80) are statistically indistinguishable from zero and reject 0.5 (p < 0.001). Note: WLS standard errors are classical weighted SEs unadjusted for cross-tier residual autocorrelation. This finding strictly characterizes individual child-order conditional price response R(v, k). It does NOT constitute an empirical refutation of the classical Square-Root Law of Meta-Orders (which governs cumulative parent-order execution over hours or days), nor does it directly prove specific unobserved microstructure mechanisms (such as book replenishment or adverse selection ratios)."
+      "interpretation": "Exploratory single child-order estimation: WLS power-law exponent gamma = -0.1112 (Classical WLS SE: 0.0473, 95% WLS CI: [-0.2040, -0.0185], t = -12.92, is strictly negative (excludes zero)) and binned OLS exponent gamma = -0.0147 (Classical OLS SE: 0.0476, 95% OLS CI: [-0.1081, 0.0787], t = -10.80, encompasses zero) reject 0.5 (p < 0.001). Child-order models exhibit low in-sample and out-of-sample explanatory power (R\u00b2 < 0.02), with stratified power-law estimates varying across dates and weighting specifications. Note: WLS standard errors are classical weighted SEs unadjusted for cross-tier residual autocorrelation. This finding strictly characterizes individual child-order conditional price response R(v, k). It does NOT constitute an empirical refutation of the classical Square-Root Law of Meta-Orders (which governs cumulative parent-order execution over hours or days), nor does it directly prove specific unobserved microstructure mechanisms (such as book replenishment or adverse selection ratios)."
     }
   },
   "power_law_fit": {
@@ -373,7 +373,7 @@
         "p_value": 0.0,
         "is_rejected_at_5pct": true
       },
-      "interpretation": "Exploratory single child-order estimation: WLS power-law exponent gamma = -0.1112 (Classical WLS SE: 0.0473, 95% WLS CI: [-0.2040, -0.0185], t = -12.92) and binned OLS exponent gamma = -0.0147 (Classical OLS SE: 0.0476, 95% OLS CI: [-0.1081, 0.0787], t = -10.80) are statistically indistinguishable from zero and reject 0.5 (p < 0.001). Note: WLS standard errors are classical weighted SEs unadjusted for cross-tier residual autocorrelation. This finding strictly characterizes individual child-order conditional price response R(v, k). It does NOT constitute an empirical refutation of the classical Square-Root Law of Meta-Orders (which governs cumulative parent-order execution over hours or days), nor does it directly prove specific unobserved microstructure mechanisms (such as book replenishment or adverse selection ratios)."
+      "interpretation": "Exploratory single child-order estimation: WLS power-law exponent gamma = -0.1112 (Classical WLS SE: 0.0473, 95% WLS CI: [-0.2040, -0.0185], t = -12.92, is strictly negative (excludes zero)) and binned OLS exponent gamma = -0.0147 (Classical OLS SE: 0.0476, 95% OLS CI: [-0.1081, 0.0787], t = -10.80, encompasses zero) reject 0.5 (p < 0.001). Child-order models exhibit low in-sample and out-of-sample explanatory power (R\u00b2 < 0.02), with stratified power-law estimates varying across dates and weighting specifications. Note: WLS standard errors are classical weighted SEs unadjusted for cross-tier residual autocorrelation. This finding strictly characterizes individual child-order conditional price response R(v, k). It does NOT constitute an empirical refutation of the classical Square-Root Law of Meta-Orders (which governs cumulative parent-order execution over hours or days), nor does it directly prove specific unobserved microstructure mechanisms (such as book replenishment or adverse selection ratios)."
     }
   },
   "power_law_wls": {

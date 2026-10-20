@@ -318,6 +318,9 @@ class NonlinearImpactModel:
                     "power_gamma_se": g_chunk_se
                 })
 
+        wls_ci_note = "encompasses zero" if (ci_wls_lower <= 0.0 <= ci_wls_upper) else f"is strictly {'negative' if ci_wls_upper < 0 else 'positive'} (excludes zero)"
+        ols_ci_note = "encompasses zero" if (ci_lower <= 0.0 <= ci_upper) else f"is strictly {'negative' if ci_upper < 0 else 'positive'} (excludes zero)"
+
         power_law_dict = {
             "name": "Power Law (R = alpha * Q^gamma)",
             "alpha": alpha_est,
@@ -411,8 +414,9 @@ class NonlinearImpactModel:
                 },
                 "interpretation": (
                     f"Exploratory single child-order estimation: WLS power-law exponent gamma = {gamma_wls:.4f} "
-                    f"(Classical WLS SE: {gamma_wls_se:.4f}, 95% WLS CI: [{ci_wls_lower:.4f}, {ci_wls_upper:.4f}], t = {t_wls:.2f}) and binned OLS exponent gamma = {gamma_est:.4f} "
-                    f"(Classical OLS SE: {gamma_se:.4f}, 95% OLS CI: [{ci_lower:.4f}, {ci_upper:.4f}], t = {t_ols:.2f}) are statistically indistinguishable from zero and reject 0.5 (p < 0.001). "
+                    f"(Classical WLS SE: {gamma_wls_se:.4f}, 95% WLS CI: [{ci_wls_lower:.4f}, {ci_wls_upper:.4f}], t = {t_wls:.2f}, {wls_ci_note}) and binned OLS exponent gamma = {gamma_est:.4f} "
+                    f"(Classical OLS SE: {gamma_se:.4f}, 95% OLS CI: [{ci_lower:.4f}, {ci_upper:.4f}], t = {t_ols:.2f}, {ols_ci_note}) reject 0.5 (p < 0.001). "
+                    "Child-order models exhibit low in-sample and out-of-sample explanatory power (R² < 0.02), with stratified power-law estimates varying across dates and weighting specifications. "
                     "Note: WLS standard errors are classical weighted SEs unadjusted for cross-tier residual autocorrelation. "
                     "This finding strictly characterizes individual child-order conditional price response R(v, k). "
                     "It does NOT constitute an empirical refutation of the classical Square-Root Law of Meta-Orders "

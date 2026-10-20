@@ -73,10 +73,12 @@ def test_v11_discrete_stratification_and_point_mass():
 
 def test_v11_square_root_law_confidence_interval():
     np.random.seed(42)
-    n = 1000
-    quantities = np.random.uniform(0.001, 1.0, n)
-    prices = 60000.0 + np.cumsum(np.random.normal(0, 1, n))
+    n = 1500
+    quantities = np.random.exponential(scale=0.03, size=n) + 0.00008
     directions = np.random.choice([1, -1], n)
+    # Price innovations with structural trade price impact (BUY pushes price up, SELL down)
+    impact = directions * (quantities ** 0.5) * 5.0 + np.random.normal(0, 0.05, n)
+    prices = 60000.0 + np.cumsum(impact)
 
     df = pl.DataFrame({
         "event_time_utc": [f"2026-07-01 00:00:{i % 60:02d}" for i in range(n)],
@@ -93,6 +95,9 @@ def test_v11_square_root_law_confidence_interval():
     assert "ci_95_upper" in fit
     assert "rejects_square_root_half" in fit
     assert "ci_contains_zero" in fit
+    assert fit["status"] == "ESTIMATED"
+    assert fit["ci_95_lower"] is not None
+    assert fit["ci_95_upper"] is not None
     assert fit["ci_95_lower"] < fit["ci_95_upper"]
     assert isinstance(fit["rejects_square_root_half"], bool)
     assert isinstance(fit["ci_contains_zero"], bool)

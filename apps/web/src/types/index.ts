@@ -154,20 +154,24 @@ export interface EmpiricalBinPoint {
 
 export interface ModelFitStats {
   name: string;
-  alpha: number;
-  alpha_se?: number;
-  beta?: number;
-  beta_se?: number;
-  beta_t_stat?: number;
-  beta_p_value?: number;
-  gamma?: number;
-  gamma_se?: number;
-  ci_95_lower?: number;
-  ci_95_upper?: number;
-  r_squared?: number;
-  r_squared_binned?: number;
-  aic?: number;
-  bic?: number;
+  status?: string;
+  is_estimable?: boolean;
+  unestimable_reason?: string;
+  moving_block_bootstrap?: any;
+  alpha?: number | null;
+  alpha_se?: number | null;
+  beta?: number | null;
+  beta_se?: number | null;
+  beta_t_stat?: number | null;
+  beta_p_value?: number | null;
+  gamma?: number | null;
+  gamma_se?: number | null;
+  ci_95_lower?: number | null;
+  ci_95_upper?: number | null;
+  r_squared?: number | null;
+  r_squared_binned?: number | null;
+  aic?: number | null;
+  bic?: number | null;
   wls_fit?: {
     name?: string;
     estimator?: string;

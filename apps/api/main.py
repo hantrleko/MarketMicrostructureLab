@@ -115,15 +115,13 @@ def get_trades_df(symbol: str, date_str: str) -> pl.DataFrame:
     try:
         return trade_analytics.load_trades(symbol=symbol, date_str=date_str)
     except FileNotFoundError:
-        # Fallback to CI / testing sample fixture if running without full downloaded dataset
+        # Strictly fall back to fixture for the EXACT matching date only
         sample_path = DATA_DIR / "fixtures" / f"sample_trades_{date_str}.parquet"
-        if not sample_path.exists():
-            sample_path = DATA_DIR / "fixtures" / "sample_trades_2026-07-01.parquet"
         if sample_path.exists():
             return pl.read_parquet(sample_path)
         raise HTTPException(
             status_code=404,
-            detail=f"Partition for {symbol} on {date_str} not found in normalized layer."
+            detail=f"Partition for {symbol} on date {date_str} not found in normalized or fixture layer. Cross-date fallback is strictly prohibited."
         )
 
 

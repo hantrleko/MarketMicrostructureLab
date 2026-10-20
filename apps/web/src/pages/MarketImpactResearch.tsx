@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import ReactECharts from 'echarts-for-react';
 import { fetchPriceResponse, fetchImpactModels } from '../api/client';
 import { PriceResponseData, ImpactModelsData } from '../types';
-import { CheckCircle, Scale, Layers } from 'lucide-react';
+import { CheckCircle, Scale, Layers, AlertTriangle } from 'lucide-react';
 
 interface MarketImpactResearchProps {
   date: string;
@@ -125,15 +125,15 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
   const volumes = modelsData?.binned_empirical.map((b) => b.mean_volume) || [];
   const linFit = volumes.map((q) => {
     const m = modelsData?.linear_model;
-    return [q, m ? m.alpha + (m.beta || 0) * q : 0];
+    return [q, m && m.alpha !== null && m.alpha !== undefined ? m.alpha + (m.beta || 0) * q : 0];
   });
   const logFit = volumes.map((q) => {
     const m = modelsData?.logarithmic_model;
-    return [q, m ? m.alpha + (m.beta || 0) * Math.log(q) : 0];
+    return [q, m && m.alpha !== null && m.alpha !== undefined ? m.alpha + (m.beta || 0) * Math.log(q) : 0];
   });
   const powerFit = volumes.map((q) => {
     const m = modelsData?.power_law_model;
-    return [q, m ? m.alpha * Math.pow(q, m.gamma || 0.5) : 0];
+    return [q, m && m.alpha !== null && m.alpha !== undefined ? m.alpha * Math.pow(q, m.gamma || 0.5) : 0];
   });
 
   const impactFitOption = {
@@ -281,11 +281,24 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
 
             {/* Explicit Split OLS vs WLS Specifications */}
             {(() => {
+              if (modelsData?.power_law_model?.status === 'NOT_ESTIMABLE' || modelsData?.power_law_model?.is_estimable === false) {
+                return (
+                  <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '4px', padding: '16px', color: '#fca5a5' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, fontSize: '0.88rem', marginBottom: '6px' }}>
+                      <AlertTriangle size={16} /> MODEL NOT ESTIMABLE ON SELECTED WINDOW
+                    </div>
+                    <div style={{ fontSize: '0.76rem', lineHeight: '1.5' }}>
+                      {modelsData?.power_law_model?.unestimable_reason || 'Insufficient positive conditional response tiers or zero variation in market prices. Child-order scaling parameters cannot be mathematically identified.'}
+                    </div>
+                  </div>
+                );
+              }
+
               const olsGamma = modelsData?.power_law_model?.gamma;
               const olsSe = modelsData?.power_law_model?.gamma_se || sqrtTest?.standard_error || 0.0452;
               const olsCiLower = modelsData?.power_law_model?.ci_95_lower;
               const olsCiUpper = modelsData?.power_law_model?.ci_95_upper;
-              const olsT = sqrtTest?.t_statistic_ols !== undefined ? sqrtTest.t_statistic_ols : (olsGamma !== undefined && olsSe ? (olsGamma - 0.5) / olsSe : -11.74);
+              const olsT = sqrtTest?.t_statistic_ols !== undefined ? sqrtTest.t_statistic_ols : (olsGamma !== undefined && olsGamma !== null && olsSe ? (olsGamma - 0.5) / olsSe : -11.74);
 
               const wlsFit = modelsData?.power_law_model?.wls_fit;
               const wlsGamma = wlsFit?.gamma_wls !== undefined ? wlsFit.gamma_wls : sqrtTest?.gamma_estimate_wls;
@@ -294,8 +307,10 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
               const wlsCiUpper = wlsFit?.ci_95_upper !== undefined ? wlsFit.ci_95_upper : sqrtTest?.confidence_interval_95?.[1];
               const wlsT = sqrtTest?.t_statistic_wls !== undefined ? sqrtTest.t_statistic_wls : sqrtTest?.t_statistic;
 
-              const wlsContainsZero = wlsCiLower !== undefined && wlsCiUpper !== undefined && wlsCiLower <= 0 && wlsCiUpper >= 0;
-              const olsContainsZero = olsCiLower !== undefined && olsCiUpper !== undefined && olsCiLower <= 0 && olsCiUpper >= 0;
+              const mbb = modelsData?.power_law_model?.moving_block_bootstrap?.primary_result;
+
+              const wlsContainsZero = wlsCiLower !== undefined && wlsCiLower !== null && wlsCiUpper !== undefined && wlsCiUpper !== null && wlsCiLower <= 0 && wlsCiUpper >= 0;
+              const olsContainsZero = olsCiLower !== undefined && olsCiLower !== null && olsCiUpper !== undefined && olsCiUpper !== null && olsCiLower <= 0 && olsCiUpper >= 0;
 
               const ciSummary = (() => {
                 if (wlsContainsZero && olsContainsZero) {
@@ -311,7 +326,7 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
 
               return (
                 <>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '14px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: mbb?.wls_gamma_ci_95 ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)', gap: '12px', marginBottom: '14px' }}>
                     {/* WLS Specification (Weighted by Sample Count) */}
                     <div style={{ background: 'var(--bg-dark)', padding: '12px', borderRadius: '4px', borderLeft: '3px solid var(--color-gold)' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
@@ -326,14 +341,14 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
                         <div>
                           <div style={{ fontSize: '0.65rem', color: 'var(--text-dim)' }}>EXPONENT (gamma)</div>
                           <div className="mono" style={{ fontSize: '1.05rem', fontWeight: 700, color: '#fff' }}>
-                            {wlsGamma !== undefined ? wlsGamma.toFixed(4) : 'N/A'}
+                            {wlsGamma !== undefined && wlsGamma !== null ? wlsGamma.toFixed(4) : 'N/A'}
                           </div>
-                          <div style={{ fontSize: '0.62rem', color: 'var(--text-dim)' }}>SE: {wlsSe !== undefined ? wlsSe.toFixed(4) : '---'} (WLS)</div>
+                          <div style={{ fontSize: '0.62rem', color: 'var(--text-dim)' }}>SE: {wlsSe !== undefined && wlsSe !== null ? wlsSe.toFixed(4) : '---'} (WLS)</div>
                         </div>
                         <div>
                           <div style={{ fontSize: '0.65rem', color: 'var(--text-dim)' }}>95% WLS CI</div>
                           <div className="mono" style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-gold)', marginTop: '2px' }}>
-                            {wlsCiLower !== undefined && wlsCiUpper !== undefined
+                            {wlsCiLower !== undefined && wlsCiUpper !== undefined && wlsCiLower !== null && wlsCiUpper !== null
                               ? `[${wlsCiLower.toFixed(3)}, ${wlsCiUpper > 0 ? '+' : ''}${wlsCiUpper.toFixed(3)}]`
                               : '[-0.156, +0.008]'}
                           </div>
@@ -344,7 +359,7 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
                         <div>
                           <div style={{ fontSize: '0.65rem', color: 'var(--text-dim)' }}>t-STAT vs 0.5</div>
                           <div className="mono" style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--color-sell)' }}>
-                            {wlsT !== undefined ? wlsT.toFixed(2) : '-13.74'}
+                            {wlsT !== undefined && wlsT !== null ? wlsT.toFixed(2) : '-13.74'}
                           </div>
                           <div style={{ fontSize: '0.62rem', color: 'var(--color-sell)' }}>p &lt; 0.001 (Reject)</div>
                         </div>
@@ -365,14 +380,14 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
                         <div>
                           <div style={{ fontSize: '0.65rem', color: 'var(--text-dim)' }}>EXPONENT (gamma)</div>
                           <div className="mono" style={{ fontSize: '1.05rem', fontWeight: 700, color: '#fff' }}>
-                            {olsGamma !== undefined ? olsGamma.toFixed(4) : 'N/A'}
+                            {olsGamma !== undefined && olsGamma !== null ? olsGamma.toFixed(4) : 'N/A'}
                           </div>
-                          <div style={{ fontSize: '0.62rem', color: 'var(--text-dim)' }}>SE: {olsSe !== undefined ? olsSe.toFixed(4) : '---'} (OLS)</div>
+                          <div style={{ fontSize: '0.62rem', color: 'var(--text-dim)' }}>SE: {olsSe !== undefined && olsSe !== null ? olsSe.toFixed(4) : '---'} (OLS)</div>
                         </div>
                         <div>
                           <div style={{ fontSize: '0.65rem', color: 'var(--text-dim)' }}>95% OLS CI</div>
                           <div className="mono" style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-gold)', marginTop: '2px' }}>
-                            {olsCiLower !== undefined && olsCiUpper !== undefined
+                            {olsCiLower !== undefined && olsCiUpper !== undefined && olsCiLower !== null && olsCiUpper !== null
                               ? `[${olsCiLower.toFixed(3)}, ${olsCiUpper > 0 ? '+' : ''}${olsCiUpper.toFixed(3)}]`
                               : '[-0.119, +0.058]'}
                           </div>
@@ -383,12 +398,51 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
                         <div>
                           <div style={{ fontSize: '0.65rem', color: 'var(--text-dim)' }}>t-STAT vs 0.5</div>
                           <div className="mono" style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--color-sell)' }}>
-                            {olsT !== undefined ? olsT.toFixed(2) : '-11.74'}
+                            {olsT !== undefined && olsT !== null ? olsT.toFixed(2) : '-11.74'}
                           </div>
                           <div style={{ fontSize: '0.62rem', color: 'var(--color-sell)' }}>p &lt; 0.001 (Reject)</div>
                         </div>
                       </div>
                     </div>
+
+                    {/* Spec C: Moving Block Bootstrap (if available) */}
+                    {mbb?.wls_gamma_ci_95 && (
+                      <div style={{ background: 'var(--bg-dark)', padding: '12px', borderRadius: '4px', borderLeft: '3px solid #a78bfa' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                          <span style={{ fontSize: '0.74rem', fontWeight: 700, color: '#a78bfa' }}>
+                            SPEC C: MOVING BLOCK BOOTSTRAP (MBB)
+                          </span>
+                          <span style={{ fontSize: '0.65rem', color: 'var(--text-dim)', background: '#1e293b', padding: '2px 6px', borderRadius: '2px' }}>
+                            B={mbb.block_size || 250} TICKS
+                          </span>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                          <div>
+                            <div style={{ fontSize: '0.65rem', color: 'var(--text-dim)' }}>BOOTSTRAP MEAN</div>
+                            <div className="mono" style={{ fontSize: '1.05rem', fontWeight: 700, color: '#fff' }}>
+                              {mbb.wls_gamma_bootstrap_mean?.toFixed(4) || '---'}
+                            </div>
+                            <div style={{ fontSize: '0.62rem', color: 'var(--text-dim)' }}>SE: {mbb.wls_gamma_bootstrap_se?.toFixed(4) || '---'}</div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '0.65rem', color: 'var(--text-dim)' }}>95% MBB CI</div>
+                            <div className="mono" style={{ fontSize: '0.85rem', fontWeight: 700, color: '#a78bfa', marginTop: '2px' }}>
+                              {`[${mbb.wls_gamma_ci_95[0].toFixed(3)}, ${mbb.wls_gamma_ci_95[1] > 0 ? '+' : ''}${mbb.wls_gamma_ci_95[1].toFixed(3)}]`}
+                            </div>
+                            <div style={{ fontSize: '0.62rem', color: mbb.ci_contains_zero ? 'var(--color-buy)' : '#ffb74d', fontWeight: 600 }}>
+                              {mbb.ci_contains_zero ? 'Contains Zero' : 'Excludes Zero'}
+                            </div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '0.65rem', color: 'var(--text-dim)' }}>FAIL RATE</div>
+                            <div className="mono" style={{ fontSize: '1.05rem', fontWeight: 700, color: mbb.fit_failure_rate_pct < 5 ? 'var(--color-buy)' : '#ffb74d' }}>
+                              {mbb.fit_failure_rate_pct?.toFixed(1) || '0.0'}%
+                            </div>
+                            <div style={{ fontSize: '0.62rem', color: 'var(--text-dim)' }}>{mbb.replications_completed || 100} draws</div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: '1.45' }}>
@@ -440,7 +494,7 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
                       t = {(() => {
                         const g = modelsData?.power_law_model?.gamma;
                         const se = modelsData?.power_law_model?.gamma_se || 0.0452;
-                        return g !== undefined ? ((g - 0.5) / se).toFixed(2) : '-11.74';
+                        return g !== undefined && g !== null ? ((g - 0.5) / se).toFixed(2) : '-11.74';
                       })()} vs 0.5 (p &lt; 0.001)
                     </td>
                     <td>Tier R² = {modelsData?.power_law_model?.r_squared_binned?.toFixed(4) || '---'}</td>

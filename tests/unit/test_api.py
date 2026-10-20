@@ -115,3 +115,16 @@ def test_fixture_fallback_mode(monkeypatch, tmp_path):
     assert len(df) > 0
     assert "price" in df.columns
 
+def test_missing_date_strictly_fails_with_404_no_cross_date_fallback(monkeypatch, tmp_path):
+    """Verify that requesting a missing date strictly raises 404 and NEVER silently falls back to 2026-07-01"""
+    import apps.api.main as api_main
+    empty_dir = tmp_path / "empty_normalized"
+    empty_dir.mkdir()
+    monkeypatch.setattr(api_main, "NORMALIZED_DIR", empty_dir)
+
+    # Request non-existent date
+    with pytest.raises(Exception) as exc_info:
+        api_main.get_trades_df("BTCUSDT", "2026-07-99")
+    assert "404" in str(exc_info.value) or "not found" in str(exc_info.value).lower()
+
+

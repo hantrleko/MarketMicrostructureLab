@@ -23,21 +23,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy python project definition & install dependencies
-COPY pyproject.toml ./
-RUN pip install --no-cache-dir \
-    duckdb \
-    fastapi \
-    "uvicorn[standard]" \
-    httpx \
-    numpy \
-    polars \
-    pyarrow \
-    pydantic \
-    requests \
-    scipy \
-    statsmodels \
-    websockets
+# Copy python project definition & install locked dependencies
+COPY pyproject.toml requirements-lock.txt ./
+RUN pip install --no-cache-dir -r requirements-lock.txt
 
 # Copy application code
 COPY packages/ ./packages/

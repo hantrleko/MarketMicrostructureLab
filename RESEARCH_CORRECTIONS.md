@@ -9,7 +9,7 @@ This document details all methodological, statistical, and engineering correctio
 | Component | V1.0/V1.1 Initial State | V1.1.1 Corrected Methodology | Empirical Impact & Evidence |
 | :--- | :--- | :--- | :--- |
 | **Data License Precision** | Labeled derived data as CC BY-SA 4.0. | Corrected to **CC BY-NC-SA 4.0** per Binance Public Data Terms Sections 3.1 & 4.5. | Fully adheres to Binance Vision NonCommercial copyleft requirements. |
-| **Square-Root Law Interpretation** | Inferred logarithmic saturation and economic mechanisms from rejection of $\gamma = 0.5$. | Explicit 95% Confidence Interval $[-0.1198, 0.1190]$ (includes 0); explicitly limited to child-order tick responses; avoided unverified claims of adverse selection mechanisms. | Rigorously distinguishes child-order price response from meta-order market impact laws. |
+| **Square-Root Law Interpretation** | Inferred logarithmic saturation and economic mechanisms from rejection of $\gamma = 0.5$. | Explicit 95% Confidence Intervals (Tier OLS CI: [-0.1190, 0.0581], WLS CI: [-0.1557, 0.0080], both include 0 and reject 0.5); explicitly limited to child-order tick responses; avoided unverified claims of adverse selection mechanisms. | Rigorously distinguishes child-order price response from meta-order market impact laws. |
 | **Quantile Binning & Tied Volumes** | Continuous quantiles on discrete sizes placed tied 0.00009 BTC trades into arbitrary rank bins. | Replaced with 10 discrete economic tiers isolating the 0.00009 BTC point mass (68.75% of trades) with unique, non-overlapping bounds. | Eliminates artificial splitting of identical trade volumes across bins. |
 | **Hawkes Stability Boundary** | Generalized all results as stable near-critical, ignoring $\rho \ge 1.0$ boundary conditions. | Explicit `SUBCRITICAL_STABLE` vs `SUPERCRITICAL_UNSTABLE` status; added compensator autocorrelation diagnostics and jitter sensitivity sweeps. | Rigorously bounds linear Hawkes point process stationarity conditions. |
 | **Hawkes Slicing Artifact Control** | Single-trade fills at identical timestamps created artificial near-critical excitation. | Implemented **Microsecond-Aggregated Control Model**, showing spectral radius drops from $\sim 0.95$ to $\sim 0.53$ (-45%). | Empirically proves that near-criticality is largely driven by matching engine fill splits. |
@@ -28,17 +28,17 @@ This document details all methodological, statistical, and engineering correctio
 - $R(50) = 0.2747 \text{ bps}$ (Newey-West HAC SE: $0.0023$, $t = 121.5$)
 
 ### 2.2 Nonlinear Model Comparison & Robustness Suite at $k=20$ (2026-07-01)
-- **Linear Model**: $R^2 = 0.0007$, $\hat{\beta} = -0.0678$
-- **Logarithmic Model**: $R^2 = 0.0047$, $\hat{\beta} = -0.0058$
-- **Power-Law Model (Tier Binned OLS)**: $\hat{\gamma} = -0.0305 \pm 0.0452$ (95% CI: [-0.1557, 0.0080])
-- **Power-Law Model (Weighted Least Squares, WLS)**: $\hat{\gamma}_{\text{WLS}} = -0.0739 \pm 0.0418$ ($R^2 = 0.2810$)
-- **Trade-Level HAC Regression**: $\hat{\gamma}_{\text{trade}} = 0.1272$ (HAC SE: $0.0068$, $R^2 = 0.008609$)
+- **Linear Model**: $R^2 = 0.0007$, $\hat{\beta} = -0.0678$ (Classical OLS SE: 0.015343, $t = -4.42$)
+- **Logarithmic Model**: $R^2 = 0.0047$, $\hat{\beta} = -0.0058$ (Classical OLS SE: 0.000399, $t = -14.56$)
+- **Power-Law Model (Tier Binned OLS)**: $\hat{\gamma} = -0.0305 \pm 0.0452$ (95% OLS CI: [-0.1190, 0.0581], $t(\gamma=0.5) = -11.74$, $p < 10^{-15}$)
+- **Power-Law Model (Weighted Least Squares, WLS)**: $\hat{\gamma}_{\text{WLS}} = -0.0739 \pm 0.0418$ (95% WLS CI: [-0.1557, 0.0080], $t(\gamma=0.5) = -13.74$, $p < 10^{-15}$, $R^2 = 0.2810$)
+- **Trade-Level HAC Regression (Positive Response Sub-Sample)**: $\hat{\gamma}_{\text{trade}} = 0.1272$ (Newey-West HAC SE: $0.0068$, Sub-sample $R^2 = 0.008609$; strictly excludes 70,574 zero and adverse price moves, 28.2% of sample)
 - **Out-of-Sample (OOS) Cross-Validation**: Logarithmic Test $R^2 = 0.0031$ (50%/50% chronological split)
 - **Square-Root Law Hypothesis Test (Exploratory Finding)**:
   - $H_0: \gamma = 0.5$
-  - $t = -13.74$
-  - $p\text{-value} = 0.0000e+00$
-  - **Conclusion**: Unweighted tier rejection of $\gamma = 0.5$ is labeled an exploratory finding; WLS and trade-level HAC estimation confirm that child trade size has negligible explanatory power ($R^2 < 0.01$) over subsequent 20-tick price changes.
+  - Tier Binned OLS: $t = -11.74$, $p < 10^{-15}$
+  - Weighted Least Squares (WLS): $t = -13.74$, $p < 10^{-15}$
+  - **Conclusion**: Both unweighted tier OLS and tier-weighted WLS reject $\gamma = 0.5$ for individual child orders; WLS and trade-level HAC estimation confirm that child trade size has negligible explanatory power ($R^2 < 0.01$) over subsequent 20-tick price changes.
 
 ### 2.3 Bivariate Hawkes Process & Control Model (2026-07-01)
 - **Raw Trades Spectral Radius**: $\rho(\Gamma_{\text{raw}}) = 1.0050$ (SUPERCRITICAL_UNSTABLE)

@@ -35,15 +35,29 @@
     "impact_models_k20": {
       "linear_r2": 0.0006876094126229138,
       "linear_beta": -0.06782275520236695,
+      "linear_beta_se": 0.015343229904763375,
+      "linear_beta_t": -4.420370132191728,
       "log_r2": 0.004685190821658081,
       "log_beta": -0.005801612880140896,
+      "log_beta_se": 0.0003985145013373208,
+      "log_beta_t": -14.558097285474053,
       "power_gamma": -0.030475110722505194,
       "power_gamma_se": 0.04518717018516709,
       "confidence_interval_95": [
         -0.15572425678014,
         0.008010819942339334
       ],
+      "confidence_interval_95_ols": [
+        -0.11904196428543269,
+        0.0580917428404223
+      ],
+      "confidence_interval_95_wls": [
+        -0.15572425678014,
+        0.008010819942339334
+      ],
       "t_stat_sqrt_law": -13.738768633033231,
+      "t_stat_sqrt_law_ols": -11.739507221822805,
+      "t_stat_sqrt_law_wls": -13.738768633033231,
       "p_value_sqrt_law": 0.0,
       "is_rejected_sqrt_law": true,
       "power_law_wls": {
@@ -92,7 +106,7 @@
         "sample_start_utc": "2026-07-01T05:49:54.563429Z",
         "sample_end_utc": "2026-07-01T07:48:27.491649Z",
         "sampling_method": "CHRONOLOGICAL_TICK_RESPONSE",
-        "generation_timestamp_utc": "2026-10-20T08:26:07.687012+00:00",
+        "generation_timestamp_utc": "2026-10-20T08:59:03.882722+00:00",
         "status": "EXPLORATORY_RESEARCH"
       },
       "economic_tiers": [
@@ -368,15 +382,29 @@
     "impact_models_k20": {
       "linear_r2": 2.1328861771641172e-05,
       "linear_beta": -0.009428922594454468,
+      "linear_beta_se": 0.030604907089615715,
+      "linear_beta_t": -0.3080853200058795,
       "log_r2": 0.004994333265872064,
       "log_beta": -0.005415669212740511,
+      "log_beta_se": 0.00036307829420633016,
+      "log_beta_t": -14.915981756989565,
       "power_gamma": -0.022363229209126145,
       "power_gamma_se": 0.03863799445644515,
       "confidence_interval_95": [
         -0.13962834379492509,
         -0.004162867788242874
       ],
+      "confidence_interval_95_ols": [
+        -0.09809369834375864,
+        0.05336723992550635
+      ],
+      "confidence_interval_95_wls": [
+        -0.13962834379492509,
+        -0.004162867788242874
+      ],
       "t_stat_sqrt_law": -16.5490931031935,
+      "t_stat_sqrt_law_ols": -13.519418814502973,
+      "t_stat_sqrt_law_wls": -16.5490931031935,
       "p_value_sqrt_law": 0.0,
       "is_rejected_sqrt_law": true,
       "power_law_wls": {
@@ -425,7 +453,7 @@
         "sample_start_utc": "2026-07-02T06:45:37.700916Z",
         "sample_end_utc": "2026-07-02T08:48:36.372819Z",
         "sampling_method": "CHRONOLOGICAL_TICK_RESPONSE",
-        "generation_timestamp_utc": "2026-10-20T08:26:12.367397+00:00",
+        "generation_timestamp_utc": "2026-10-20T08:59:17.784728+00:00",
         "status": "EXPLORATORY_RESEARCH"
       },
       "economic_tiers": [
@@ -701,15 +729,29 @@
     "impact_models_k20": {
       "linear_r2": 2.584700929952888e-07,
       "linear_beta": 0.0006190635309110403,
+      "linear_beta_se": 0.012224926146205099,
+      "linear_beta_t": 0.050639449556364964,
       "log_r2": 0.010218440850531585,
       "log_beta": -0.006749354332427122,
+      "log_beta_se": 0.00041641070549440875,
+      "log_beta_t": -16.208407332884356,
       "power_gamma": -0.006119840010403166,
       "power_gamma_se": 0.049070027324172795,
       "confidence_interval_95": [
         -0.20861999161726608,
         -0.022624565181259035
       ],
+      "confidence_interval_95_ols": [
+        -0.10229709356578184,
+        0.09005741354497551
+      ],
+      "confidence_interval_95_wls": [
+        -0.20861999161726608,
+        -0.022624565181259035
+      ],
       "t_stat_sqrt_law": -12.974724043310818,
+      "t_stat_sqrt_law_ols": -10.314235952362703,
+      "t_stat_sqrt_law_wls": -12.974724043310818,
       "p_value_sqrt_law": 0.0,
       "is_rejected_sqrt_law": true,
       "power_law_wls": {
@@ -758,7 +800,7 @@
         "sample_start_utc": "2026-07-03T05:37:15.255456Z",
         "sample_end_utc": "2026-07-03T08:30:10.032670Z",
         "sampling_method": "CHRONOLOGICAL_TICK_RESPONSE",
-        "generation_timestamp_utc": "2026-10-20T08:26:16.326187+00:00",
+        "generation_timestamp_utc": "2026-10-20T08:59:29.337571+00:00",
         "status": "EXPLORATORY_RESEARCH"
       },
       "economic_tiers": [

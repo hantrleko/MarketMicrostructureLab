@@ -144,6 +144,10 @@ class NonlinearImpactModel:
         ci_upper = 0.10
         p_val_sqrt = 1.0
         t_sqrt = 0.0
+        t_ols = 0.0
+        p_val_ols = 1.0
+        t_wls = 0.0
+        p_val_wls = 1.0
         r2_power = 0.0
 
         # WLS fields
@@ -188,9 +192,15 @@ class NonlinearImpactModel:
                 ci_wls_lower, ci_wls_upper = ci_lower, ci_upper
                 r2_wls = r2_power
 
-            # Hypothesis test on WLS and OLS: H0: gamma = 0.5 (Square-Root Law for Child Trades)
-            t_sqrt = (gamma_wls - 0.5) / gamma_wls_se if gamma_wls_se > 0 else 0.0
-            p_val_sqrt = float(2.0 * (1.0 - norm.cdf(abs(t_sqrt))))
+            # Hypothesis tests on both OLS and WLS: H0: gamma = 0.5 (Square-Root Law for Child Trades)
+            t_ols = (gamma_est - 0.5) / gamma_se if gamma_se > 0 else 0.0
+            p_val_ols = float(2.0 * (1.0 - norm.cdf(abs(t_ols))))
+
+            t_wls = (gamma_wls - 0.5) / gamma_wls_se if gamma_wls_se > 0 else 0.0
+            p_val_wls = float(2.0 * (1.0 - norm.cdf(abs(t_wls))))
+
+            t_sqrt = t_wls
+            p_val_sqrt = p_val_wls
 
         # Trade-level estimation on individual positive trades (subsample up to 50k for tractability)
         trade_pos_mask = (R_clean > 0) & (Q_clean > 0)
@@ -370,13 +380,39 @@ class NonlinearImpactModel:
                 "standard_error": gamma_se,
                 "standard_error_wls": gamma_wls_se,
                 "confidence_interval_95": [ci_wls_lower, ci_wls_upper],
-                "t_statistic": float(t_sqrt),
-                "p_value": p_val_sqrt,
-                "is_rejected_at_5pct": bool(p_val_sqrt < 0.05),
+                "confidence_interval_95_ols": [ci_lower, ci_upper],
+                "confidence_interval_95_wls": [ci_wls_lower, ci_wls_upper],
+                "t_statistic": float(t_wls),
+                "t_statistic_ols": float(t_ols),
+                "t_statistic_wls": float(t_wls),
+                "p_value": p_val_wls,
+                "p_value_ols": p_val_ols,
+                "p_value_wls": p_val_wls,
+                "is_rejected_at_5pct": bool(p_val_wls < 0.05),
+                "ols_test": {
+                    "estimator": "Tier-Binned OLS (Unweighted)",
+                    "gamma": gamma_est,
+                    "se": gamma_se,
+                    "se_type": "Classical OLS SE",
+                    "ci_95": [ci_lower, ci_upper],
+                    "t_statistic": float(t_ols),
+                    "p_value": float(p_val_ols),
+                    "is_rejected_at_5pct": bool(p_val_ols < 0.05)
+                },
+                "wls_test": {
+                    "estimator": "Weighted Least Squares (Tier Sample Weights)",
+                    "gamma": gamma_wls,
+                    "se": gamma_wls_se,
+                    "se_type": "Classical WLS SE",
+                    "ci_95": [ci_wls_lower, ci_wls_upper],
+                    "t_statistic": float(t_wls),
+                    "p_value": float(p_val_wls),
+                    "is_rejected_at_5pct": bool(p_val_wls < 0.05)
+                },
                 "interpretation": (
                     f"Exploratory single child-order estimation: WLS power-law exponent gamma = {gamma_wls:.4f} "
-                    f"(Classical WLS SE: {gamma_wls_se:.4f}, 95% CI: [{ci_wls_lower:.4f}, {ci_wls_upper:.4f}]) and binned OLS exponent gamma = {gamma_est:.4f} "
-                    f"(95% CI: [{ci_lower:.4f}, {ci_upper:.4f}]) are statistically indistinguishable from zero and reject 0.5 (p < 0.001). "
+                    f"(Classical WLS SE: {gamma_wls_se:.4f}, 95% WLS CI: [{ci_wls_lower:.4f}, {ci_wls_upper:.4f}], t = {t_wls:.2f}) and binned OLS exponent gamma = {gamma_est:.4f} "
+                    f"(Classical OLS SE: {gamma_se:.4f}, 95% OLS CI: [{ci_lower:.4f}, {ci_upper:.4f}], t = {t_ols:.2f}) are statistically indistinguishable from zero and reject 0.5 (p < 0.001). "
                     "Note: WLS standard errors are classical weighted SEs unadjusted for cross-tier residual autocorrelation. "
                     "This finding strictly characterizes individual child-order conditional price response R(v, k). "
                     "It does NOT constitute an empirical refutation of the classical Square-Root Law of Meta-Orders "

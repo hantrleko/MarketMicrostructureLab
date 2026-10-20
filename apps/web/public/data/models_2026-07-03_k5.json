@@ -9,7 +9,7 @@
     "sample_start_utc": "2026-07-03T05:37:15.255456Z",
     "sample_end_utc": "2026-07-03T08:30:15.594872Z",
     "sampling_method": "CHRONOLOGICAL_TICK_RESPONSE",
-    "generation_timestamp_utc": "2026-10-20T08:26:43.676964+00:00",
+    "generation_timestamp_utc": "2026-10-20T09:00:21.757789+00:00",
     "status": "EXPLORATORY_RESEARCH"
   },
   "binned_empirical": [
@@ -228,10 +228,48 @@
         -0.20518879915421212,
         -0.036737095575068934
       ],
+      "confidence_interval_95_ols": [
+        -0.13227610485799454,
+        0.06644177096995083
+      ],
+      "confidence_interval_95_wls": [
+        -0.20518879915421212,
+        -0.036737095575068934
+      ],
       "t_statistic": -14.450282792929722,
+      "t_statistic_ols": -10.512568563430607,
+      "t_statistic_wls": -14.450282792929722,
       "p_value": 0.0,
+      "p_value_ols": 0.0,
+      "p_value_wls": 0.0,
       "is_rejected_at_5pct": true,
-      "interpretation": "Exploratory single child-order estimation: WLS power-law exponent gamma = -0.1210 (Classical WLS SE: 0.0430, 95% CI: [-0.2052, -0.0367]) and binned OLS exponent gamma = -0.0329 (95% CI: [-0.1323, 0.0664]) are statistically indistinguishable from zero and reject 0.5 (p < 0.001). Note: WLS standard errors are classical weighted SEs unadjusted for cross-tier residual autocorrelation. This finding strictly characterizes individual child-order conditional price response R(v, k). It does NOT constitute an empirical refutation of the classical Square-Root Law of Meta-Orders (which governs cumulative parent-order execution over hours or days), nor does it directly prove specific unobserved microstructure mechanisms (such as book replenishment or adverse selection ratios)."
+      "ols_test": {
+        "estimator": "Tier-Binned OLS (Unweighted)",
+        "gamma": -0.03291716694402186,
+        "se": 0.050693335670394225,
+        "se_type": "Classical OLS SE",
+        "ci_95": [
+          -0.13227610485799454,
+          0.06644177096995083
+        ],
+        "t_statistic": -10.512568563430607,
+        "p_value": 0.0,
+        "is_rejected_at_5pct": true
+      },
+      "wls_test": {
+        "estimator": "Weighted Least Squares (Tier Sample Weights)",
+        "gamma": -0.12096294736464053,
+        "se": 0.04297237336202633,
+        "se_type": "Classical WLS SE",
+        "ci_95": [
+          -0.20518879915421212,
+          -0.036737095575068934
+        ],
+        "t_statistic": -14.450282792929722,
+        "p_value": 0.0,
+        "is_rejected_at_5pct": true
+      },
+      "interpretation": "Exploratory single child-order estimation: WLS power-law exponent gamma = -0.1210 (Classical WLS SE: 0.0430, 95% WLS CI: [-0.2052, -0.0367], t = -14.45) and binned OLS exponent gamma = -0.0329 (Classical OLS SE: 0.0507, 95% OLS CI: [-0.1323, 0.0664], t = -10.51) are statistically indistinguishable from zero and reject 0.5 (p < 0.001). Note: WLS standard errors are classical weighted SEs unadjusted for cross-tier residual autocorrelation. This finding strictly characterizes individual child-order conditional price response R(v, k). It does NOT constitute an empirical refutation of the classical Square-Root Law of Meta-Orders (which governs cumulative parent-order execution over hours or days), nor does it directly prove specific unobserved microstructure mechanisms (such as book replenishment or adverse selection ratios)."
     }
   },
   "power_law_fit": {
@@ -294,11 +332,88 @@
         -0.20518879915421212,
         -0.036737095575068934
       ],
+      "confidence_interval_95_ols": [
+        -0.13227610485799454,
+        0.06644177096995083
+      ],
+      "confidence_interval_95_wls": [
+        -0.20518879915421212,
+        -0.036737095575068934
+      ],
       "t_statistic": -14.450282792929722,
+      "t_statistic_ols": -10.512568563430607,
+      "t_statistic_wls": -14.450282792929722,
       "p_value": 0.0,
+      "p_value_ols": 0.0,
+      "p_value_wls": 0.0,
       "is_rejected_at_5pct": true,
-      "interpretation": "Exploratory single child-order estimation: WLS power-law exponent gamma = -0.1210 (Classical WLS SE: 0.0430, 95% CI: [-0.2052, -0.0367]) and binned OLS exponent gamma = -0.0329 (95% CI: [-0.1323, 0.0664]) are statistically indistinguishable from zero and reject 0.5 (p < 0.001). Note: WLS standard errors are classical weighted SEs unadjusted for cross-tier residual autocorrelation. This finding strictly characterizes individual child-order conditional price response R(v, k). It does NOT constitute an empirical refutation of the classical Square-Root Law of Meta-Orders (which governs cumulative parent-order execution over hours or days), nor does it directly prove specific unobserved microstructure mechanisms (such as book replenishment or adverse selection ratios)."
+      "ols_test": {
+        "estimator": "Tier-Binned OLS (Unweighted)",
+        "gamma": -0.03291716694402186,
+        "se": 0.050693335670394225,
+        "se_type": "Classical OLS SE",
+        "ci_95": [
+          -0.13227610485799454,
+          0.06644177096995083
+        ],
+        "t_statistic": -10.512568563430607,
+        "p_value": 0.0,
+        "is_rejected_at_5pct": true
+      },
+      "wls_test": {
+        "estimator": "Weighted Least Squares (Tier Sample Weights)",
+        "gamma": -0.12096294736464053,
+        "se": 0.04297237336202633,
+        "se_type": "Classical WLS SE",
+        "ci_95": [
+          -0.20518879915421212,
+          -0.036737095575068934
+        ],
+        "t_statistic": -14.450282792929722,
+        "p_value": 0.0,
+        "is_rejected_at_5pct": true
+      },
+      "interpretation": "Exploratory single child-order estimation: WLS power-law exponent gamma = -0.1210 (Classical WLS SE: 0.0430, 95% WLS CI: [-0.2052, -0.0367], t = -14.45) and binned OLS exponent gamma = -0.0329 (Classical OLS SE: 0.0507, 95% OLS CI: [-0.1323, 0.0664], t = -10.51) are statistically indistinguishable from zero and reject 0.5 (p < 0.001). Note: WLS standard errors are classical weighted SEs unadjusted for cross-tier residual autocorrelation. This finding strictly characterizes individual child-order conditional price response R(v, k). It does NOT constitute an empirical refutation of the classical Square-Root Law of Meta-Orders (which governs cumulative parent-order execution over hours or days), nor does it directly prove specific unobserved microstructure mechanisms (such as book replenishment or adverse selection ratios)."
     }
+  },
+  "power_law_wls": {
+    "name": "Weighted Least Squares (weighted by tier sample count)",
+    "estimator": "Classical WLS (weights = tier count)",
+    "se_type": "Classical WLS SE (unadjusted for cross-tier residual autocorrelation)",
+    "gamma_wls": -0.12096294736464053,
+    "gamma_wls_se": 0.04297237336202633,
+    "ci_95_lower": -0.20518879915421212,
+    "ci_95_upper": -0.036737095575068934,
+    "r_squared_wls": 0.49760305759836077
+  },
+  "trade_level_fit": {
+    "name": "Trade-Level Log-Log HAC (Positive Response Sub-Sample: R > 0)",
+    "estimator": "OLS with Newey-West HAC covariance",
+    "sample_type": "POSITIVE_RESPONSE_SUBSAMPLE",
+    "conditioning": "Strictly conditional on positive signed price displacement (R_i > 0)",
+    "caveat": "Evaluated strictly on the conditional positive-response sub-sample (R_i > 0); cannot serve as an unconditional full-sample validation because zero and adverse price moves (161,541 trades, 64.6% of sample) are dropped by the log transform.",
+    "gamma_trade": 0.1983644750760101,
+    "gamma_trade_se": 0.004398895308905678,
+    "r_squared_trade": 0.02845575697518632,
+    "positive_trades_count": 88454,
+    "zero_trades_count": 147394,
+    "negative_trades_count": 14147,
+    "total_trades_count": 249995,
+    "positive_trades_pct": 35.382307646152924
+  },
+  "out_of_sample_validation": {
+    "description": "50% chronological split of analyzed window",
+    "train_start_utc": "2026-07-03T05:37:15.255456Z",
+    "train_end_utc": "2026-07-03T07:08:48.988390Z",
+    "test_start_utc": "2026-07-03T07:08:48.988390Z",
+    "test_end_utc": "2026-07-03T08:30:15.594872Z",
+    "train_observations": 124997,
+    "test_observations": 124998,
+    "train_window": "2026-07-03T05:37:15.255456Z - 2026-07-03T07:08:48.988390Z",
+    "test_window": "2026-07-03T07:08:48.988390Z - 2026-07-03T08:30:15.594872Z",
+    "train_r2": 0.0016306681120575872,
+    "test_r2": 0.002421394585995107,
+    "log_model_oos_r2": 0.002421394585995107
   },
   "time_chunk_stability": [
     {

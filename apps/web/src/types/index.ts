@@ -215,9 +215,35 @@ export interface ModelFitStats {
     standard_error: number;
     standard_error_wls?: number;
     confidence_interval_95?: [number, number];
+    confidence_interval_95_ols?: [number, number];
+    confidence_interval_95_wls?: [number, number];
     t_statistic: number;
+    t_statistic_ols?: number;
+    t_statistic_wls?: number;
     p_value: number;
+    p_value_ols?: number;
+    p_value_wls?: number;
     is_rejected_at_5pct: boolean;
+    ols_test?: {
+      estimator: string;
+      gamma: number;
+      se: number;
+      se_type: string;
+      ci_95: [number, number];
+      t_statistic: number;
+      p_value: number;
+      is_rejected_at_5pct: boolean;
+    };
+    wls_test?: {
+      estimator: string;
+      gamma: number;
+      se: number;
+      se_type: string;
+      ci_95: [number, number];
+      t_statistic: number;
+      p_value: number;
+      is_rejected_at_5pct: boolean;
+    };
     interpretation: string;
   };
 }

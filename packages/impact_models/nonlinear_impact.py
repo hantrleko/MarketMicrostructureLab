@@ -739,10 +739,12 @@ class NonlinearImpactModel:
             try:
                 q_tr = Q_clean[trade_pos_mask]
                 r_tr = R_clean[trade_pos_mask]
+                stride_step = 1
                 if len(q_tr) > 50000:
-                    step = len(q_tr) // 50000
-                    q_tr = q_tr[::step]
-                    r_tr = r_tr[::step]
+                    stride_step = int(len(q_tr) // 50000)
+                    q_tr = q_tr[::stride_step]
+                    r_tr = r_tr[::stride_step]
+                reg_obs = int(len(q_tr))
                 X_tr = sm.add_constant(np.log(q_tr))
                 res_tr = sm.OLS(np.log(r_tr), X_tr).fit(cov_type="HAC", cov_kwds={"maxlags": min(k, 30)})
                 g_tr = float(res_tr.params[1]) if len(res_tr.params) > 1 else None
@@ -766,7 +768,9 @@ class NonlinearImpactModel:
                         "p_value_trade": p_tr,
                         "df_resid": df_tr,
                         "confidence_interval_95": ci_tr,
-                        "is_significant_5pct": bool(p_tr is not None and p_tr < 0.05)
+                        "is_significant_5pct": bool(p_tr is not None and p_tr < 0.05),
+                        "regression_observations": reg_obs,
+                        "sampling_stride": stride_step
                     }
                 else:
                     trade_level_status = "FIT_FAILED"
@@ -1177,7 +1181,8 @@ class NonlinearImpactModel:
                 "sample_type": "POSITIVE_RESPONSE_SUBSAMPLE",
                 "conditioning": "Strictly conditional on positive signed price displacement (R_i > 0)",
                 "caveat": (
-                    "Evaluated strictly on the conditional positive-response sub-sample (R_i > 0); "
+                    f"Evaluated on {trade_level_dict.get('regression_observations', trade_pos_count):,} systematically sampled trades "
+                    f"(stride={trade_level_dict.get('sampling_stride', 1)} from {trade_pos_count:,} positive price displacement trades, {pos_pct:.1f}% of sample); "
                     "cannot serve as an unconditional full-sample validation because zero and adverse price moves "
                     f"({trade_zero_count + trade_neg_count:,} trades, {(100.0 - pos_pct):.1f}% of sample) "
                     "are dropped by the log transform."
@@ -1190,6 +1195,8 @@ class NonlinearImpactModel:
                 "df_resid": trade_level_dict.get("df_resid"),
                 "confidence_interval_95": trade_level_dict.get("confidence_interval_95"),
                 "is_significant_5pct": trade_level_dict.get("is_significant_5pct"),
+                "regression_observations": trade_level_dict.get("regression_observations", trade_pos_count),
+                "sampling_stride": trade_level_dict.get("sampling_stride", 1),
                 "positive_trades_count": trade_pos_count,
                 "zero_trades_count": trade_zero_count,
                 "negative_trades_count": trade_neg_count,

@@ -704,7 +704,21 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
                   )}
                   {modelsData?.power_law_model?.trade_level_fit && modelsData.power_law_model.trade_level_fit.gamma_trade !== 0 && (
                     <tr>
-                      <td style={{ color: '#38bdf8' }}>Power Law (Trade-Level, R &gt; 0 Sub-Sample)*</td>
+                      <td style={{ color: '#38bdf8' }}>
+                        Power Law (Trade-Level HAC Regression, R &gt; 0)*
+                        <div style={{ fontSize: '0.62rem', color: 'var(--text-dim)', marginTop: '2px' }}>
+                          {(() => {
+                            const tf = modelsData?.power_law_model?.trade_level_fit;
+                            const regCnt = tf?.regression_observations || tf?.positive_trades_count || 0;
+                            const posCnt = tf?.positive_trades_count || 0;
+                            const stride = tf?.sampling_stride || 1;
+                            if (stride > 1 && posCnt > 0) {
+                              return `${regCnt.toLocaleString()} trades evaluated (stride=${stride} from ${posCnt.toLocaleString()} positive trades)`;
+                            }
+                            return `${posCnt.toLocaleString()} positive trades evaluated`;
+                          })()}
+                        </div>
+                      </td>
                       <td style={{ color: '#38bdf8' }}>
                         gamma = {modelsData.power_law_model.trade_level_fit.gamma_trade.toFixed(4)}
                       </td>
@@ -775,6 +789,9 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
                 const excludedCount = zeroCount + negCount;
                 const posPct = tradeFit?.positive_trades_pct ?? 0;
                 const excludedPct = totalTrades > 0 ? (100.0 - posPct) : 0;
+                const regObs = tradeFit?.regression_observations ?? tradeFit?.positive_trades_count ?? 0;
+                const posTrades = tradeFit?.positive_trades_count ?? 0;
+                const stride = tradeFit?.sampling_stride ?? 1;
 
                 const excludedText = excludedCount > 0
                   ? `${excludedCount.toLocaleString()} zero and adverse tick responses (${excludedPct.toFixed(2)}% of ${totalTrades.toLocaleString()} sampled trades on ${date} at k=${horizon}; ${posPct.toFixed(2)}% positive trades kept)`
@@ -783,7 +800,7 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
                 return (
                   <div style={{ fontSize: '0.71rem', color: 'var(--text-dim)', marginTop: '8px', lineHeight: '1.4' }}>
                     • <strong>Standard Error Specifications:</strong> Explicitly designated by row above. WLS standard errors are classical weighted SEs, unadjusted for cross-tier residual autocorrelation; Trade-Level and Price Response R(k) standard errors employ Newey-West HAC robust covariance.<br />
-                    • <strong>*Trade-Level Sub-Sample:</strong> Evaluated strictly conditional on positive price displacements (R &gt; 0). Excludes {excludedText} which are dropped by ln(R). This is an exploratory sub-sample check, not an unconditional full-sample validation.<br />
+                    • <strong>*Trade-Level Sub-Sample vs. Regression Accounting:</strong> Evaluated strictly on {regObs.toLocaleString()} systematically sampled trades {stride > 1 ? `(stride=${stride})` : ''} out of {posTrades.toLocaleString()} total positive price displacement trades ({posPct.toFixed(2)}% of the {totalTrades.toLocaleString()} trade sample). Excludes {excludedText} which are dropped by ln(R). This is an exploratory conditional sub-sample check, not an unconditional full-sample validation.<br />
                     • <strong>OOS Validation:</strong> Evaluated on consecutive 50% chronological halves of active estimation window.
                   </div>
                 );
@@ -1049,7 +1066,7 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
                 <AlertTriangle size={13} color="var(--color-gold)" /> Methodological Interpretation: Why Power-Law OOS R² &lt; 0 at Tick Level
               </div>
               <p style={{ margin: '0 0 6px 0' }}>
-                &bull; <strong>Asymmetry between Meta-Orders and Single Child Trades:</strong> The Square-Root Law of Market Impact (\(I(Q) \approx Y \sigma \sqrt&#123;Q/V&#125;\)) is a structural equilibrium theorem established for cumulative institutional <em>parent meta-orders</em> sliced into thousands of executions over hours or days (Bouchaud et al., 2009; Gatheral, 2010). In contrast, single child-order price response \(\mathcal&#123;R&#125;(v, k)\) at the tick level reflects instantaneous liquidity hole depletion and transient quote replenishment.
+                &bull; <strong>Asymmetry between Meta-Orders and Single Child Trades:</strong> The Square-Root Law of Market Impact (\(I(Q) \approx Y \sigma \sqrt&#123;Q/V&#125;\)) is an empirical scaling relationship established for cumulative institutional <em>parent meta-orders</em> sliced into thousands of executions over hours or days (Bouchaud et al., 2009; Gatheral, 2010); it is not an axiomatic law or universal structural equilibrium theorem. In contrast, single child-order price response \(\mathcal&#123;R&#125;(v, k)\) at the tick level reflects instantaneous liquidity hole depletion and transient quote replenishment.
               </p>
               <p style={{ margin: 0 }}>
                 &bull; <strong>Out-of-Sample Overfitting on Tick Variance:</strong> Fitting a power-law exponent directly across noisy tick-level executions produces out-of-sample \(R^2 &lt; 0\) because idiosyncratic trade arrival order and discrete point-mass sizing (e.g. 69.5% minimum-lot trades) destabilize unconstrained power curves on unseen test sets. Both specifications confirm that single child-order predictive power is bounded near zero (\(R^2 &lt; 0.02\)).

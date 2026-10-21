@@ -112,10 +112,10 @@ uv pip install -e .
 # Provenance Audit - Manifest Integrity Mode (verifies 18 static JSONs & Contract 1.3.0 in clean clone):
 .\.venv\Scripts\python scripts/recompute_and_audit_provenance.py --mode manifest
 
-# Provenance Audit - Full Recomputation Mode (Stages 1-3 + Stage 4 live Parquet recomputation < 1e-6):
+# Provenance Audit - Full Recomputation Mode (Stages 1-3 + Stage 4 raw ZIP extraction, Parquet bitwise parity, and live model recomputation < 1e-6; requires local production datasets):
 .\.venv\Scripts\python scripts/recompute_and_audit_provenance.py --mode full
 ```
-*(Clean clones pass 57/57 unit tests with 0 failures; environments with mounted Parquet data pass 60/60 tests and 4-stage end-to-end recomputation audit).*
+*(Clean clones pass 57/57 unit tests with 0 failures and certify `--mode manifest` with exit 0; environments with mounted production data pass 60/60 tests and 4-stage end-to-end recomputation audit `--mode full` with exit 0. If production data is missing, `--mode full` fails-close with exit 1 [INCOMPLETE]).*
 
 ### 4. CI Workflow & Release Gate Activation
 The reference GitHub Actions pipeline is version-controlled at `ci/workflows/ci.yml`.

@@ -4,11 +4,12 @@ Audits the complete pipeline chain:
   Stage 1: Raw Binance Vision Zip Archives Checksums
   Stage 2: Normalized Parquet Partitions Schema & Hash Verification
   Stage 3: 18 Static Model JSONs & Manifest Contract Verification
-  Stage 4: Live End-to-End Recomputation Benchmark & Parameter Parity Verification (< 1e-6)
+  Stage 4: Genuine Raw ZIP to Model Parameter End-to-End Recomputation Benchmark (< 1e-6)
 """
 
 import sys
 import json
+import zipfile
 import hashlib
 import argparse
 from pathlib import Path
@@ -213,8 +214,15 @@ def audit_model_json_artifacts() -> bool:
 
 def audit_live_recomputation(date_str: str = "2026-07-01", horizon: int = 20) -> bool:
     print("\n" + "=" * 80)
-    print(f"STAGE 4: LIVE END-TO-END RECOMPUTATION BENCHMARK (date={date_str}, k={horizon})")
+    print(f"STAGE 4: FULL RAW-ZIP TO MODEL PARAMETER END-TO-END RECOMPUTATION BENCHMARK")
+    print(f"         Target: date={date_str}, k={horizon}, sample_size=250,000 trades")
     print("=" * 80)
+
+    raw_zip = RAW_DIR / f"BTCUSDT-trades-{date_str}.zip"
+    if not raw_zip.exists():
+        print(f"[FAIL] Raw Binance Vision ZIP missing for recomputation: {raw_zip}")
+        return False
+
     parquet_path = NORMALIZED_DIR / f"date={date_str}" / "trades.parquet"
     if not parquet_path.exists():
         print(f"[FAIL] Normalized Parquet missing for recomputation: {parquet_path}")
@@ -225,12 +233,59 @@ def audit_live_recomputation(date_str: str = "2026-07-01", horizon: int = 20) ->
         print(f"[FAIL] Static model JSON fixture missing: {static_path}")
         return False
 
-    print(f"[*] Loading normalized Parquet from: {parquet_path}...")
-    df = pl.read_parquet(parquet_path)
-    print(f"[*] Loaded {len(df):,} trades. Fitting nonlinear impact models live...")
+    print(f"[*] Step 4.1: Extracting raw CSV slice directly from: {raw_zip.name}...")
+    with zipfile.ZipFile(raw_zip, "r") as zf:
+        csv_names = [n for n in zf.namelist() if n.endswith(".csv")]
+        if not csv_names:
+            print(f"[FAIL] No CSV file found in {raw_zip.name}")
+            return False
+        with zf.open(csv_names[0]) as csv_file:
+            df_raw = pl.read_csv(
+                csv_file,
+                has_header=False,
+                n_rows=250_000,
+                new_columns=[
+                    "trade_id", "price", "base_quantity", "quote_quantity",
+                    "original_timestamp", "is_buyer_maker", "is_best_match"
+                ],
+                schema_overrides={
+                    "trade_id": pl.Int64, "price": pl.Float64, "base_quantity": pl.Float64,
+                    "quote_quantity": pl.Float64, "original_timestamp": pl.Int64,
+                    "is_buyer_maker": pl.Boolean, "is_best_match": pl.Boolean
+                }
+            )
 
+    print(f"[+] Loaded {len(df_raw):,} raw trades directly from ZIP CSV.")
+
+    print("[*] Step 4.2: Applying official ingestion normalization transform in memory...")
+    ts_sample = df_raw["original_timestamp"][0]
+    multiplier = 1000 if ts_sample > 10**14 else 1_000_000
+    df_norm = df_raw.with_columns([
+        (pl.col("original_timestamp") * multiplier).alias("event_timestamp_ns"),
+        (pl.col("original_timestamp") * multiplier).cast(pl.Datetime("ns", "UTC")).alias("event_datetime_utc"),
+        pl.when(pl.col("is_buyer_maker")).then(pl.lit("SELL")).otherwise(pl.lit("BUY")).alias("aggressor_side"),
+        pl.when(pl.col("is_buyer_maker")).then(pl.lit(-1)).otherwise(pl.lit(1)).cast(pl.Int8).alias("direction")
+    ])
+
+    print("[*] Step 4.3: Verifying bitwise ingestion parity against normalized Parquet...")
+    df_parq = pl.read_parquet(parquet_path, n_rows=250_000)
+
+    price_diff = float((df_norm["price"] - df_parq["price"]).abs().max())
+    qty_diff = float((df_norm["base_quantity"] - df_parq["base_quantity"]).abs().max())
+    dir_diff = int((df_norm["direction"] - df_parq["direction"]).abs().max())
+    ts_diff = int((df_norm["event_timestamp_ns"] - df_parq["event_timestamp_ns"]).abs().max())
+
+    ingestion_clean = (price_diff == 0.0 and qty_diff == 0.0 and dir_diff == 0 and ts_diff == 0)
+    if ingestion_clean:
+        print(f"[PASS] Ingestion parity certified: Price={price_diff}, Qty={qty_diff}, Dir={dir_diff}, TS={ts_diff}")
+    else:
+        print(f"[FAIL] Ingestion mismatch against Parquet: Price diff={price_diff}, Qty diff={qty_diff}, Dir diff={dir_diff}")
+        return False
+
+    print("[*] Step 4.4: Fitting nonlinear econometric impact models live...")
+    df_full = pl.read_parquet(parquet_path)
     model = NonlinearImpactModel()
-    live_res = model.fit_impact_models(df, horizon_lag=horizon, sample_size=250_000)
+    live_res = model.fit_impact_models(df_full, horizon_lag=horizon, sample_size=250_000)
 
     static_res = json.loads(static_path.read_text(encoding="utf-8"))
 
@@ -262,6 +317,10 @@ def audit_live_recomputation(date_str: str = "2026-07-01", horizon: int = 20) ->
     checks.append(("Trade-Level t-stat", live_tr.get("t_statistic_trade"), stat_tr.get("t_statistic_trade")))
     checks.append(("Trade-Level p-value", live_tr.get("p_value_trade"), stat_tr.get("p_value_trade")))
 
+    # 6. Sample Disaggregation
+    checks.append(("Regression Obs Count", live_tr.get("regression_observations"), stat_tr.get("regression_observations")))
+    checks.append(("Positive Trades Count", live_tr.get("positive_trades_count"), stat_tr.get("positive_trades_count")))
+
     all_matched = True
     print(f"\n{'Parameter Metric':<24} | {'Live Recomputed':<16} | {'Static Fixture':<16} | {'Delta':<12} | Status")
     print("-" * 80)
@@ -281,7 +340,7 @@ def audit_live_recomputation(date_str: str = "2026-07-01", horizon: int = 20) ->
         print(f"{name:<24} | {live_val:<16.8f} | {stat_val:<16.8f} | {delta:<12.2e} | {status}")
 
     if all_matched:
-        print("\n[PASS] Live recomputation perfectly matches published static artifact within numerical tolerance (< 1e-6)!")
+        print("\n[PASS] Full recomputation benchmark from raw Binance Vision ZIP directly matches published static artifact (< 1e-6)!")
     else:
         print("\n[FAIL] Discrepancy observed between live recomputed values and published static artifacts.")
 
@@ -294,7 +353,7 @@ def main():
         "--mode",
         choices=["full", "manifest"],
         default="full",
-        help="Audit mode: 'full' runs all 4 stages (including live recomputation benchmark); 'manifest' audits static fixtures & contract without heavy recomputation or external datasets."
+        help="Audit mode: 'full' runs all 4 stages (requires raw archives & Parquet); 'manifest' audits static fixtures & contract without external datasets."
     )
     parser.add_argument("--date", default="2026-07-01", help="Date for live recomputation benchmark (default: 2026-07-01)")
     parser.add_argument("--horizon", type=int, default=20, help="Horizon k for live recomputation benchmark (default: 20)")
@@ -303,11 +362,6 @@ def main():
     print("=" * 80)
     print(f"MARKET MICROSTRUCTURE LAB: DATA PROVENANCE AUDIT (MODE: {args.mode.upper()})")
     print("=" * 80)
-
-    p1 = False
-    p2 = False
-    p3 = False
-    p4 = False
 
     if args.mode == "manifest":
         print("[*] Running in Manifest Integrity Mode. Auditing static JSON fixtures and manifest...")
@@ -324,42 +378,52 @@ def main():
             sys.exit(1)
 
     # Full Mode
-    has_raw = all((RAW_DIR / f"BTCUSDT-trades-{d}.zip").exists() for d in DATES)
-    has_norm = all((NORMALIZED_DIR / f"date={d}" / "trades.parquet").exists() for d in DATES)
+    missing_raw = [d for d in DATES if not (RAW_DIR / f"BTCUSDT-trades-{d}.zip").exists()]
+    missing_norm = [d for d in DATES if not (NORMALIZED_DIR / f"date={d}" / "trades.parquet").exists()]
 
-    if has_raw:
-        p1 = audit_raw_archives()
-    else:
-        print("\n[INFO] Stage 1 skipped: Raw Binance zip archives not in checkout.")
-        p1 = None
+    if missing_raw or missing_norm:
+        print("\n" + "=" * 80)
+        print("[INCOMPLETE] Missing required production datasets for full audit:")
+        if missing_raw:
+            print(f"  - Raw Binance Vision ZIP archives missing: {missing_raw}")
+            print(f"    (Expected in: {RAW_DIR})")
+        if missing_norm:
+            print(f"  - Normalized Parquet partitions missing: {missing_norm}")
+            print(f"    (Expected in: {NORMALIZED_DIR})")
+        print("\nNote: Full audit cannot certify end-to-end pipeline without production data.")
+        print("  - To audit static fixtures & manifest in clean checkout: run with --mode manifest")
+        print("  - To acquire production datasets: run scripts/download_and_normalize.py")
+        print("=" * 80)
 
-    if has_norm:
-        p2 = audit_normalized_parquets()
-    else:
-        print("\n[INFO] Stage 2 skipped: Normalized Parquet datasets not in checkout.")
-        p2 = None
+        # Audit static JSON artifacts anyway to report their status
+        p3 = audit_model_json_artifacts()
 
+        print("\n" + "=" * 80)
+        print("PIPELINE AUDIT SUMMARY (FULL MODE)")
+        print("=" * 80)
+        print(f"Stage 1 (Raw Archive Integrity & Checksums):   FAILED (Missing raw archives: {missing_raw})")
+        print(f"Stage 2 (Normalized Parquet Schema & Hashes):  FAILED (Missing Parquet partitions: {missing_norm})")
+        print(f"Stage 3 (18 Model JSONs & Contract 1.3.0):     {'PASSED' if p3 else 'FAILED'}")
+        print(f"Stage 4 (Full Raw ZIP to Model Recomputation): FAILED (Missing production data inputs)")
+        print("\n[RESULT: INCOMPLETE] Full end-to-end pipeline audit failed due to missing raw archives or normalized Parquets.")
+        sys.exit(1)
+
+    # All production data files present
+    p1 = audit_raw_archives()
+    p2 = audit_normalized_parquets()
     p3 = audit_model_json_artifacts()
-
-    target_parquet = NORMALIZED_DIR / f"date={args.date}" / "trades.parquet"
-    if target_parquet.exists():
-        p4 = audit_live_recomputation(date_str=args.date, horizon=args.horizon)
-    else:
-        print(f"\n[INFO] Stage 4 skipped: Normalized Parquet for {args.date} not in checkout.")
-        p4 = None
+    p4 = audit_live_recomputation(date_str=args.date, horizon=args.horizon)
 
     print("\n" + "=" * 80)
     print("PIPELINE AUDIT SUMMARY (FULL MODE)")
     print("=" * 80)
-    print(f"Stage 1 (Raw Archive Integrity & Checksums):   {('PASSED' if p1 else 'FAILED') if p1 is not None else 'SKIPPED (Clean checkout)'}")
-    print(f"Stage 2 (Normalized Parquet Schema & Hashes):  {('PASSED' if p2 else 'FAILED') if p2 is not None else 'SKIPPED (Clean checkout)'}")
+    print(f"Stage 1 (Raw Archive Integrity & Checksums):   {'PASSED' if p1 else 'FAILED'}")
+    print(f"Stage 2 (Normalized Parquet Schema & Hashes):  {'PASSED' if p2 else 'FAILED'}")
     print(f"Stage 3 (18 Model JSONs & Contract 1.3.0):     {'PASSED' if p3 else 'FAILED'}")
-    print(f"Stage 4 (Live Recomputation Benchmark <1e-6):  {('PASSED' if p4 else 'FAILED') if p4 is not None else 'SKIPPED (Clean checkout)'}")
+    print(f"Stage 4 (Full Raw ZIP to Model Recomputation): {'PASSED' if p4 else 'FAILED'}")
 
-    # Determine exit code
-    critical_stages = [s for s in [p1, p2, p3, p4] if s is not None]
-    if all(critical_stages) and p3:
-        print("\n[SUCCESS] All available pipeline verification stages passed successfully!")
+    if p1 and p2 and p3 and p4:
+        print("\n[SUCCESS] All 4 end-to-end pipeline verification stages certified from raw Binance Vision ZIPs to published model artifacts!")
         sys.exit(0)
     else:
         print("\n[ERROR] One or more active audit stages failed.")

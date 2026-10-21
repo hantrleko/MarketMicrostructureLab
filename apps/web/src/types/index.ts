@@ -222,6 +222,8 @@ export interface ModelFitStats {
     df_resid?: number | null;
     confidence_interval_95?: [number, number] | null;
     is_significant_5pct?: boolean;
+    regression_observations?: number;
+    sampling_stride?: number;
     positive_trades_count?: number;
     zero_trades_count?: number;
     negative_trades_count?: number;

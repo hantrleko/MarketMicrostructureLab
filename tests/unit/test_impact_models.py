@@ -148,14 +148,22 @@ def test_moving_block_bootstrap_and_purged_oos_on_valid_data():
     model = NonlinearImpactModel()
     fit = model.fit_impact_models(df, horizon_lag=10)
 
-    # 1. Verify Purged OOS
+    # 1. Verify Purged OOS & Dual Comparison
     oos = fit["out_of_sample_validation"]
     assert oos["purging_applied"] is True
     assert oos["purged_boundary_trades"] == 10
     assert oos["model_specification"].startswith("Logarithmic Specification")
     assert oos["is_power_law_oos"] is False
+    assert "power_law_oos_r2" in oos
 
-    # 2. Verify Moving Block Bootstrap
+    # 2. Verify Walk-Forward Purged Evaluation
+    assert "walk_forward_validation" in fit
+    wf = fit["walk_forward_validation"]
+    assert wf["folds_count"] > 0
+    assert "mean_log_oos_r2" in wf
+    assert wf["purged_trades_per_boundary"] == 10
+
+    # 3. Verify Moving Block Bootstrap
     mbb = fit["moving_block_bootstrap"]
     assert "block_sizes_evaluated" in mbb
     assert 250 in mbb["block_sizes_evaluated"]

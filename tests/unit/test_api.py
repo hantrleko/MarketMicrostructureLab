@@ -128,3 +128,106 @@ def test_missing_date_strictly_fails_with_404_no_cross_date_fallback(monkeypatch
     assert "404" in str(exc_info.value) or "not found" in str(exc_info.value).lower()
 
 
+def test_unsupported_symbol_returns_422_no_crosstalk():
+    """Requesting an unsupported symbol (e.g. ETHUSDT) must return HTTP 422 with UNSUPPORTED_SYMBOL, never BTCUSDT data."""
+    resp = client.get("/api/v1/flow/buckets?symbol=ETHUSDT&date=2026-07-01")
+    assert resp.status_code == 422
+    data = resp.json()
+    assert "error" in data
+    assert data["error"]["code"] == "UNSUPPORTED_SYMBOL"
+    assert "ETHUSDT" in data["error"]["message"]
+    assert "request_id" in data["error"]
+
+
+def test_missing_date_returns_404_dataset_not_found():
+    """Requesting an unavailable date (e.g. 2026-07-99) must return HTTP 404 with DATASET_NOT_FOUND."""
+    resp = client.get("/api/v1/flow/buckets?symbol=BTCUSDT&date=2026-07-99")
+    assert resp.status_code == 404
+    data = resp.json()
+    assert "error" in data
+    assert data["error"]["code"] == "DATASET_NOT_FOUND"
+    assert "request_id" in data["error"]
+
+
+def test_production_fail_close_blocks_fixtures(monkeypatch, tmp_path):
+    """When MML_ENV=production, missing normalized datasets must fail-close (404) and never fallback to fixtures."""
+    import apps.api.main as api_main
+    empty_dir = tmp_path / "empty_normalized"
+    empty_dir.mkdir()
+    monkeypatch.setattr(api_main, "NORMALIZED_DIR", empty_dir)
+    monkeypatch.setenv("MML_ENV", "production")
+
+    resp = client.get("/api/v1/flow/buckets?symbol=BTCUSDT&date=2026-07-01")
+    assert resp.status_code == 404
+    data = resp.json()
+    assert "error" in data
+    assert data["error"]["code"] == "DATASET_NOT_FOUND"
+    assert data["error"]["details"].get("mode") == "PRODUCTION_FAIL_CLOSE"
+
+
+def test_content_identity_mismatch_raises_500():
+    """If a dataset content has mismatched symbols or dates, it must raise 500 DATA_IDENTITY_MISMATCH."""
+    import polars as pl
+    from packages.governance.manifest import DataManifestManager, ManifestEntry
+
+    mgr = DataManifestManager()
+    dummy_entry = ManifestEntry(
+        symbol="BTCUSDT",
+        date="2026-07-01",
+        source_type="TEST",
+        file_path="dummy.parquet",
+        row_count=1,
+        sha256="abc",
+        min_event_time_utc="2026-07-01 00:00:00",
+        max_event_time_utc="2026-07-01 00:00:00",
+        min_timestamp_ns="0",
+        max_timestamp_ns="0",
+        is_fixture=False,
+        provenance="TEST"
+    )
+
+    # Symbol mismatch
+    mismatched_df = pl.DataFrame({
+        "symbol": ["ETHUSDT"],
+        "event_time_utc": ["2026-07-01 00:00:00"]
+    })
+    with pytest.raises(Exception) as exc_info:
+        mgr.validate_content_identity(mismatched_df, "BTCUSDT", "2026-07-01", dummy_entry)
+    assert exc_info.value.code == "DATA_IDENTITY_MISMATCH"
+
+    # Date mismatch
+    mismatched_date_df = pl.DataFrame({
+        "symbol": ["BTCUSDT"],
+        "event_time_utc": ["2026-07-02 00:00:00"]
+    })
+    with pytest.raises(Exception) as exc_info:
+        mgr.validate_content_identity(mismatched_date_df, "BTCUSDT", "2026-07-01", dummy_entry)
+    assert exc_info.value.code == "DATA_IDENTITY_MISMATCH"
+
+
+def test_nanosecond_precision_and_string_serialization():
+    """Verify that trade_id and event_timestamp_ns are serialized as strings preserving 64-bit int precision."""
+    resp = client.get("/api/v1/replay/window?symbol=BTCUSDT&date=2026-07-01&limit=10")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "trades" in data
+    assert len(data["trades"]) > 0
+    trade = data["trades"][0]
+    # nanosecond timestamp must be a string and have 19 digits (e.g. 1782864000...)
+    assert isinstance(trade["event_timestamp_ns"], str)
+    assert len(trade["event_timestamp_ns"]) >= 19
+    int_ns = int(trade["event_timestamp_ns"])
+    assert str(int_ns) == trade["event_timestamp_ns"]
+
+    # trade_id must be a string to avoid IEEE 754 truncation in JS
+    assert isinstance(trade["trade_id"], str)
+    int_id = int(trade["trade_id"])
+    assert str(int_id) == trade["trade_id"]
+
+    # identity block must be present
+    assert "identity" in data
+    assert data["identity"]["symbol"] == "BTCUSDT"
+    assert data["identity"]["date"] == "2026-07-01"
+
+
+

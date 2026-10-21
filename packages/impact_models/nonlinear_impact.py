@@ -393,6 +393,7 @@ class NonlinearImpactModel:
 
         train_r2_val = 0.0
         oos_r2_log = 0.0
+        oos_r2_power = 0.0
         if train_obs >= 20 and test_obs >= 20 and np.var(q_train) > 1e-12 and np.var(r_train) > 1e-12 and np.var(r_test) > 1e-12:
             try:
                 res_tr_log = sm.OLS(r_train, sm.add_constant(np.log(q_train))).fit()
@@ -401,8 +402,55 @@ class NonlinearImpactModel:
                 ss_tot = np.sum((r_test - np.mean(r_test)) ** 2)
                 oos_r2_log = float(max(-1.0, 1.0 - (ss_res / ss_tot))) if ss_tot > 0 else 0.0
                 train_r2_val = float(res_tr_log.rsquared)
+
+                # Power law out-of-sample comparison on identical test set targets
+                if is_power_law_estimable and alpha_est > 0:
+                    pred_test_pow = alpha_est * (q_test ** gamma_est)
+                    ss_res_pow = np.sum((r_test - pred_test_pow) ** 2)
+                    oos_r2_power = float(max(-1.0, 1.0 - (ss_res_pow / ss_tot))) if ss_tot > 0 else 0.0
             except Exception:
                 oos_r2_log = 0.0
+                oos_r2_power = 0.0
+
+        # Multi-window expanding Walk-Forward Purged Evaluation
+        wf_folds = []
+        if n_obs >= 300:
+            split_points = [
+                (0.0, 0.4, 0.4, 0.7),
+                (0.0, 0.6, 0.6, 0.85),
+                (0.0, 0.75, 0.75, 1.0)
+            ]
+            for fold_idx, (tr_s, tr_e, te_s, te_e) in enumerate(split_points, 1):
+                tr_end = max(10, int(n_obs * tr_e) - purge_k)
+                tr_start = int(n_obs * tr_s)
+                te_start = int(n_obs * te_s)
+                te_end = min(n_obs, int(n_obs * te_e))
+
+                q_tr, r_tr = Q_clean[tr_start:tr_end], R_clean[tr_start:tr_end]
+                q_te, r_te = Q_clean[te_start:te_end], R_clean[te_start:te_end]
+
+                if len(q_tr) >= 20 and len(q_te) >= 20 and np.var(q_tr) > 1e-12 and np.var(r_te) > 1e-12:
+                    try:
+                        m_log = sm.OLS(r_tr, sm.add_constant(np.log(q_tr))).fit()
+                        p_log = m_log.predict(sm.add_constant(np.log(q_te)))
+                        ss_tot_f = np.sum((r_te - np.mean(r_te)) ** 2)
+                        r2_log_f = float(max(-1.0, 1.0 - (np.sum((r_te - p_log) ** 2) / ss_tot_f))) if ss_tot_f > 0 else 0.0
+
+                        r2_pow_f = None
+                        if is_power_law_estimable and alpha_est > 0:
+                            p_pow = alpha_est * (q_te ** gamma_est)
+                            r2_pow_f = float(max(-1.0, 1.0 - (np.sum((r_te - p_pow) ** 2) / ss_tot_f))) if ss_tot_f > 0 else 0.0
+
+                        wf_folds.append({
+                            "fold": fold_idx,
+                            "train_observations": len(q_tr),
+                            "test_observations": len(q_te),
+                            "purged_observations": purge_k,
+                            "log_oos_r2": r2_log_f,
+                            "power_oos_r2": r2_pow_f
+                        })
+                    except Exception:
+                        continue
 
         # 5. Time-Chunk / Sub-period Stability Analysis based on True Timestamps
         time_chunks = []
@@ -543,7 +591,7 @@ class NonlinearImpactModel:
             },
             "out_of_sample_validation": {
                 "description": "50% chronological split with purged transition buffer",
-                "model_specification": "Logarithmic Specification (R = alpha + beta * ln(Q))",
+                "model_specification": "Logarithmic Specification (Full-Sample) with Power-Law Comparison",
                 "evaluation_scope": "FULL_SAMPLE_WITH_ZERO_AND_NEGATIVE_RETURNS",
                 "purging_applied": True,
                 "purged_boundary_trades": purge_k,
@@ -559,8 +607,16 @@ class NonlinearImpactModel:
                 "train_r2": train_r2_val,
                 "test_r2": oos_r2_log,
                 "log_model_oos_r2": oos_r2_log,
+                "power_law_oos_r2": oos_r2_power if is_power_law_estimable else None,
                 "is_power_law_oos": False,
                 "note": "Evaluates the logarithmic model on the full sample. Conditioning on positive returns for power-law models is reported separately."
+            },
+            "walk_forward_validation": {
+                "folds_count": len(wf_folds),
+                "folds": wf_folds,
+                "mean_log_oos_r2": float(np.mean([f["log_oos_r2"] for f in wf_folds])) if wf_folds else 0.0,
+                "mean_power_oos_r2": float(np.mean([f["power_oos_r2"] for f in wf_folds if f["power_oos_r2"] is not None])) if any(f["power_oos_r2"] is not None for f in wf_folds) else None,
+                "purged_trades_per_boundary": purge_k
             },
             "moving_block_bootstrap": mbb_results,
             "rejects_square_root_half": rejects_sqrt,
@@ -646,6 +702,7 @@ class NonlinearImpactModel:
             "power_law_wls": power_law_dict["wls_fit"],
             "trade_level_fit": power_law_dict["trade_level_fit"],
             "out_of_sample_validation": power_law_dict["out_of_sample_validation"],
+            "walk_forward_validation": power_law_dict["walk_forward_validation"],
             "moving_block_bootstrap": mbb_results,
             "time_chunk_stability": time_chunks
         }

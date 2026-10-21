@@ -6,14 +6,17 @@ market replay event streaming, and data integrity auditing.
 
 import os
 import json
+import uuid
 from pathlib import Path
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Tuple
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Query, HTTPException, Header
+from fastapi import FastAPI, Query, HTTPException, Header, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 import polars as pl
+from packages.governance.manifest import DataManifestManager, ManifestEntry, APIError
 from packages.analytics.trade_flow import TradeFlowAnalytics
 from packages.analytics.volatility import VolatilityAnalytics
 from packages.analytics.hawkes import BivariateHawkesModel
@@ -30,7 +33,7 @@ METADATA_DIR = DATA_DIR / "metadata"
 
 
 def get_system_runtime_mode() -> Dict[str, Any]:
-    has_normalized = NORMALIZED_DIR.exists() and any(NORMALIZED_DIR.glob("*.parquet"))
+    has_normalized = NORMALIZED_DIR.exists() and any(NORMALIZED_DIR.rglob("*.parquet"))
     fixtures_dir = DATA_DIR / "fixtures"
     has_fixtures = fixtures_dir.exists() and any(fixtures_dir.glob("*.parquet"))
 
@@ -44,7 +47,7 @@ def get_system_runtime_mode() -> Dict[str, Any]:
         mode = "STATIC_ONLY"
         data_desc = "No local parquet datasets found; static API serving only"
 
-    commit = os.environ.get("BUILD_COMMIT", "e91f140")
+    commit = os.environ.get("BUILD_COMMIT", "6732ae9")
     data_version = os.environ.get("DATA_VERSION", "V1.1.2 Institutional Rigor")
 
     return {
@@ -91,6 +94,51 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.exception_handler(APIError)
+async def api_error_handler(request: Request, exc: APIError):
+    req_id = request.headers.get("X-Request-ID") or f"req-{uuid.uuid4().hex[:8]}"
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "detail": exc.message,
+            "error": {
+                "code": exc.code,
+                "message": exc.message,
+                "details": exc.details,
+                "request_id": req_id
+            }
+        }
+    )
+
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    req_id = request.headers.get("X-Request-ID") or f"req-{uuid.uuid4().hex[:8]}"
+    code_map = {
+        400: "BAD_REQUEST",
+        401: "UNAUTHORIZED",
+        403: "FORBIDDEN",
+        404: "NOT_FOUND",
+        422: "UNPROCESSABLE_ENTITY",
+        500: "INTERNAL_SERVER_ERROR",
+        503: "SERVICE_UNAVAILABLE"
+    }
+    code = code_map.get(exc.status_code, f"HTTP_{exc.status_code}")
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "detail": exc.detail,
+            "error": {
+                "code": code,
+                "message": str(exc.detail),
+                "details": {},
+                "request_id": req_id
+            }
+        }
+    )
+
+
+manifest_mgr = DataManifestManager(data_dir=DATA_DIR, normalized_dir=NORMALIZED_DIR)
 trade_analytics = TradeFlowAnalytics(normalized_dir=NORMALIZED_DIR)
 vol_analytics = VolatilityAnalytics()
 response_engine = PriceResponseEngine(normalized_dir=NORMALIZED_DIR)
@@ -111,18 +159,40 @@ def system_info():
     return get_system_runtime_mode()
 
 
+def build_identity_block(entry: ManifestEntry) -> Dict[str, Any]:
+    """Generates standard institutional provenance and identity verification metadata."""
+    return {
+        "symbol": entry.symbol,
+        "date": entry.date,
+        "source_type": entry.source_type,
+        "is_fixture": entry.is_fixture,
+        "sha256": entry.sha256,
+        "total_records": entry.row_count,
+        "provenance": entry.provenance
+    }
+
+
+def get_trades_df_and_entry(symbol: str, date_str: str) -> Tuple[pl.DataFrame, ManifestEntry]:
+    """
+    Loads trade dataset guaranteed by the manifest registry.
+    Enforces symbol validation (422), partition availability (404),
+    production fail-close (no fallback to fixtures in production),
+    and runtime data content identity checks (500 on cross-talk).
+    """
+    manifest_mgr.normalized_dir = Path(NORMALIZED_DIR)
+    is_prod = os.environ.get("MML_ENV", "").strip().lower() == "production"
+    return manifest_mgr.load_dataset(
+        symbol=symbol,
+        date_str=date_str,
+        is_production=is_prod,
+        allow_fixtures=not is_prod
+    )
+
+
 def get_trades_df(symbol: str, date_str: str) -> pl.DataFrame:
-    try:
-        return trade_analytics.load_trades(symbol=symbol, date_str=date_str)
-    except FileNotFoundError:
-        # Strictly fall back to fixture for the EXACT matching date only
-        sample_path = DATA_DIR / "fixtures" / f"sample_trades_{date_str}.parquet"
-        if sample_path.exists():
-            return pl.read_parquet(sample_path)
-        raise HTTPException(
-            status_code=404,
-            detail=f"Partition for {symbol} on date {date_str} not found in normalized or fixture layer. Cross-date fallback is strictly prohibited."
-        )
+    """Convenience helper returning DataFrame only."""
+    df, _ = get_trades_df_and_entry(symbol, date_str)
+    return df
 
 
 @app.get("/api/v1/metadata/datasets")
@@ -191,10 +261,10 @@ def get_flow_buckets(
     Supported intervals: '1s', '5s', '1m', '5m', '15m', '1h'.
     """
     cache_key = f"{symbol}_{date}_{interval}"
+    df, entry = get_trades_df_and_entry(symbol, date)
     if cache_key in _BUCKET_CACHE:
         df_bucketed = _BUCKET_CACHE[cache_key]
     else:
-        df = get_trades_df(symbol, date)
         df_bucketed = trade_analytics.compute_time_buckets(df, bucket_interval=interval)
         _BUCKET_CACHE[cache_key] = df_bucketed
 
@@ -218,6 +288,7 @@ def get_flow_buckets(
             "vwap": row["vwap"]
         })
     return {
+        "identity": build_identity_block(entry),
         "symbol": symbol,
         "date": date,
         "interval": interval,
@@ -233,10 +304,12 @@ def get_signed_autocorrelation(
     max_lag: int = 50
 ):
     """Calculates aggressive trade direction autocorrelation rho(k)."""
-    df = get_trades_df(symbol, date)
+    df, entry = get_trades_df_and_entry(symbol, date)
     # Use first 300,000 trades for fast sub-second calculation
     sample_df = df.slice(0, 300_000)
-    return trade_analytics.compute_signed_autocorrelation(sample_df, max_lag=max_lag)
+    res = trade_analytics.compute_signed_autocorrelation(sample_df, max_lag=max_lag)
+    res["identity"] = build_identity_block(entry)
+    return res
 
 
 @app.get("/api/v1/flow/distributions")
@@ -245,11 +318,12 @@ def get_distributions(
     date: str = "2026-07-01"
 ):
     """Calculates trade size distribution and inter-trade arrival duration distribution."""
-    df = get_trades_df(symbol, date)
+    df, entry = get_trades_df_and_entry(symbol, date)
     sample_df = df.slice(0, 300_000)
     size_dist = trade_analytics.compute_trade_size_distribution(sample_df, num_bins=35)
     dur_dist = trade_analytics.compute_duration_distribution(sample_df, max_ms_cutoff=1500.0, num_bins=40)
     return {
+        "identity": build_identity_block(entry),
         "trade_size_distribution": size_dist,
         "duration_distribution": dur_dist
     }
@@ -263,14 +337,16 @@ def get_activity_vs_volatility(
 ):
     """Computes Realized Volatility and HAC regression against intensity and volume."""
     cache_key = f"{symbol}_{date}_1m"
+    df, entry = get_trades_df_and_entry(symbol, date)
     if cache_key in _BUCKET_CACHE:
         df_bucketed = _BUCKET_CACHE[cache_key]
     else:
-        df = get_trades_df(symbol, date)
         df_bucketed = trade_analytics.compute_time_buckets(df, bucket_interval="1m")
         _BUCKET_CACHE[cache_key] = df_bucketed
 
-    return vol_analytics.analyze_activity_vs_volatility(df_bucketed, window_size=window)
+    res = vol_analytics.analyze_activity_vs_volatility(df_bucketed, window_size=window)
+    res["identity"] = build_identity_block(entry)
+    return res
 
 
 @app.get("/api/v1/impact/response")
@@ -279,8 +355,10 @@ def get_price_response(
     date: str = "2026-07-01"
 ):
     """Calculates price response R(k), HAC confidence intervals, buy/sell asymmetry, and size quintiles."""
-    df = get_trades_df(symbol, date)
-    return response_engine.compute_event_response(df, sample_size=300_000)
+    df, entry = get_trades_df_and_entry(symbol, date)
+    res = response_engine.compute_event_response(df, sample_size=300_000)
+    res["identity"] = build_identity_block(entry)
+    return res
 
 
 @app.get("/api/v1/impact/models")
@@ -290,8 +368,10 @@ def get_impact_models(
     horizon: int = Query(default=20, ge=1, le=100)
 ):
     """Fits Linear, Log, and Power-Law models with HAC inference and tests square-root hypothesis."""
-    df = get_trades_df(symbol, date)
-    return impact_model.fit_impact_models(df, horizon_lag=horizon, sample_size=250_000)
+    df, entry = get_trades_df_and_entry(symbol, date)
+    res = impact_model.fit_impact_models(df, horizon_lag=horizon, sample_size=250_000)
+    res["identity"] = build_identity_block(entry)
+    return res
 
 
 @app.get("/api/v1/replay/window")
@@ -307,7 +387,7 @@ def get_replay_window(
     Ensures trade IDs and nanosecond timestamps are serialized safely as strings
     to protect 64-bit integer precision in browsers.
     """
-    df = get_trades_df(symbol, date)
+    df, entry = get_trades_df_and_entry(symbol, date)
     
     # Calculate nanosecond boundaries for day
     base_ns = int(df["event_timestamp_ns"][0])
@@ -336,6 +416,7 @@ def get_replay_window(
         })
 
     return {
+        "identity": build_identity_block(entry),
         "symbol": symbol,
         "date": date,
         "start_second": start_second,
@@ -383,9 +464,11 @@ def get_hawkes_estimation(
     Estimates baseline intensity, self/cross excitation, branching matrix Gamma,
     and checks spectral radius rho(Gamma) < 1.
     """
-    df = get_trades_df(symbol, date)
+    df, entry = get_trades_df_and_entry(symbol, date)
     model = BivariateHawkesModel(beta=beta)
-    return model.fit_trades(df, sample_size=sample_size)
+    res = model.fit_trades(df, sample_size=sample_size)
+    res["identity"] = build_identity_block(entry)
+    return res
 
 
 class OrderBookControlRequest(BaseModel):

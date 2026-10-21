@@ -301,31 +301,63 @@ export const MarketReplay: React.FC<MarketReplayProps> = ({ date }) => {
         </div>
       </div>
 
-      {/* Sampling Coverage & Physical Span Banner */}
+      {/* Disaggregated Sample & Coverage Metric Panel */}
       <div style={{
-        background: isTruncated ? 'rgba(234, 179, 8, 0.08)' : 'rgba(0, 229, 255, 0.05)',
-        border: `1px solid ${isTruncated ? 'rgba(234, 179, 8, 0.3)' : 'var(--border-color)'}`,
-        borderRadius: '4px',
-        padding: '8px 14px',
-        fontSize: '0.78rem',
-        color: isTruncated ? 'var(--color-gold)' : 'var(--text-main)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        gap: '8px'
+        display: 'grid',
+        gridTemplateColumns: 'repeat(4, 1fr)',
+        gap: '12px',
+        background: 'var(--bg-card)',
+        border: '1px solid var(--border-color)',
+        borderRadius: '6px',
+        padding: '12px 16px'
       }}>
-        <span>
-          {isTruncated ? '⚠️' : 'ℹ️'} <strong>Loaded Replay Clip:</strong> Nominal Window: <strong>60s</strong> &bull; Actual Physical Span: <strong className="mono">{clipStartUtc || '00:00:00'} - {clipEndUtc || '00:00:24'} UTC</strong> (<strong className="mono">{clipDurationSec}s</strong> elapsed).
-          {isTruncated ? (
-            <span> Loaded first <strong>{trades.length.toLocaleString()}</strong> of <strong>{totalInWindow.toLocaleString()}</strong> window trades ({((trades.length / Math.max(1, totalInWindow)) * 100).toFixed(1)}% event coverage).</span>
-          ) : (
-            <span> Loaded all <strong>{trades.length.toLocaleString()}</strong> trades in window (100% coverage).</span>
-          )}
-        </span>
-        <span className="mono" style={{ fontSize: '0.74rem' }}>
-          {playbackMode === 'REAL_CLOCK' ? `Monotonic Clock (${playbackSpeed}x Real Time)` : `Fixed Rate (${playbackSpeed * 10} Trades/Sec)`}
-        </span>
+        <div>
+          <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            1. Window Total Events
+          </div>
+          <div className="mono" style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--color-gold)', marginTop: '2px' }}>
+            {totalInWindow.toLocaleString()}
+          </div>
+          <div style={{ fontSize: '0.64rem', color: 'var(--text-muted)' }}>
+            Nominal Span: 60.0s window
+          </div>
+        </div>
+
+        <div>
+          <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            2. Loaded Buffer Events
+          </div>
+          <div className="mono" style={{ fontSize: '1.05rem', fontWeight: 700, color: '#fff', marginTop: '2px' }}>
+            {trades.length.toLocaleString()}
+          </div>
+          <div style={{ fontSize: '0.64rem', color: isTruncated ? 'var(--color-gold)' : 'var(--color-buy)' }}>
+            {((trades.length / Math.max(1, totalInWindow)) * 100).toFixed(1)}% ({clipStartUtc}-{clipEndUtc}, {clipDurationSec}s)
+          </div>
+        </div>
+
+        <div>
+          <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            3. Rendered / Playback
+          </div>
+          <div className="mono" style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--color-buy)', marginTop: '2px' }}>
+            {visibleTrades.length.toLocaleString()} / {trades.length.toLocaleString()}
+          </div>
+          <div style={{ fontSize: '0.64rem', color: 'var(--text-muted)' }}>
+            {playbackMode === 'REAL_CLOCK' ? `Clock Paced (${playbackSpeed}x)` : `Fixed (${playbackSpeed * 10} tps)`}
+          </div>
+        </div>
+
+        <div>
+          <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            4. Model Estimation Baseline
+          </div>
+          <div className="mono" style={{ fontSize: '1.05rem', fontWeight: 700, color: '#a78bfa', marginTop: '2px' }}>
+            250k - 300k
+          </div>
+          <div style={{ fontSize: '0.64rem', color: 'var(--text-muted)' }}>
+            Econometric sample size
+          </div>
+        </div>
       </div>
 
       {/* Control Bar */}

@@ -1,0 +1,99 @@
+{
+  "version": "1.1.2",
+  "supported_symbols": [
+    "BTCUSDT"
+  ],
+  "total_entries": 6,
+  "entries": {
+    "BTCUSDT_2026-07-01_prod": {
+      "symbol": "BTCUSDT",
+      "date": "2026-07-01",
+      "source_type": "NORMALIZED_PARQUET",
+      "file_path": "normalized\\exchange=binance\\market=spot\\symbol=BTCUSDT\\date=2026-07-01\\trades.parquet",
+      "row_count": 4166849,
+      "sha256": "3f5afa0760d52a6eb54b670e685c83e21414d7b4c43a2ad11346ba1b0db21ce1",
+      "min_event_time_utc": "2026-07-01T00:00:00.054233Z",
+      "max_event_time_utc": "2026-07-01T23:59:59.831689Z",
+      "min_timestamp_ns": "1782864000054233000",
+      "max_timestamp_ns": "1782950399831689000",
+      "is_fixture": false,
+      "provenance": "BINANCE_VISION_OFFICIAL_AUDITED",
+      "status": "VERIFIED"
+    },
+    "BTCUSDT_2026-07-02_prod": {
+      "symbol": "BTCUSDT",
+      "date": "2026-07-02",
+      "source_type": "NORMALIZED_PARQUET",
+      "file_path": "normalized\\exchange=binance\\market=spot\\symbol=BTCUSDT\\date=2026-07-02\\trades.parquet",
+      "row_count": 3883096,
+      "sha256": "79b97982029522afa2c87c844f42e3d446d4b314e6ea7948fbfa97d7eb38cfd8",
+      "min_event_time_utc": "2026-07-02T00:00:00.058300Z",
+      "max_event_time_utc": "2026-07-02T23:59:59.535942Z",
+      "min_timestamp_ns": "1782950400058300000",
+      "max_timestamp_ns": "1783036799535942000",
+      "is_fixture": false,
+      "provenance": "BINANCE_VISION_OFFICIAL_AUDITED",
+      "status": "VERIFIED"
+    },
+    "BTCUSDT_2026-07-03_prod": {
+      "symbol": "BTCUSDT",
+      "date": "2026-07-03",
+      "source_type": "NORMALIZED_PARQUET",
+      "file_path": "normalized\\exchange=binance\\market=spot\\symbol=BTCUSDT\\date=2026-07-03\\trades.parquet",
+      "row_count": 2571531,
+      "sha256": "89071f3f8b1a3e9518fdf2179e82c216e0084ed66a3e3dd38adc98c63861e0a4",
+      "min_event_time_utc": "2026-07-03T00:00:00.121883Z",
+      "max_event_time_utc": "2026-07-03T23:59:59.782967Z",
+      "min_timestamp_ns": "1783036800121883000",
+      "max_timestamp_ns": "1783123199782967000",
+      "is_fixture": false,
+      "provenance": "BINANCE_VISION_OFFICIAL_AUDITED",
+      "status": "VERIFIED"
+    },
+    "BTCUSDT_2026-07-01_fixture": {
+      "symbol": "BTCUSDT",
+      "date": "2026-07-01",
+      "source_type": "RESEARCH_FIXTURE",
+      "file_path": "fixtures\\sample_trades_2026-07-01.parquet",
+      "row_count": 5000,
+      "sha256": "d6f6bd93b58d1ee3226fcefef282479eda0c3ffcad444f4bff7b3b6b97d666fd",
+      "min_event_time_utc": "2026-07-01T00:00:01.005243Z",
+      "max_event_time_utc": "2026-07-01T23:59:35.606972Z",
+      "min_timestamp_ns": "1782864001005243136",
+      "max_timestamp_ns": "1782950375606971904",
+      "is_fixture": true,
+      "provenance": "RESEARCH_FIXTURE_ISOLATED",
+      "status": "VERIFIED"
+    },
+    "BTCUSDT_2026-07-02_fixture": {
+      "symbol": "BTCUSDT",
+      "date": "2026-07-02",
+      "source_type": "RESEARCH_FIXTURE",
+      "file_path": "fixtures\\sample_trades_2026-07-02.parquet",
+      "row_count": 5000,
+      "sha256": "86d6b0d80616b684d6e0e1fede9988935d28fb305b6cbc36e0f9db9a7d1b0eee",
+      "min_event_time_utc": "2026-07-02T00:00:00.058300Z",
+      "max_event_time_utc": "2026-07-02T00:01:16.144415Z",
+      "min_timestamp_ns": "1782950400058300000",
+      "max_timestamp_ns": "1782950476144415000",
+      "is_fixture": true,
+      "provenance": "RESEARCH_FIXTURE_ISOLATED",
+      "status": "VERIFIED"
+    },
+    "BTCUSDT_2026-07-03_fixture": {
+      "symbol": "BTCUSDT",
+      "date": "2026-07-03",
+      "source_type": "RESEARCH_FIXTURE",
+      "file_path": "fixtures\\sample_trades_2026-07-03.parquet",
+      "row_count": 5000,
+      "sha256": "5a99bf04dd4b2d23f33003a7bd73074558e64eb2bcad0bfc192999fc1cd9a4e5",
+      "min_event_time_utc": "2026-07-03T00:00:00.121883Z",
+      "max_event_time_utc": "2026-07-03T00:01:17.986197Z",
+      "min_timestamp_ns": "1783036800121883000",
+      "max_timestamp_ns": "1783036877986197000",
+      "is_fixture": true,
+      "provenance": "RESEARCH_FIXTURE_ISOLATED",
+      "status": "VERIFIED"
+    }
+  }
+}

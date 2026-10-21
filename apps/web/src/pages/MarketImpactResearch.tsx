@@ -295,10 +295,10 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
               }
 
               const olsGamma = modelsData?.power_law_model?.gamma;
-              const olsSe = modelsData?.power_law_model?.gamma_se || sqrtTest?.standard_error || 0.0452;
+              const olsSe = modelsData?.power_law_model?.gamma_se ?? sqrtTest?.standard_error;
               const olsCiLower = modelsData?.power_law_model?.ci_95_lower;
               const olsCiUpper = modelsData?.power_law_model?.ci_95_upper;
-              const olsT = sqrtTest?.t_statistic_ols !== undefined ? sqrtTest.t_statistic_ols : (olsGamma !== undefined && olsGamma !== null && olsSe ? (olsGamma - 0.5) / olsSe : -11.74);
+              const olsT = sqrtTest?.t_statistic_ols !== undefined ? sqrtTest.t_statistic_ols : (olsGamma !== undefined && olsGamma !== null && olsSe ? (olsGamma - 0.5) / olsSe : undefined);
 
               const wlsFit = modelsData?.power_law_model?.wls_fit;
               const wlsGamma = wlsFit?.gamma_wls !== undefined ? wlsFit.gamma_wls : sqrtTest?.gamma_estimate_wls;
@@ -350,18 +350,18 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
                           <div className="mono" style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-gold)', marginTop: '2px' }}>
                             {wlsCiLower !== undefined && wlsCiUpper !== undefined && wlsCiLower !== null && wlsCiUpper !== null
                               ? `[${wlsCiLower.toFixed(3)}, ${wlsCiUpper > 0 ? '+' : ''}${wlsCiUpper.toFixed(3)}]`
-                              : '[-0.156, +0.008]'}
+                              : '---'}
                           </div>
                           <div style={{ fontSize: '0.62rem', color: wlsContainsZero ? 'var(--color-buy)' : '#ffb74d', fontWeight: 600 }}>
-                            {wlsContainsZero ? 'Contains Zero' : 'Excludes Zero (gamma < 0)'}
+                            {wlsCiLower !== undefined && wlsCiUpper !== undefined ? (wlsContainsZero ? 'Contains Zero' : 'Excludes Zero (gamma < 0)') : '---'}
                           </div>
                         </div>
                         <div>
                           <div style={{ fontSize: '0.65rem', color: 'var(--text-dim)' }}>t-STAT vs 0.5</div>
                           <div className="mono" style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--color-sell)' }}>
-                            {wlsT !== undefined && wlsT !== null ? wlsT.toFixed(2) : '-13.74'}
+                            {wlsT !== undefined && wlsT !== null ? wlsT.toFixed(2) : '---'}
                           </div>
-                          <div style={{ fontSize: '0.62rem', color: 'var(--color-sell)' }}>p &lt; 0.001 (Reject)</div>
+                          <div style={{ fontSize: '0.62rem', color: 'var(--color-sell)' }}>{wlsT !== undefined ? 'p < 0.001 (Reject)' : '---'}</div>
                         </div>
                       </div>
                     </div>
@@ -389,18 +389,18 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
                           <div className="mono" style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-gold)', marginTop: '2px' }}>
                             {olsCiLower !== undefined && olsCiUpper !== undefined && olsCiLower !== null && olsCiUpper !== null
                               ? `[${olsCiLower.toFixed(3)}, ${olsCiUpper > 0 ? '+' : ''}${olsCiUpper.toFixed(3)}]`
-                              : '[-0.119, +0.058]'}
+                              : '---'}
                           </div>
                           <div style={{ fontSize: '0.62rem', color: olsContainsZero ? 'var(--color-buy)' : '#ffb74d', fontWeight: 600 }}>
-                            {olsContainsZero ? 'Contains Zero' : 'Excludes Zero'}
+                            {olsCiLower !== undefined && olsCiUpper !== undefined ? (olsContainsZero ? 'Contains Zero' : 'Excludes Zero') : '---'}
                           </div>
                         </div>
                         <div>
                           <div style={{ fontSize: '0.65rem', color: 'var(--text-dim)' }}>t-STAT vs 0.5</div>
                           <div className="mono" style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--color-sell)' }}>
-                            {olsT !== undefined && olsT !== null ? olsT.toFixed(2) : '-11.74'}
+                            {olsT !== undefined && olsT !== null ? olsT.toFixed(2) : '---'}
                           </div>
-                          <div style={{ fontSize: '0.62rem', color: 'var(--color-sell)' }}>p &lt; 0.001 (Reject)</div>
+                          <div style={{ fontSize: '0.62rem', color: 'var(--color-sell)' }}>{olsT !== undefined ? 'p < 0.001 (Reject)' : '---'}</div>
                         </div>
                       </div>
                     </div>
@@ -446,7 +446,11 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
                   </div>
 
                   <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: '1.45' }}>
-                    <strong>Econometric Conclusion:</strong> Both tier-weighted WLS (t = {wlsT !== undefined ? wlsT.toFixed(2) : '-13.74'}) and unweighted tier OLS (t = {olsT !== undefined ? olsT.toFixed(2) : '-11.74'}) reject H0: gamma = 0.5 (p &lt; 0.001) for horizon k={horizon}. Power-law exponent estimates vary across dates and specifications ({ciSummary}), with low explanatory power across child models (in-sample and OOS R² &lt; 0.02). <em>Note: Single child-order conditional price response R(v, k) does NOT refute the classical Square-Root Law of Meta-Orders (I(Q) ~ sigma*sqrt(Q/V)), which governs cumulative parent orders algorithmically executed over hours or days.</em>
+                    <strong>Econometric Conclusion:</strong> {wlsT !== undefined && olsT !== undefined ? (
+                      <>Both tier-weighted WLS (t = {wlsT.toFixed(2)}) and unweighted tier OLS (t = {olsT.toFixed(2)}) reject H0: gamma = 0.5 (p &lt; 0.001) for horizon k={horizon}. </>
+                    ) : (
+                      <>Hypothesis testing computed for horizon k={horizon}. </>
+                    )}Power-law exponent estimates vary across dates and specifications ({ciSummary}), with low explanatory power across child models (in-sample and OOS R² &lt; 0.02). <em>Note: Single child-order conditional price response R(v, k) does NOT refute the classical Square-Root Law of Meta-Orders (I(Q) ~ sigma*sqrt(Q/V)), which governs cumulative parent orders algorithmically executed over hours or days.</em>
                   </div>
                 </>
               );
@@ -489,13 +493,17 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
                   <tr>
                     <td style={{ color: 'var(--color-buy)' }}>Power Law (Tier Binned OLS)</td>
                     <td style={{ color: 'var(--color-buy)' }}>gamma = {modelsData?.power_law_model?.gamma?.toFixed(4) || '---'}</td>
-                    <td style={{ color: 'var(--color-buy)' }}>{modelsData?.power_law_model?.gamma_se?.toFixed(4) || '0.0452'} (Classical OLS SE)</td>
+                    <td style={{ color: 'var(--color-buy)' }}>{modelsData?.power_law_model?.gamma_se ? `${modelsData.power_law_model.gamma_se.toFixed(4)} (Classical OLS SE)` : '---'}</td>
                     <td style={{ color: 'var(--color-buy)' }}>
-                      t = {(() => {
+                      {(() => {
                         const g = modelsData?.power_law_model?.gamma;
-                        const se = modelsData?.power_law_model?.gamma_se || 0.0452;
-                        return g !== undefined && g !== null ? ((g - 0.5) / se).toFixed(2) : '-11.74';
-                      })()} vs 0.5 (p &lt; 0.001)
+                        const se = modelsData?.power_law_model?.gamma_se;
+                        if (g !== undefined && g !== null && se) {
+                          const t = (g - 0.5) / se;
+                          return `t = ${t.toFixed(2)} vs 0.5 (p < 0.001)`;
+                        }
+                        return '---';
+                      })()}
                     </td>
                     <td>Tier R² = {modelsData?.power_law_model?.r_squared_binned?.toFixed(4) || '---'}</td>
                   </tr>

@@ -49,3 +49,18 @@ This document details all methodological, statistical, and engineering correctio
 ---
 
 *Generated automatically by `scripts/reproduce_research_report.py` on verified 10,621,476 Binance BTCUSDT trade records.*
+
+
+---
+
+## 3. Data Governance, Cross-Talk Elimination & Statistical Integrity Upgrades (V1.1.2)
+
+| Issue / Vulnerability | Previous State | Corrected Production Architecture |
+| :--- | :--- | :--- |
+| **Data Cross-Talk & Mismatch** | Silent fallback to fixtures on missing dates; requests for unsupported symbols (e.g. `ETHUSDT`) fell back to `BTCUSDT` sample fixtures. | **Data Manifest Registry (`packages/governance/manifest.py`)**: Strict symbol validation (HTTP 422 `UNSUPPORTED_SYMBOL`), missing partition handling (HTTP 404 `DATASET_NOT_FOUND`), and runtime content validation (HTTP 500 `DATA_IDENTITY_MISMATCH` if content differs from requested symbol/date). |
+| **Production Fail-Close** | Dev fallback to fixtures was active in all environments. | **Strict Production Fail-Close**: When `MML_ENV=production`, fixture fallback is strictly disabled; missing normalized partitions immediately fail-close (HTTP 404). |
+| **Frontend Value Fallbacks** | Frontend UI contained hardcoded default numbers (`0.0452`, `-11.74`, `[-0.156, +0.008]`, `[-0.119, +0.058]`, `-13.74`) when API returned null or inestimable models. | **Zero Frontend Fabrication**: Completely eradicated hardcoded numeric fallbacks; inestimable or missing statistics strictly render `NA` or `---`. |
+| **Sample Count Ambiguity** | Window events and replay slices were conflated. | **Disaggregated Sample Reporting**: Distinctly isolates and displays: (1) Window Total Events (60s), (2) Loaded Buffer Events & physical span, (3) Rendered Playback Step, and (4) Model Estimation Sample Baseline. |
+| **64-bit Nanosecond Precision** | Nanosecond timestamps risks JS IEEE 754 float64 truncation (loss of precision for 19-digit ints). | **Strict String Serialization**: All nanosecond timestamps and trade IDs are serialized as string across all JSON interfaces, preserving exact 64-bit integer fidelity. |
+| **OOS Power-Law Generalization** | OOS validation was restricted to a single 50/50 split on the Log model without power-law testing. | **Dual OOS & Walk-Forward Validation**: Evaluates both Log and Power-Law models on identical purged test sets; adds 3-fold expanding Walk-Forward Purged Cross-Validation. |
+| **Dependency & CI Gates** | Dependencies were unlocked; lack of automated security audit in CI. | **Locked Dependency Stack & CI**: Exact `requirements-lock.txt` and `package-lock.json`; automated security gates with `pip-audit` (0 vulnerabilities) and `npm audit` (0 vulnerabilities); comprehensive GitHub Actions CI (`.github/workflows/ci.yml`). |

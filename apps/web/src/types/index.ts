@@ -152,11 +152,37 @@ export interface EmpiricalBinPoint {
   count: number;
 }
 
+export interface InferenceSensitivityItem {
+  estimator: string;
+  parameter: string;
+  inference_method: string;
+  block_size_events: number;
+  unit_description: string;
+  point_estimate: number | null;
+  standard_error: number | null;
+  ci_95: [number, number] | null;
+  ci_contains_zero: boolean | null;
+  ci_contains_half: boolean | null;
+  replications: number;
+  verdict: string;
+}
+
 export interface ModelFitStats {
   name: string;
   status?: string;
   is_estimable?: boolean;
   unestimable_reason?: string;
+  fit?: Record<string, any> | null;
+  error?: {
+    code: string;
+    message: string;
+    retryable: boolean;
+  } | null;
+  metrics_diagnostics?: Record<string, any>;
+  input_diagnostics?: Record<string, any>;
+  inference_sensitivity_table?: InferenceSensitivityItem[];
+  sensitivity_verdict?: string;
+  sensitivity_summary?: string;
   moving_block_bootstrap?: any;
   alpha?: number | null;
   alpha_se?: number | null;
@@ -401,10 +427,12 @@ export interface ImpactModelsData {
     total_observations?: number;
     sample_start_utc?: string;
     sample_end_utc?: string;
+    sample_duration_seconds?: number;
     sampling_method?: string;
     generation_timestamp_utc?: string;
     status?: string;
     disclaimer?: string;
+    scope_limitation_disclosure?: string;
   };
   binned_empirical: EmpiricalBinPoint[];
   linear_model: ModelFitStats;
@@ -412,6 +440,9 @@ export interface ImpactModelsData {
   power_law_model: ModelFitStats;
   out_of_sample_validation?: ModelFitStats['out_of_sample_validation'];
   walk_forward_validation?: WalkForwardValidation;
+  inference_sensitivity_table?: InferenceSensitivityItem[];
+  sensitivity_verdict?: string;
+  sensitivity_summary?: string;
   artifact_metadata?: ArtifactMetadata;
   time_chunk_stability?: Array<{
     chunk_index: number;

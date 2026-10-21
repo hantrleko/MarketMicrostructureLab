@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import ReactECharts from 'echarts-for-react';
 import { fetchPriceResponse, fetchImpactModels } from '../api/client';
 import { PriceResponseData, ImpactModelsData, WalkForwardFold, WalkForwardValidation } from '../types';
@@ -14,9 +14,10 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
   const [modelsData, setModelsData] = useState<ImpactModelsData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const activeQueryIdRef = useRef<number>(0);
 
   useEffect(() => {
-    let isMounted = true;
+    const currentQueryId = ++activeQueryIdRef.current;
     setLoading(true);
     setError(null);
     setPriceResp(null);
@@ -27,7 +28,7 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
       fetchImpactModels('BTCUSDT', date, horizon)
     ])
       .then(([pr, md]) => {
-        if (isMounted) {
+        if (currentQueryId === activeQueryIdRef.current) {
           setPriceResp(pr);
           setModelsData(md);
           setLoading(false);
@@ -35,13 +36,15 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
       })
       .catch((err) => {
         console.error(err);
-        if (isMounted) {
+        if (currentQueryId === activeQueryIdRef.current) {
           setError(err.message || 'Failed to load market impact data');
           setLoading(false);
         }
       });
 
-    return () => { isMounted = false; };
+    return () => {
+      // Monotonic query id will ignore results from superseded queries
+    };
   }, [date, horizon]);
 
   // Price response curves
@@ -126,22 +129,21 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
     ]
   };
 
-  // Nonlinear Impact Scatter & Fits
+  // Nonlinear Impact Scatter & Fits (M1: Suppress fake lines when not estimated)
   const empiricalScatter = modelsData?.binned_empirical.map((b) => [b.mean_volume, b.mean_response_bps]) || [];
-  
   const volumes = modelsData?.binned_empirical.map((b) => b.mean_volume) || [];
-  const linFit = volumes.map((q) => {
-    const m = modelsData?.linear_model;
-    return [q, m && m.alpha !== null && m.alpha !== undefined ? m.alpha + (m.beta || 0) * q : 0];
-  });
-  const logFit = volumes.map((q) => {
-    const m = modelsData?.logarithmic_model;
-    return [q, m && m.alpha !== null && m.alpha !== undefined ? m.alpha + (m.beta || 0) * Math.log(q) : 0];
-  });
-  const powerFit = volumes.map((q) => {
-    const m = modelsData?.power_law_model;
-    return [q, m && m.alpha !== null && m.alpha !== undefined ? m.alpha * Math.pow(q, m.gamma || 0.5) : 0];
-  });
+
+  const linModel = modelsData?.linear_model;
+  const isLinEstimated = linModel?.status === 'ESTIMATED' && linModel?.alpha !== null && linModel?.beta !== null && linModel?.alpha !== undefined && linModel?.beta !== undefined;
+  const linFit = isLinEstimated ? volumes.map((q) => [q, linModel!.alpha! + linModel!.beta! * q]) : [];
+
+  const logModel = modelsData?.logarithmic_model;
+  const isLogEstimated = logModel?.status === 'ESTIMATED' && logModel?.alpha !== null && logModel?.beta !== null && logModel?.alpha !== undefined && logModel?.beta !== undefined;
+  const logFit = isLogEstimated ? volumes.map((q) => [q, logModel!.alpha! + logModel!.beta! * Math.log(q)]) : [];
+
+  const powModel = modelsData?.power_law_model;
+  const isPowEstimated = powModel?.status === 'ESTIMATED' && powModel?.alpha !== null && powModel?.gamma !== null && powModel?.alpha !== undefined && powModel?.gamma !== undefined;
+  const powerFit = isPowEstimated ? volumes.map((q) => [q, powModel!.alpha! * Math.pow(q, powModel!.gamma!)]) : [];
 
   const impactFitOption = {
     backgroundColor: 'transparent',
@@ -152,7 +154,12 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
       textStyle: { color: '#f1f5f9', fontFamily: 'JetBrains Mono' }
     },
     legend: {
-      data: ['Empirical Binned Impact', 'Linear Fit', 'Logarithmic Fit', 'Power Law Fit'],
+      data: [
+        'Empirical Binned Impact',
+        isLinEstimated ? 'Linear Fit' : 'Linear Fit (Unavailable)',
+        isLogEstimated ? 'Logarithmic Fit' : 'Logarithmic Fit (Unavailable)',
+        isPowEstimated ? 'Power Law Fit' : 'Power Law Fit (Unavailable)'
+      ],
       textStyle: { color: '#94a3b8' },
       top: '2%'
     },
@@ -178,21 +185,21 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
         symbolSize: 8
       },
       {
-        name: 'Linear Fit',
+        name: isLinEstimated ? 'Linear Fit' : 'Linear Fit (Unavailable)',
         type: 'line',
         data: linFit,
         lineStyle: { color: '#94a3b8', width: 1.5, type: 'dashed' },
         showSymbol: false
       },
       {
-        name: 'Logarithmic Fit',
+        name: isLogEstimated ? 'Logarithmic Fit' : 'Logarithmic Fit (Unavailable)',
         type: 'line',
         data: logFit,
         lineStyle: { color: '#ffd700', width: 2 },
         showSymbol: false
       },
       {
-        name: 'Power Law Fit',
+        name: isPowEstimated ? 'Power Law Fit' : 'Power Law Fit (Unavailable)',
         type: 'line',
         data: powerFit,
         lineStyle: { color: '#ff9100', width: 2 },
@@ -206,7 +213,61 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      {/* Top Banner: Methodology and Distinction */}
+      {/* Historical Research & Provenance Disclosure Banner (M2) */}
+      <div className="mml-card" style={{ borderLeft: '4px solid var(--color-buy)', background: 'rgba(15, 23, 42, 0.65)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{
+              background: 'rgba(14, 165, 233, 0.15)',
+              border: '1px solid rgba(14, 165, 233, 0.4)',
+              color: '#38bdf8',
+              fontSize: '0.68rem',
+              fontWeight: 700,
+              padding: '2px 8px',
+              borderRadius: '3px',
+              fontFamily: 'var(--font-mono)'
+            }}>
+              HISTORICAL RESEARCH ARCHIVE &bull; NON-REALTIME
+            </span>
+            <span className="mono" style={{ fontSize: '0.74rem', color: 'var(--text-main)', fontWeight: 600 }}>
+              ASSET: BTC/USDT (Spot) &bull; ARCHIVE: Binance Vision Spot Trades
+            </span>
+          </div>
+          <div style={{ fontSize: '0.70rem', color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
+            DATASET CUTOFF: {date} 23:59:59 UTC &bull; RUNTIME: Offline Static Research
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '10px', fontSize: '0.73rem', color: 'var(--text-muted)' }}>
+          <div>
+            <span style={{ color: 'var(--text-dim)' }}>Sample Chronology: </span>
+            <span className="mono" style={{ color: '#fff' }}>
+              {modelsData?.sample_metadata?.sample_start_utc ? modelsData.sample_metadata.sample_start_utc.split('T')[1]?.slice(0, 8) : '00:00:00'} &rarr; {modelsData?.sample_metadata?.sample_end_utc ? modelsData.sample_metadata.sample_end_utc.split('T')[1]?.slice(0, 8) : '04:23:18'} UTC
+            </span>
+          </div>
+          <div>
+            <span style={{ color: 'var(--text-dim)' }}>Physical Span: </span>
+            <span className="mono" style={{ color: 'var(--color-gold)' }}>
+              {modelsData?.sample_metadata?.sample_duration_seconds ? `${(modelsData.sample_metadata.sample_duration_seconds / 3600).toFixed(2)}h (${modelsData.sample_metadata.sample_duration_seconds.toFixed(0)}s)` : '---'}
+            </span>
+            <span style={{ color: 'var(--text-dim)' }}> ({modelsData?.observations?.toLocaleString() || '250,000'} ticks)</span>
+          </div>
+          <div>
+            <span style={{ color: 'var(--text-dim)' }}>Generation / Commit: </span>
+            <span className="mono" style={{ color: 'var(--color-buy)' }}>
+              {modelsData?.artifact_metadata?.generation_timestamp_utc ? modelsData.artifact_metadata.generation_timestamp_utc.slice(0, 19).replace('T', ' ') : 'Static Fixture'} ({modelsData?.artifact_metadata?.build_commit || 'HEAD'})
+            </span>
+          </div>
+          <div>
+            <span style={{ color: 'var(--text-dim)' }}>Coverage Scope: </span>
+            <span style={{ color: '#94a3b8' }}>
+              ETH/USDT not supported (archive BTC only; no silent fallback).
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Top Banner: Methodology and Distinction (M4 Bounded Framing) */}
       <div className="mml-card" style={{ borderLeft: '4px solid var(--color-gold)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <Scale size={24} color="var(--color-gold)" />
@@ -215,8 +276,7 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
               SINGLE-TRADE CONDITIONAL PRICE RESPONSE VS. META-ORDER MARKET IMPACT
             </div>
             <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', maxWidth: '780px' }}>
-              Estimated: $\mathcal&#123;R&#125;(v, k) = \mathbb&#123;E&#125;[\epsilon_i \cdot (\ln P_&#123;i+k&#125; - \ln P_i) \mid Q_i = v]$. This models instantaneous child-order price displacement and depth depletion.
-              The classical Square-Root Law applies to cumulative multi-hour institutional meta-orders, not isolated child trades.
+              Estimated: $\mathcal&#123;R&#125;(v, k) = \mathbb&#123;E&#125;[\epsilon_i \cdot (\ln P_&#123;i+k&#125; - \ln P_i) \mid Q_i = v]$. Single-trade child response reflects transient liquidity hole depletion and quote replenishment. The Square-Root Law of Market Impact ($I(Q) \approx Y \sigma \sqrt&#123;Q/V&#125;$) is an empirical scaling relationship governing cumulative institutional meta-orders executed over hours or days, and cannot be conflated with single child ticks.
             </div>
           </div>
         </div>
@@ -284,6 +344,12 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
             </span>
           </div>
           <ReactECharts option={impactFitOption} style={{ height: '320px', width: '100%' }} />
+          {(!isLinEstimated || !isLogEstimated || !isPowEstimated) && (
+            <div style={{ marginTop: '10px', padding: '8px 12px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '4px', fontSize: '0.74rem', color: '#fca5a5' }}>
+              <AlertTriangle size={13} style={{ display: 'inline', marginRight: '6px' }} />
+              <strong>Model Estimation Notice:</strong> One or more specifications could not be estimated ({[!isLinEstimated && 'Linear', !isLogEstimated && 'Logarithmic', !isPowEstimated && 'Power Law'].filter(Boolean).join(', ')}). Flat zero-slope curves are suppressed to prevent false inference of zero effect.
+            </div>
+          )}
         </div>
 
         {/* Statistical Test Card & Diagnostics */}
@@ -299,14 +365,15 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
 
             {/* Explicit Split OLS vs WLS Specifications */}
             {(() => {
-              if (modelsData?.power_law_model?.status === 'NOT_ESTIMABLE' || modelsData?.power_law_model?.is_estimable === false) {
+              const powModel = modelsData?.power_law_model;
+              if (powModel?.status === 'NOT_ESTIMABLE' || powModel?.status === 'FIT_FAILED' || powModel?.is_estimable === false || powModel?.fit === null) {
                 return (
                   <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '4px', padding: '16px', color: '#fca5a5' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, fontSize: '0.88rem', marginBottom: '6px' }}>
-                      <AlertTriangle size={16} /> MODEL NOT ESTIMABLE ON SELECTED WINDOW
+                      <AlertTriangle size={16} /> MODEL NOT ESTIMABLE ON SELECTED WINDOW ({powModel?.error?.code || 'FIT_FAILED'})
                     </div>
                     <div style={{ fontSize: '0.76rem', lineHeight: '1.5' }}>
-                      {modelsData?.power_law_model?.unestimable_reason || 'Insufficient positive conditional response tiers or zero variation in market prices. Child-order scaling parameters cannot be mathematically identified.'}
+                      {powModel?.error?.message || powModel?.unestimable_reason || 'Insufficient positive conditional response tiers or zero variation in market prices. Child-order scaling parameters cannot be mathematically identified.'}
                     </div>
                   </div>
                 );
@@ -468,7 +535,7 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
                       <>Both tier-weighted WLS (t = {wlsT.toFixed(2)}) and unweighted tier OLS (t = {olsT.toFixed(2)}) reject H0: gamma = 0.5 (p &lt; 0.001) for horizon k={horizon}. </>
                     ) : (
                       <>Hypothesis testing computed for horizon k={horizon}. </>
-                    )}Power-law exponent estimates vary across dates and specifications ({ciSummary}), with low explanatory power across child models (in-sample and OOS R² &lt; 0.02). <em>Note: Single child-order conditional price response R(v, k) does NOT refute the classical Square-Root Law of Meta-Orders (I(Q) ~ sigma*sqrt(Q/V)), which governs cumulative parent orders algorithmically executed over hours or days.</em>
+                    )}Child-order scaling parameters depend on the estimation date, specification, and temporal dependence structure ({ciSummary}). In-sample and out-of-sample explanatory power is low across specifications (R² &lt; 0.02). <em>Confidence interval containment of zero indicates that the current sample and specification do not detect a statistically distinguishable difference from zero; it does not prove the absence of an effect. Furthermore, single child-order conditional price response R(v, k) reflects transient liquidity hole depletion and does NOT refute the classical Square-Root Law of Meta-Orders (I(Q) ~ Y*sigma*sqrt(Q/V)), which is an empirical scaling relationship governing cumulative parent meta-orders algorithmically executed over hours or days.</em>
                   </div>
                 </>
               );
@@ -496,48 +563,105 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
                 <tbody>
                   <tr>
                     <td>Linear Model (Tick-level)</td>
-                    <td>beta = {modelsData?.linear_model?.beta?.toFixed(4) || '---'}</td>
-                    <td>{modelsData?.linear_model?.beta_se?.toFixed(6) || '---'} (Classical OLS SE)</td>
-                    <td>t = {modelsData?.linear_model?.beta_t_stat?.toFixed(2) || '---'} (p = {modelsData?.linear_model?.beta_p_value?.toFixed(4) || '---'})</td>
-                    <td>R² = {modelsData?.linear_model?.r_squared?.toFixed(4) || '---'}</td>
+                    <td>
+                      {modelsData?.linear_model?.status === 'ESTIMATED'
+                        ? `beta = ${modelsData.linear_model.beta?.toFixed(4) || '---'}`
+                        : `Unavailable (${modelsData?.linear_model?.error?.code || modelsData?.linear_model?.status || 'NOT_ESTIMABLE'})`}
+                    </td>
+                    <td>
+                      {modelsData?.linear_model?.status === 'ESTIMATED' && modelsData.linear_model.beta_se !== null && modelsData.linear_model.beta_se !== undefined
+                        ? `${modelsData.linear_model.beta_se.toFixed(6)} (Classical OLS SE)`
+                        : '---'}
+                    </td>
+                    <td>
+                      {modelsData?.linear_model?.status === 'ESTIMATED' && modelsData.linear_model.beta_t_stat !== null && modelsData.linear_model.beta_t_stat !== undefined
+                        ? `t = ${modelsData.linear_model.beta_t_stat.toFixed(2)} (p = ${modelsData.linear_model.beta_p_value?.toFixed(4) || '---'})`
+                        : '---'}
+                    </td>
+                    <td>
+                      {modelsData?.linear_model?.status === 'ESTIMATED'
+                        ? (modelsData.linear_model.metrics_diagnostics?.r_squared?.status === 'UNDEFINED_METRIC'
+                            ? 'R² = Undefined (SS_tot=0)'
+                            : `R² = ${modelsData.linear_model.r_squared?.toFixed(4) || '---'}`)
+                        : '---'}
+                    </td>
                   </tr>
                   <tr>
                     <td style={{ color: 'var(--color-gold)' }}>Logarithmic Model (Tick-level)</td>
-                    <td style={{ color: 'var(--color-gold)' }}>beta = {modelsData?.logarithmic_model?.beta?.toFixed(4) || '---'}</td>
-                    <td style={{ color: 'var(--color-gold)' }}>{modelsData?.logarithmic_model?.beta_se?.toFixed(6) || '---'} (Classical OLS SE)</td>
-                    <td style={{ color: 'var(--color-gold)' }}>t = {modelsData?.logarithmic_model?.beta_t_stat?.toFixed(2) || '---'} (p = {modelsData?.logarithmic_model?.beta_p_value?.toFixed(4) || '---'})</td>
-                    <td style={{ color: 'var(--color-gold)' }}>R² = {modelsData?.logarithmic_model?.r_squared?.toFixed(4) || '---'}</td>
+                    <td style={{ color: 'var(--color-gold)' }}>
+                      {modelsData?.logarithmic_model?.status === 'ESTIMATED'
+                        ? `beta = ${modelsData.logarithmic_model.beta?.toFixed(4) || '---'}`
+                        : `Unavailable (${modelsData?.logarithmic_model?.error?.code || modelsData?.logarithmic_model?.status || 'NOT_ESTIMABLE'})`}
+                    </td>
+                    <td style={{ color: 'var(--color-gold)' }}>
+                      {modelsData?.logarithmic_model?.status === 'ESTIMATED' && modelsData.logarithmic_model.beta_se !== null && modelsData.logarithmic_model.beta_se !== undefined
+                        ? `${modelsData.logarithmic_model.beta_se.toFixed(6)} (Classical OLS SE)`
+                        : '---'}
+                    </td>
+                    <td style={{ color: 'var(--color-gold)' }}>
+                      {modelsData?.logarithmic_model?.status === 'ESTIMATED' && modelsData.logarithmic_model.beta_t_stat !== null && modelsData.logarithmic_model.beta_t_stat !== undefined
+                        ? `t = ${modelsData.logarithmic_model.beta_t_stat.toFixed(2)} (p = ${modelsData.logarithmic_model.beta_p_value?.toFixed(4) || '---'})`
+                        : '---'}
+                    </td>
+                    <td style={{ color: 'var(--color-gold)' }}>
+                      {modelsData?.logarithmic_model?.status === 'ESTIMATED'
+                        ? (modelsData.logarithmic_model.metrics_diagnostics?.r_squared?.status === 'UNDEFINED_METRIC'
+                            ? 'R² = Undefined (SS_tot=0)'
+                            : `R² = ${modelsData.logarithmic_model.r_squared?.toFixed(4) || '---'}`)
+                        : '---'}
+                    </td>
                   </tr>
                   <tr>
                     <td style={{ color: 'var(--color-buy)' }}>Power Law (Tier Binned OLS)</td>
-                    <td style={{ color: 'var(--color-buy)' }}>gamma = {modelsData?.power_law_model?.gamma?.toFixed(4) || '---'}</td>
-                    <td style={{ color: 'var(--color-buy)' }}>{modelsData?.power_law_model?.gamma_se ? `${modelsData.power_law_model.gamma_se.toFixed(4)} (Classical OLS SE)` : '---'}</td>
+                    <td style={{ color: 'var(--color-buy)' }}>
+                      {modelsData?.power_law_model?.status === 'ESTIMATED' && modelsData.power_law_model.gamma !== null && modelsData.power_law_model.gamma !== undefined
+                        ? `gamma = ${modelsData.power_law_model.gamma.toFixed(4)}`
+                        : `Unavailable (${modelsData?.power_law_model?.error?.code || modelsData?.power_law_model?.status || 'NOT_ESTIMABLE'})`}
+                    </td>
+                    <td style={{ color: 'var(--color-buy)' }}>
+                      {modelsData?.power_law_model?.status === 'ESTIMATED' && modelsData.power_law_model.gamma_se
+                        ? `${modelsData.power_law_model.gamma_se.toFixed(4)} (Classical OLS SE)`
+                        : '---'}
+                    </td>
                     <td style={{ color: 'var(--color-buy)' }}>
                       {(() => {
-                        const g = modelsData?.power_law_model?.gamma;
-                        const se = modelsData?.power_law_model?.gamma_se;
-                        if (g !== undefined && g !== null && se) {
-                          const t = (g - 0.5) / se;
+                        const m = modelsData?.power_law_model;
+                        if (m?.status === 'ESTIMATED' && m.gamma !== null && m.gamma !== undefined && m.gamma_se) {
+                          const t = (m.gamma - 0.5) / m.gamma_se;
                           return `t = ${t.toFixed(2)} vs 0.5 (p < 0.001)`;
                         }
                         return '---';
                       })()}
                     </td>
-                    <td>Tier R² = {modelsData?.power_law_model?.r_squared_binned?.toFixed(4) || '---'}</td>
+                    <td>
+                      {modelsData?.power_law_model?.status === 'ESTIMATED'
+                        ? `Tier R² = ${modelsData.power_law_model.r_squared_binned?.toFixed(4) || '---'}`
+                        : '---'}
+                    </td>
                   </tr>
                   {modelsData?.power_law_model?.wls_fit && (
                     <tr>
                       <td style={{ color: 'var(--color-gold)' }}>Power Law (WLS Tier-Weighted)</td>
                       <td style={{ color: 'var(--color-gold)' }}>
-                        gamma = {modelsData.power_law_model.wls_fit.gamma_wls.toFixed(4)}
+                        {modelsData.power_law_model.wls_fit.gamma_wls !== null && modelsData.power_law_model.wls_fit.gamma_wls !== undefined
+                          ? `gamma = ${modelsData.power_law_model.wls_fit.gamma_wls.toFixed(4)}`
+                          : `Unavailable (${(modelsData.power_law_model.wls_fit as any).error?.code || (modelsData.power_law_model.wls_fit as any).status || 'FIT_FAILED'})`}
                       </td>
                       <td style={{ color: 'var(--color-gold)' }}>
-                        {modelsData.power_law_model.wls_fit.gamma_wls_se.toFixed(4)} (Classical WLS SE)
+                        {modelsData.power_law_model.wls_fit.gamma_wls_se !== null && modelsData.power_law_model.wls_fit.gamma_wls_se !== undefined
+                          ? `${modelsData.power_law_model.wls_fit.gamma_wls_se.toFixed(4)} (Classical WLS SE)`
+                          : '---'}
                       </td>
                       <td style={{ color: 'var(--color-gold)' }}>
-                        t = {((modelsData.power_law_model.wls_fit.gamma_wls - 0.5) / modelsData.power_law_model.wls_fit.gamma_wls_se).toFixed(2)} vs 0.5 (p &lt; 0.001)
+                        {modelsData.power_law_model.wls_fit.gamma_wls !== null && modelsData.power_law_model.wls_fit.gamma_wls_se
+                          ? `t = ${((modelsData.power_law_model.wls_fit.gamma_wls - 0.5) / modelsData.power_law_model.wls_fit.gamma_wls_se).toFixed(2)} vs 0.5 (p < 0.001)`
+                          : '---'}
                       </td>
-                      <td>WLS R² = {modelsData.power_law_model.wls_fit.r_squared_wls.toFixed(4)}</td>
+                      <td>
+                        {modelsData.power_law_model.wls_fit.r_squared_wls !== null && modelsData.power_law_model.wls_fit.r_squared_wls !== undefined
+                          ? `WLS R² = ${modelsData.power_law_model.wls_fit.r_squared_wls.toFixed(4)}`
+                          : '---'}
+                      </td>
                     </tr>
                   )}
                   {modelsData?.power_law_model?.trade_level_fit && modelsData.power_law_model.trade_level_fit.gamma_trade !== 0 && (
@@ -618,6 +742,90 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
           </div>
         </div>
       </div>
+
+      {/* M3: Temporal Dependence & Moving Block Bootstrap Sensitivity Card */}
+      {(() => {
+        const sensTable = modelsData?.inference_sensitivity_table || modelsData?.power_law_model?.moving_block_bootstrap?.sensitivity_table || [];
+        const sensVerdict = modelsData?.sensitivity_verdict || modelsData?.power_law_model?.moving_block_bootstrap?.sensitivity_verdict;
+        const sensSummary = modelsData?.sensitivity_summary || modelsData?.power_law_model?.moving_block_bootstrap?.sensitivity_summary;
+
+        if (!sensTable || sensTable.length === 0) return null;
+
+        const isSensitive = sensVerdict === 'SENSITIVE_TO_TEMPORAL_DEPENDENCE_SPECIFICATION';
+
+        return (
+          <div className="mml-card" style={{ borderLeft: isSensitive ? '4px solid #f59e0b' : '4px solid var(--color-buy)' }}>
+            <div className="mml-card-title">
+              <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: isSensitive ? '#f59e0b' : 'var(--color-buy)' }}>
+                <CheckCircle size={15} /> TEMPORAL DEPENDENCE &amp; INFERENCE SENSITIVITY GRID (b &isin; [50, 100, 250, 500] EVENTS)
+              </span>
+              <span style={{
+                fontSize: '0.68rem',
+                fontFamily: 'var(--font-mono)',
+                padding: '2px 8px',
+                borderRadius: '3px',
+                background: isSensitive ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                color: isSensitive ? '#f59e0b' : 'var(--color-buy)',
+                fontWeight: 700
+              }}>
+                {isSensitive ? 'SENSITIVE TO TEMPORAL SPECIFICATION' : 'STABLE ACROSS BLOCK LENGTHS'}
+              </span>
+            </div>
+
+            <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginBottom: '12px', lineHeight: '1.45' }}>
+              Moving Block Bootstrap (MBB) re-samples contiguous event blocks of size <em>b</em> to account for temporal clustering and order-flow dependence in high-frequency child trade arrivals.
+              {sensSummary && <span style={{ marginLeft: '6px', color: '#fff' }}>{sensSummary}</span>}
+            </div>
+
+            <div className="table-responsive">
+              <table className="mml-table mono" style={{ fontSize: '0.74rem' }}>
+                <thead>
+                  <tr>
+                    <th>ESTIMATOR</th>
+                    <th>INFERENCE METHOD</th>
+                    <th>BLOCK SIZE (UNIT DESCRIPTION)</th>
+                    <th>BOOTSTRAP POINT EST.</th>
+                    <th>95% MBB CI</th>
+                    <th>H0: &gamma; = 0 (CONTAINS 0)</th>
+                    <th>H0: &gamma; = 0.5 (CONTAINS 0.5)</th>
+                    <th>REPLICATIONS</th>
+                    <th>INFERENCE VERDICT</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sensTable.map((item: any, idx: number) => {
+                    const hasZero = item.ci_contains_zero;
+                    const hasHalf = item.ci_contains_half;
+                    const isWls = item.estimator.includes('WLS');
+                    return (
+                      <tr key={idx}>
+                        <td style={{ color: isWls ? 'var(--color-gold)' : 'var(--color-buy)', fontWeight: 600 }}>{item.estimator}</td>
+                        <td>{item.inference_method}</td>
+                        <td>{item.unit_description || `${item.block_size_events} events`}</td>
+                        <td style={{ fontWeight: 600 }}>
+                          {item.point_estimate !== null && item.point_estimate !== undefined ? item.point_estimate.toFixed(4) : '---'}
+                          {item.standard_error ? ` (SE: ${item.standard_error.toFixed(4)})` : ''}
+                        </td>
+                        <td style={{ color: item.ci_95 ? (hasZero ? 'var(--color-buy)' : '#ffb74d') : 'var(--text-dim)' }}>
+                          {item.ci_95 ? `[${item.ci_95[0].toFixed(3)}, ${item.ci_95[1] > 0 ? '+' : ''}${item.ci_95[1].toFixed(3)}]` : '---'}
+                        </td>
+                        <td style={{ fontWeight: 600, color: hasZero === null ? 'var(--text-dim)' : (hasZero ? 'var(--color-buy)' : '#ffb74d') }}>
+                          {hasZero === null ? '---' : (hasZero ? 'Yes (Retains H0)' : 'No (Rejects H0)')}
+                        </td>
+                        <td style={{ fontWeight: 600, color: hasHalf === null ? 'var(--text-dim)' : (hasHalf ? 'var(--color-buy)' : 'var(--color-sell)') }}>
+                          {hasHalf === null ? '---' : (hasHalf ? 'Yes (Retains 0.5)' : 'No (Rejects 0.5)')}
+                        </td>
+                        <td>{item.replications ?? '---'}</td>
+                        <td style={{ fontSize: '0.71rem', color: 'var(--text-dim)' }}>{item.verdict || '---'}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Discrete Economic Strata & Trade Size Point Mass Table */}
       {modelsData?.binned_empirical && modelsData.binned_empirical.length > 0 && (

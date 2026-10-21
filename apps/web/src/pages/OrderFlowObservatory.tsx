@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import ReactECharts from 'echarts-for-react';
 import { fetchFlowBuckets, fetchAutocorrelation, fetchDistributions, fetchHawkes } from '../api/client';
 import { FlowBucket, AutocorrResult, TradeSizeDistribution, DurationDistribution } from '../types';
@@ -17,9 +17,10 @@ export const OrderFlowObservatory: React.FC<OrderFlowObservatoryProps> = ({ date
   const [hawkes, setHawkes] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const activeQueryIdRef = useRef<number>(0);
 
   useEffect(() => {
-    let isMounted = true;
+    const currentQueryId = ++activeQueryIdRef.current;
     setLoading(true);
     setErrorMessage(null);
     setBuckets([]);
@@ -35,7 +36,7 @@ export const OrderFlowObservatory: React.FC<OrderFlowObservatoryProps> = ({ date
       fetchHawkes('BTCUSDT', date, 5000, 10.0)
     ])
       .then(([bData, aData, dData, hData]) => {
-        if (isMounted) {
+        if (currentQueryId === activeQueryIdRef.current) {
           setBuckets(bData);
           setAutocorr(aData);
           setSizeDist(dData.trade_size_distribution);
@@ -46,13 +47,15 @@ export const OrderFlowObservatory: React.FC<OrderFlowObservatoryProps> = ({ date
       })
       .catch((err) => {
         console.error(err);
-        if (isMounted) {
+        if (currentQueryId === activeQueryIdRef.current) {
           setErrorMessage(err.message || 'Error loading order flow data');
           setLoading(false);
         }
       });
 
-    return () => { isMounted = false; };
+    return () => {
+      // Ignored superseded queries
+    };
   }, [date, interval]);
 
   // Flow & CVD Chart Options

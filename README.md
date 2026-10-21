@@ -47,7 +47,7 @@ MarketMicrostructureLab/
 ├── research/
 │   └── reports/               # Academic research report (MML_BTCUSDT_MICROSTRUCTURE_REPORT.md)
 └── tests/
-    └── unit/                  # Automated pytest suite (15 unit & integration tests)
+    └── unit/                  # Automated pytest suite (57 unit & regression tests)
 ```
 
 ---
@@ -101,11 +101,12 @@ uv pip install -e .
 .\.venv\Scripts\python scripts/run_audit.py
 ```
 
-### 3. Run Automated Tests
+### 3. Run Automated Tests & Provenance Audit
 ```powershell
 .\.venv\Scripts\pytest -v
+.\.venv\Scripts\python scripts/recompute_and_audit_provenance.py
 ```
-*(All 15 unit and integration tests will run and pass).*
+*(All 57 unit and regression tests and 3-stage provenance checks pass 100%).*
 
 ### 4. Start the Application
 You can launch both services using the provided PowerShell script or run them in separate terminals:
@@ -124,6 +125,14 @@ Open your browser to: **http://localhost:5173**
 
 ---
 
-## 6. Academic License & Disclaimer
+## 6. Deployment & Runtime Modes (M7 Specification)
+- **Static Research Deployment (GitHub Pages)**: The public frontend terminal is hosted at `https://hantrleko.github.io/MarketMicrostructureLab/` reading pre-computed, cryptographically verified static JSON fixtures (Contract 1.3.0). It provides an offline, non-realtime historical research environment.
+- **Local Analytical Engine (DuckDB & FastAPI)**: Running locally with `uvicorn apps.api.main:app` connects directly to the 10.6M row normalized Parquet files via DuckDB for real-time slicing and dynamic modeling.
+- **Docker Status**: `EXPERIMENTAL / UNVERIFIED (LOCAL RUNTIME)`. Dockerfile and docker-compose configurations are provided for containerized deployment, but host environments lacking an active Docker daemon have not executed container images. The verified reference runtimes are the local Python virtual environment and the GitHub Pages static deployment.
+
+---
+
+## 7. Econometric Framing & Disclaimer (M4 Bounded Language)
 - **Non-Commercial License**: The historical data from Binance Vision is strictly licensed for non-commercial research, academic inquiry, and educational purposes.
-- **Microstructure Notice**: Transaction-price responses reflect effective trade-price dynamics and bid-ask bounce; they should not be conflated with exogenous mid-quote price impact or guaranteed strategy returns.
+- **Bounded Empirical Framing**: Square-root price impact ($I(Q) \approx Y \sigma \sqrt{Q/V}$) is an empirical scaling relationship established for cumulative institutional meta-orders executed over hours or days; it is not an axiomatic law, universal invariance, or physical theorem. Single child-order tick response $\mathcal{R}(v, k)$ measures instantaneous liquidity depletion and transient quote replenishment; it cannot be conflated with exogenous meta-order impact.
+- **Inference Precision**: Confidence interval containment of zero does not prove the absence of an effect; it indicates that the current sample and specification do not detect a statistically distinguishable difference from zero. Power-law scaling parameters depend substantially on the date, specification, and temporal dependence assumptions.

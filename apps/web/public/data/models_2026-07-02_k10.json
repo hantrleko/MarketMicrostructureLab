@@ -10,7 +10,7 @@
     "sample_end_utc": "2026-07-02T08:48:37.472003Z",
     "sample_duration_seconds": 7379.771087,
     "sampling_method": "CHRONOLOGICAL_TICK_RESPONSE",
-    "generation_timestamp_utc": "2026-10-21T11:20:45.943755+00:00",
+    "generation_timestamp_utc": "2026-10-21T12:07:23.560237+00:00",
     "status": "EXPLORATORY_RESEARCH",
     "scope_limitation_disclosure": "Analyzed sample covers consecutive chronological window from 2026-07-02T06:45:37.700916Z to 2026-07-02T08:48:37.472003Z (7379.8s, 249,990 tick executions). Microstructure empirical parameters (scaling exponent, autocorrelation, point-mass proportions) reflect this specific intraday regime and cannot be extrapolated to full 24-hour trading without cross-regime validation."
   },
@@ -148,7 +148,60 @@
   ],
   "linear_model": {
     "name": "Linear (R = alpha + beta * Q)",
+    "schema_version": "1.3.0",
     "status": "ESTIMATED",
+    "is_estimable": true,
+    "fit": {
+      "alpha": 0.04821969617756566,
+      "alpha_se": 0.0005231772676847086,
+      "beta": 0.0026833949324621374,
+      "beta_se": 0.026103147174148335,
+      "beta_t_stat": 0.10279967065119566,
+      "beta_p_value": 0.9181219666633161,
+      "r_squared": 3.866748038872103e-06,
+      "aic": -474803.018516283,
+      "bic": -474782.1601638909
+    },
+    "error": null,
+    "input_diagnostics": {
+      "total_observations": 249990,
+      "quantity_variance": 0.00470594389845447,
+      "return_variance": 0.008763348082277994
+    },
+    "metrics_diagnostics": {},
+    "alpha": 0.04821969617756566,
+    "alpha_se": 0.0005231772676847086,
+    "beta": 0.0026833949324621374,
+    "beta_se": 0.026103147174148335,
+    "beta_t_stat": 0.10279967065119566,
+    "beta_p_value": 0.9181219666633161,
+    "r_squared": 3.866748038872103e-06,
+    "aic": -474803.018516283,
+    "bic": -474782.1601638909
+  },
+  "linear_fit": {
+    "name": "Linear (R = alpha + beta * Q)",
+    "schema_version": "1.3.0",
+    "status": "ESTIMATED",
+    "is_estimable": true,
+    "fit": {
+      "alpha": 0.04821969617756566,
+      "alpha_se": 0.0005231772676847086,
+      "beta": 0.0026833949324621374,
+      "beta_se": 0.026103147174148335,
+      "beta_t_stat": 0.10279967065119566,
+      "beta_p_value": 0.9181219666633161,
+      "r_squared": 3.866748038872103e-06,
+      "aic": -474803.018516283,
+      "bic": -474782.1601638909
+    },
+    "error": null,
+    "input_diagnostics": {
+      "total_observations": 249990,
+      "quantity_variance": 0.00470594389845447,
+      "return_variance": 0.008763348082277994
+    },
+    "metrics_diagnostics": {},
     "alpha": 0.04821969617756566,
     "alpha_se": 0.0005231772676847086,
     "beta": 0.0026833949324621374,
@@ -161,7 +214,60 @@
   },
   "logarithmic_model": {
     "name": "Logarithmic (R = alpha + beta * ln(Q))",
+    "schema_version": "1.3.0",
     "status": "ESTIMATED",
+    "is_estimable": true,
+    "fit": {
+      "alpha": 0.03018833979834237,
+      "alpha_se": 0.0017987209902745414,
+      "beta": -0.002144384766015194,
+      "beta_se": 0.0001988016008635167,
+      "beta_t_stat": -10.786556832041704,
+      "beta_p_value": 3.98438874627193e-27,
+      "r_squared": 0.0017527463772519791,
+      "aic": -475240.60538183665,
+      "bic": -475219.74702944455
+    },
+    "error": null,
+    "input_diagnostics": {
+      "total_observations": 249990,
+      "quantity_variance": 0.00470594389845447,
+      "return_variance": 0.008763348082277994
+    },
+    "metrics_diagnostics": {},
+    "alpha": 0.03018833979834237,
+    "alpha_se": 0.0017987209902745414,
+    "beta": -0.002144384766015194,
+    "beta_se": 0.0001988016008635167,
+    "beta_t_stat": -10.786556832041704,
+    "beta_p_value": 3.98438874627193e-27,
+    "r_squared": 0.0017527463772519791,
+    "aic": -475240.60538183665,
+    "bic": -475219.74702944455
+  },
+  "logarithmic_fit": {
+    "name": "Logarithmic (R = alpha + beta * ln(Q))",
+    "schema_version": "1.3.0",
+    "status": "ESTIMATED",
+    "is_estimable": true,
+    "fit": {
+      "alpha": 0.03018833979834237,
+      "alpha_se": 0.0017987209902745414,
+      "beta": -0.002144384766015194,
+      "beta_se": 0.0001988016008635167,
+      "beta_t_stat": -10.786556832041704,
+      "beta_p_value": 3.98438874627193e-27,
+      "r_squared": 0.0017527463772519791,
+      "aic": -475240.60538183665,
+      "bic": -475219.74702944455
+    },
+    "error": null,
+    "input_diagnostics": {
+      "total_observations": 249990,
+      "quantity_variance": 0.00470594389845447,
+      "return_variance": 0.008763348082277994
+    },
+    "metrics_diagnostics": {},
     "alpha": 0.03018833979834237,
     "alpha_se": 0.0017987209902745414,
     "beta": -0.002144384766015194,
@@ -188,10 +294,17 @@
       "status": "ESTIMATED",
       "estimator": "Classical WLS (weights = tier count)",
       "se_type": "Classical WLS SE (unadjusted for cross-tier residual autocorrelation)",
+      "gamma": -0.0649656625630226,
       "gamma_wls": -0.0649656625630226,
+      "se": 0.037491664209802995,
       "gamma_wls_se": 0.037491664209802995,
+      "ci_95": [
+        -0.13844932441423646,
+        0.008517999288191275
+      ],
       "ci_95_lower": -0.13844932441423646,
       "ci_95_upper": 0.008517999288191275,
+      "r_squared": 0.27289951054559636,
       "r_squared_wls": 0.27289951054559636
     },
     "trade_level_fit": {
@@ -380,6 +493,7 @@
       "status": "SUCCESS",
       "methodology": "Moving Block Bootstrap with economic tier re-stratification",
       "block_sizes_evaluated": [
+        50,
         100,
         250,
         500
@@ -387,86 +501,271 @@
       "primary_block_size": 250,
       "primary_result": {
         "block_size": 250,
+        "unit_label": "250 events (~4.0s primary decay horizon)",
         "replications_completed": 100,
         "replications_attempted": 100,
         "fit_failure_rate_pct": 0.0,
-        "wls_gamma_bootstrap_mean": -0.06604601291497814,
-        "wls_gamma_bootstrap_se": 0.009758252372505168,
+        "wls_gamma_bootstrap_mean": -0.06840831223548599,
+        "wls_gamma_bootstrap_se": 0.010390976849492493,
         "wls_gamma_ci_95": [
-          -0.08405395824309865,
-          -0.0481813795570963
+          -0.08635697116535568,
+          -0.05101442989569354
         ],
-        "ols_gamma_bootstrap_mean": -0.04537283968773728,
-        "ols_gamma_bootstrap_se": 0.02440964045365212,
+        "ols_gamma_bootstrap_mean": -0.04998171047712249,
+        "ols_gamma_bootstrap_se": 0.02710964981436548,
         "ols_gamma_ci_95": [
-          -0.08635793595548459,
-          -0.0032784077995794214
+          -0.11890440068728743,
+          -0.009314256243559398
         ],
+        "ci_contains_zero_wls": false,
+        "ci_contains_half_wls": false,
+        "ci_contains_zero_ols": false,
+        "ci_contains_half_ols": false,
         "ci_contains_half": false,
         "ci_contains_zero": false
       },
       "results_by_block_size": {
-        "block_100": {
-          "block_size": 100,
+        "block_50": {
+          "block_size": 50,
+          "unit_label": "50 events (~0.8s micro-clustering)",
           "replications_completed": 100,
           "replications_attempted": 100,
           "fit_failure_rate_pct": 0.0,
-          "wls_gamma_bootstrap_mean": -0.06581389391927285,
-          "wls_gamma_bootstrap_se": 0.009580776116311661,
+          "wls_gamma_bootstrap_mean": -0.06499789925912366,
+          "wls_gamma_bootstrap_se": 0.008318854948612137,
           "wls_gamma_ci_95": [
-            -0.08364933027006277,
-            -0.048595175463282396
+            -0.08134709480411186,
+            -0.05019419500072339
           ],
-          "ols_gamma_bootstrap_mean": -0.045038082567800085,
-          "ols_gamma_bootstrap_se": 0.026228170887155795,
+          "ols_gamma_bootstrap_mean": -0.04400716770734067,
+          "ols_gamma_bootstrap_se": 0.024826730447994216,
           "ols_gamma_ci_95": [
-            -0.10520315003518917,
-            -0.005313946067914069
+            -0.11005982668886588,
+            -0.006546936555027142
           ],
+          "ci_contains_zero_wls": false,
+          "ci_contains_half_wls": false,
+          "ci_contains_zero_ols": false,
+          "ci_contains_half_ols": false,
+          "ci_contains_half": false,
+          "ci_contains_zero": false
+        },
+        "block_100": {
+          "block_size": 100,
+          "unit_label": "100 events (~1.5s short memory)",
+          "replications_completed": 100,
+          "replications_attempted": 100,
+          "fit_failure_rate_pct": 0.0,
+          "wls_gamma_bootstrap_mean": -0.06614494498772118,
+          "wls_gamma_bootstrap_se": 0.008367542011536366,
+          "wls_gamma_ci_95": [
+            -0.08167256516158156,
+            -0.04946242773959766
+          ],
+          "ols_gamma_bootstrap_mean": -0.04492310029349704,
+          "ols_gamma_bootstrap_se": 0.023739833594215744,
+          "ols_gamma_ci_95": [
+            -0.09583600470134936,
+            -0.008342348561858861
+          ],
+          "ci_contains_zero_wls": false,
+          "ci_contains_half_wls": false,
+          "ci_contains_zero_ols": false,
+          "ci_contains_half_ols": false,
           "ci_contains_half": false,
           "ci_contains_zero": false
         },
         "block_250": {
           "block_size": 250,
+          "unit_label": "250 events (~4.0s primary decay horizon)",
           "replications_completed": 100,
           "replications_attempted": 100,
           "fit_failure_rate_pct": 0.0,
-          "wls_gamma_bootstrap_mean": -0.06604601291497814,
-          "wls_gamma_bootstrap_se": 0.009758252372505168,
+          "wls_gamma_bootstrap_mean": -0.06840831223548599,
+          "wls_gamma_bootstrap_se": 0.010390976849492493,
           "wls_gamma_ci_95": [
-            -0.08405395824309865,
-            -0.0481813795570963
+            -0.08635697116535568,
+            -0.05101442989569354
           ],
-          "ols_gamma_bootstrap_mean": -0.04537283968773728,
-          "ols_gamma_bootstrap_se": 0.02440964045365212,
+          "ols_gamma_bootstrap_mean": -0.04998171047712249,
+          "ols_gamma_bootstrap_se": 0.02710964981436548,
           "ols_gamma_ci_95": [
-            -0.08635793595548459,
-            -0.0032784077995794214
+            -0.11890440068728743,
+            -0.009314256243559398
           ],
+          "ci_contains_zero_wls": false,
+          "ci_contains_half_wls": false,
+          "ci_contains_zero_ols": false,
+          "ci_contains_half_ols": false,
           "ci_contains_half": false,
           "ci_contains_zero": false
         },
         "block_500": {
           "block_size": 500,
+          "unit_label": "500 events (~8.0s macro-trade horizon)",
           "replications_completed": 100,
           "replications_attempted": 100,
           "fit_failure_rate_pct": 0.0,
-          "wls_gamma_bootstrap_mean": -0.06464746115138081,
-          "wls_gamma_bootstrap_se": 0.010490308632275413,
+          "wls_gamma_bootstrap_mean": -0.06747455477699295,
+          "wls_gamma_bootstrap_se": 0.009503182008569798,
           "wls_gamma_ci_95": [
-            -0.08500584445963842,
-            -0.046011293825046484
+            -0.08632622675869829,
+            -0.05067835083789954
           ],
-          "ols_gamma_bootstrap_mean": -0.04042124253365086,
-          "ols_gamma_bootstrap_se": 0.025114920765407545,
+          "ols_gamma_bootstrap_mean": -0.044287802280250504,
+          "ols_gamma_bootstrap_se": 0.022538794427839317,
           "ols_gamma_ci_95": [
-            -0.09766568018712864,
-            -0.0023164232671761516
+            -0.1028352699909612,
+            -0.004531436656467132
           ],
+          "ci_contains_zero_wls": false,
+          "ci_contains_half_wls": false,
+          "ci_contains_zero_ols": false,
+          "ci_contains_half_ols": false,
           "ci_contains_half": false,
           "ci_contains_zero": false
         }
-      }
+      },
+      "sensitivity_table": [
+        {
+          "estimator": "Weighted Least Squares (WLS)",
+          "parameter": "gamma",
+          "inference_method": "Moving Block Bootstrap (b=50)",
+          "block_size_events": 50,
+          "unit_description": "50 events (~0.8s micro-clustering)",
+          "point_estimate": -0.06499789925912366,
+          "standard_error": 0.008318854948612137,
+          "ci_95": [
+            -0.08134709480411186,
+            -0.05019419500072339
+          ],
+          "ci_contains_zero": false,
+          "ci_contains_half": false,
+          "replications": 100,
+          "verdict": "Strictly negative (rules out 0), rejects 0.5"
+        },
+        {
+          "estimator": "Tier-Binned OLS",
+          "parameter": "gamma",
+          "inference_method": "Moving Block Bootstrap (b=50)",
+          "block_size_events": 50,
+          "unit_description": "50 events (~0.8s micro-clustering)",
+          "point_estimate": -0.04400716770734067,
+          "standard_error": 0.024826730447994216,
+          "ci_95": [
+            -0.11005982668886588,
+            -0.006546936555027142
+          ],
+          "ci_contains_zero": false,
+          "ci_contains_half": false,
+          "replications": 100,
+          "verdict": "Strictly negative (rules out 0), rejects 0.5"
+        },
+        {
+          "estimator": "Weighted Least Squares (WLS)",
+          "parameter": "gamma",
+          "inference_method": "Moving Block Bootstrap (b=100)",
+          "block_size_events": 100,
+          "unit_description": "100 events (~1.5s short memory)",
+          "point_estimate": -0.06614494498772118,
+          "standard_error": 0.008367542011536366,
+          "ci_95": [
+            -0.08167256516158156,
+            -0.04946242773959766
+          ],
+          "ci_contains_zero": false,
+          "ci_contains_half": false,
+          "replications": 100,
+          "verdict": "Strictly negative (rules out 0), rejects 0.5"
+        },
+        {
+          "estimator": "Tier-Binned OLS",
+          "parameter": "gamma",
+          "inference_method": "Moving Block Bootstrap (b=100)",
+          "block_size_events": 100,
+          "unit_description": "100 events (~1.5s short memory)",
+          "point_estimate": -0.04492310029349704,
+          "standard_error": 0.023739833594215744,
+          "ci_95": [
+            -0.09583600470134936,
+            -0.008342348561858861
+          ],
+          "ci_contains_zero": false,
+          "ci_contains_half": false,
+          "replications": 100,
+          "verdict": "Strictly negative (rules out 0), rejects 0.5"
+        },
+        {
+          "estimator": "Weighted Least Squares (WLS)",
+          "parameter": "gamma",
+          "inference_method": "Moving Block Bootstrap (b=250)",
+          "block_size_events": 250,
+          "unit_description": "250 events (~4.0s primary decay horizon)",
+          "point_estimate": -0.06840831223548599,
+          "standard_error": 0.010390976849492493,
+          "ci_95": [
+            -0.08635697116535568,
+            -0.05101442989569354
+          ],
+          "ci_contains_zero": false,
+          "ci_contains_half": false,
+          "replications": 100,
+          "verdict": "Strictly negative (rules out 0), rejects 0.5"
+        },
+        {
+          "estimator": "Tier-Binned OLS",
+          "parameter": "gamma",
+          "inference_method": "Moving Block Bootstrap (b=250)",
+          "block_size_events": 250,
+          "unit_description": "250 events (~4.0s primary decay horizon)",
+          "point_estimate": -0.04998171047712249,
+          "standard_error": 0.02710964981436548,
+          "ci_95": [
+            -0.11890440068728743,
+            -0.009314256243559398
+          ],
+          "ci_contains_zero": false,
+          "ci_contains_half": false,
+          "replications": 100,
+          "verdict": "Strictly negative (rules out 0), rejects 0.5"
+        },
+        {
+          "estimator": "Weighted Least Squares (WLS)",
+          "parameter": "gamma",
+          "inference_method": "Moving Block Bootstrap (b=500)",
+          "block_size_events": 500,
+          "unit_description": "500 events (~8.0s macro-trade horizon)",
+          "point_estimate": -0.06747455477699295,
+          "standard_error": 0.009503182008569798,
+          "ci_95": [
+            -0.08632622675869829,
+            -0.05067835083789954
+          ],
+          "ci_contains_zero": false,
+          "ci_contains_half": false,
+          "replications": 100,
+          "verdict": "Strictly negative (rules out 0), rejects 0.5"
+        },
+        {
+          "estimator": "Tier-Binned OLS",
+          "parameter": "gamma",
+          "inference_method": "Moving Block Bootstrap (b=500)",
+          "block_size_events": 500,
+          "unit_description": "500 events (~8.0s macro-trade horizon)",
+          "point_estimate": -0.044287802280250504,
+          "standard_error": 0.022538794427839317,
+          "ci_95": [
+            -0.1028352699909612,
+            -0.004531436656467132
+          ],
+          "ci_contains_zero": false,
+          "ci_contains_half": false,
+          "replications": 100,
+          "verdict": "Strictly negative (rules out 0), rejects 0.5"
+        }
+      ],
+      "sensitivity_verdict": "STABLE_ACROSS_BLOCK_SIZES",
+      "sensitivity_summary": "Confidence interval zero-containment behavior is uniform across evaluated block lengths."
     },
     "rejects_square_root_half": true,
     "ci_contains_zero": true,
@@ -497,34 +796,68 @@
       "p_value_wls": 0.0,
       "is_rejected_at_5pct": true,
       "ols_test": {
+        "name": "Tier-Binned OLS (Unweighted)",
+        "schema_version": "1.3.0",
         "status": "ESTIMATED",
-        "estimator": "Tier-Binned OLS (Unweighted)",
+        "is_estimable": true,
+        "fit": {
+          "gamma": -0.04102860999383329,
+          "se": 0.045411079982394555,
+          "ci_95": [
+            -0.1300343267593266,
+            0.04797710677166003
+          ],
+          "t_statistic": -11.914022088961218,
+          "p_value": 0.0,
+          "is_rejected_at_5pct": true
+        },
+        "error": null,
+        "input_diagnostics": {},
+        "metrics_diagnostics": {},
         "gamma": -0.04102860999383329,
         "se": 0.045411079982394555,
-        "se_type": "Classical OLS SE",
         "ci_95": [
           -0.1300343267593266,
           0.04797710677166003
         ],
         "t_statistic": -11.914022088961218,
         "p_value": 0.0,
-        "is_rejected_at_5pct": true
+        "is_rejected_at_5pct": true,
+        "estimator": "Tier-Binned OLS (Unweighted)",
+        "se_type": "Classical OLS SE"
       },
       "wls_test": {
+        "name": "Weighted Least Squares (Tier Sample Weights)",
+        "schema_version": "1.3.0",
         "status": "ESTIMATED",
-        "estimator": "Weighted Least Squares (Tier Sample Weights)",
+        "is_estimable": true,
+        "fit": {
+          "gamma": -0.0649656625630226,
+          "se": 0.037491664209802995,
+          "ci_95": [
+            -0.13844932441423646,
+            0.008517999288191275
+          ],
+          "t_statistic": -15.06910067799285,
+          "p_value": 0.0,
+          "is_rejected_at_5pct": true
+        },
+        "error": null,
+        "input_diagnostics": {},
+        "metrics_diagnostics": {},
         "gamma": -0.0649656625630226,
         "se": 0.037491664209802995,
-        "se_type": "Classical WLS SE",
         "ci_95": [
           -0.13844932441423646,
           0.008517999288191275
         ],
         "t_statistic": -15.06910067799285,
         "p_value": 0.0,
-        "is_rejected_at_5pct": true
+        "is_rejected_at_5pct": true,
+        "estimator": "Weighted Least Squares (Tier Sample Weights)",
+        "se_type": "Classical WLS SE"
       },
-      "interpretation": "Exploratory single child-order estimation: WLS power-law exponent gamma = -0.0650 (Classical WLS SE: 0.0375, 95% WLS CI: [-0.1384, 0.0085], encompasses zero) rejects the square-root null hypothesis H0: gamma = 0.5 (t = -15.07, p = 0.0000e+00); and binned OLS exponent gamma = -0.0410 (Classical OLS SE: 0.0454, 95% OLS CI: [-0.1300, 0.0480], encompasses zero) rejects H0: gamma = 0.5 (t = -11.91, p = 0.0000e+00). Child-order models exhibit low in-sample and out-of-sample explanatory power (R\u00b2 < 0.02), with stratified power-law estimates varying across dates and weighting specifications. Note: WLS standard errors are classical weighted SEs unadjusted for cross-tier residual autocorrelation. This finding strictly characterizes individual child-order conditional price response R(v, k). It does NOT constitute an empirical refutation of the classical Square-Root Law of Meta-Orders (which governs cumulative parent-order execution over hours or days), nor does it directly prove specific unobserved microstructure mechanisms (such as book replenishment or adverse selection ratios)."
+      "interpretation": "Square-root price impact is an empirical scaling relationship. This study estimates the power-law exponent under specified assets, intraday sample intervals, and regression specifications to evaluate compatibility with gamma = 0.5 (WLS gamma = -0.0650, 95% WLS CI: [-0.1384, 0.0085], encompasses zero) rejects compatibility with square-root exponent gamma = 0.5 (t = -15.07, p = 0.0000e+00); OLS gamma = -0.0410, 95% OLS CI: [-0.1300, 0.0480], encompasses zero) rejects H0: gamma = 0.5 (t = -11.91, p = 0.0000e+00). Results do not demonstrate universal or cross-asset validity. Child-order tick response cannot be conflated with exogenous meta-order impact or guaranteed execution alpha. Models exhibit low in-sample and out-of-sample explanatory power."
     }
   },
   "power_law_fit": {
@@ -543,10 +876,17 @@
       "status": "ESTIMATED",
       "estimator": "Classical WLS (weights = tier count)",
       "se_type": "Classical WLS SE (unadjusted for cross-tier residual autocorrelation)",
+      "gamma": -0.0649656625630226,
       "gamma_wls": -0.0649656625630226,
+      "se": 0.037491664209802995,
       "gamma_wls_se": 0.037491664209802995,
+      "ci_95": [
+        -0.13844932441423646,
+        0.008517999288191275
+      ],
       "ci_95_lower": -0.13844932441423646,
       "ci_95_upper": 0.008517999288191275,
+      "r_squared": 0.27289951054559636,
       "r_squared_wls": 0.27289951054559636
     },
     "trade_level_fit": {
@@ -735,6 +1075,7 @@
       "status": "SUCCESS",
       "methodology": "Moving Block Bootstrap with economic tier re-stratification",
       "block_sizes_evaluated": [
+        50,
         100,
         250,
         500
@@ -742,86 +1083,271 @@
       "primary_block_size": 250,
       "primary_result": {
         "block_size": 250,
+        "unit_label": "250 events (~4.0s primary decay horizon)",
         "replications_completed": 100,
         "replications_attempted": 100,
         "fit_failure_rate_pct": 0.0,
-        "wls_gamma_bootstrap_mean": -0.06604601291497814,
-        "wls_gamma_bootstrap_se": 0.009758252372505168,
+        "wls_gamma_bootstrap_mean": -0.06840831223548599,
+        "wls_gamma_bootstrap_se": 0.010390976849492493,
         "wls_gamma_ci_95": [
-          -0.08405395824309865,
-          -0.0481813795570963
+          -0.08635697116535568,
+          -0.05101442989569354
         ],
-        "ols_gamma_bootstrap_mean": -0.04537283968773728,
-        "ols_gamma_bootstrap_se": 0.02440964045365212,
+        "ols_gamma_bootstrap_mean": -0.04998171047712249,
+        "ols_gamma_bootstrap_se": 0.02710964981436548,
         "ols_gamma_ci_95": [
-          -0.08635793595548459,
-          -0.0032784077995794214
+          -0.11890440068728743,
+          -0.009314256243559398
         ],
+        "ci_contains_zero_wls": false,
+        "ci_contains_half_wls": false,
+        "ci_contains_zero_ols": false,
+        "ci_contains_half_ols": false,
         "ci_contains_half": false,
         "ci_contains_zero": false
       },
       "results_by_block_size": {
-        "block_100": {
-          "block_size": 100,
+        "block_50": {
+          "block_size": 50,
+          "unit_label": "50 events (~0.8s micro-clustering)",
           "replications_completed": 100,
           "replications_attempted": 100,
           "fit_failure_rate_pct": 0.0,
-          "wls_gamma_bootstrap_mean": -0.06581389391927285,
-          "wls_gamma_bootstrap_se": 0.009580776116311661,
+          "wls_gamma_bootstrap_mean": -0.06499789925912366,
+          "wls_gamma_bootstrap_se": 0.008318854948612137,
           "wls_gamma_ci_95": [
-            -0.08364933027006277,
-            -0.048595175463282396
+            -0.08134709480411186,
+            -0.05019419500072339
           ],
-          "ols_gamma_bootstrap_mean": -0.045038082567800085,
-          "ols_gamma_bootstrap_se": 0.026228170887155795,
+          "ols_gamma_bootstrap_mean": -0.04400716770734067,
+          "ols_gamma_bootstrap_se": 0.024826730447994216,
           "ols_gamma_ci_95": [
-            -0.10520315003518917,
-            -0.005313946067914069
+            -0.11005982668886588,
+            -0.006546936555027142
           ],
+          "ci_contains_zero_wls": false,
+          "ci_contains_half_wls": false,
+          "ci_contains_zero_ols": false,
+          "ci_contains_half_ols": false,
+          "ci_contains_half": false,
+          "ci_contains_zero": false
+        },
+        "block_100": {
+          "block_size": 100,
+          "unit_label": "100 events (~1.5s short memory)",
+          "replications_completed": 100,
+          "replications_attempted": 100,
+          "fit_failure_rate_pct": 0.0,
+          "wls_gamma_bootstrap_mean": -0.06614494498772118,
+          "wls_gamma_bootstrap_se": 0.008367542011536366,
+          "wls_gamma_ci_95": [
+            -0.08167256516158156,
+            -0.04946242773959766
+          ],
+          "ols_gamma_bootstrap_mean": -0.04492310029349704,
+          "ols_gamma_bootstrap_se": 0.023739833594215744,
+          "ols_gamma_ci_95": [
+            -0.09583600470134936,
+            -0.008342348561858861
+          ],
+          "ci_contains_zero_wls": false,
+          "ci_contains_half_wls": false,
+          "ci_contains_zero_ols": false,
+          "ci_contains_half_ols": false,
           "ci_contains_half": false,
           "ci_contains_zero": false
         },
         "block_250": {
           "block_size": 250,
+          "unit_label": "250 events (~4.0s primary decay horizon)",
           "replications_completed": 100,
           "replications_attempted": 100,
           "fit_failure_rate_pct": 0.0,
-          "wls_gamma_bootstrap_mean": -0.06604601291497814,
-          "wls_gamma_bootstrap_se": 0.009758252372505168,
+          "wls_gamma_bootstrap_mean": -0.06840831223548599,
+          "wls_gamma_bootstrap_se": 0.010390976849492493,
           "wls_gamma_ci_95": [
-            -0.08405395824309865,
-            -0.0481813795570963
+            -0.08635697116535568,
+            -0.05101442989569354
           ],
-          "ols_gamma_bootstrap_mean": -0.04537283968773728,
-          "ols_gamma_bootstrap_se": 0.02440964045365212,
+          "ols_gamma_bootstrap_mean": -0.04998171047712249,
+          "ols_gamma_bootstrap_se": 0.02710964981436548,
           "ols_gamma_ci_95": [
-            -0.08635793595548459,
-            -0.0032784077995794214
+            -0.11890440068728743,
+            -0.009314256243559398
           ],
+          "ci_contains_zero_wls": false,
+          "ci_contains_half_wls": false,
+          "ci_contains_zero_ols": false,
+          "ci_contains_half_ols": false,
           "ci_contains_half": false,
           "ci_contains_zero": false
         },
         "block_500": {
           "block_size": 500,
+          "unit_label": "500 events (~8.0s macro-trade horizon)",
           "replications_completed": 100,
           "replications_attempted": 100,
           "fit_failure_rate_pct": 0.0,
-          "wls_gamma_bootstrap_mean": -0.06464746115138081,
-          "wls_gamma_bootstrap_se": 0.010490308632275413,
+          "wls_gamma_bootstrap_mean": -0.06747455477699295,
+          "wls_gamma_bootstrap_se": 0.009503182008569798,
           "wls_gamma_ci_95": [
-            -0.08500584445963842,
-            -0.046011293825046484
+            -0.08632622675869829,
+            -0.05067835083789954
           ],
-          "ols_gamma_bootstrap_mean": -0.04042124253365086,
-          "ols_gamma_bootstrap_se": 0.025114920765407545,
+          "ols_gamma_bootstrap_mean": -0.044287802280250504,
+          "ols_gamma_bootstrap_se": 0.022538794427839317,
           "ols_gamma_ci_95": [
-            -0.09766568018712864,
-            -0.0023164232671761516
+            -0.1028352699909612,
+            -0.004531436656467132
           ],
+          "ci_contains_zero_wls": false,
+          "ci_contains_half_wls": false,
+          "ci_contains_zero_ols": false,
+          "ci_contains_half_ols": false,
           "ci_contains_half": false,
           "ci_contains_zero": false
         }
-      }
+      },
+      "sensitivity_table": [
+        {
+          "estimator": "Weighted Least Squares (WLS)",
+          "parameter": "gamma",
+          "inference_method": "Moving Block Bootstrap (b=50)",
+          "block_size_events": 50,
+          "unit_description": "50 events (~0.8s micro-clustering)",
+          "point_estimate": -0.06499789925912366,
+          "standard_error": 0.008318854948612137,
+          "ci_95": [
+            -0.08134709480411186,
+            -0.05019419500072339
+          ],
+          "ci_contains_zero": false,
+          "ci_contains_half": false,
+          "replications": 100,
+          "verdict": "Strictly negative (rules out 0), rejects 0.5"
+        },
+        {
+          "estimator": "Tier-Binned OLS",
+          "parameter": "gamma",
+          "inference_method": "Moving Block Bootstrap (b=50)",
+          "block_size_events": 50,
+          "unit_description": "50 events (~0.8s micro-clustering)",
+          "point_estimate": -0.04400716770734067,
+          "standard_error": 0.024826730447994216,
+          "ci_95": [
+            -0.11005982668886588,
+            -0.006546936555027142
+          ],
+          "ci_contains_zero": false,
+          "ci_contains_half": false,
+          "replications": 100,
+          "verdict": "Strictly negative (rules out 0), rejects 0.5"
+        },
+        {
+          "estimator": "Weighted Least Squares (WLS)",
+          "parameter": "gamma",
+          "inference_method": "Moving Block Bootstrap (b=100)",
+          "block_size_events": 100,
+          "unit_description": "100 events (~1.5s short memory)",
+          "point_estimate": -0.06614494498772118,
+          "standard_error": 0.008367542011536366,
+          "ci_95": [
+            -0.08167256516158156,
+            -0.04946242773959766
+          ],
+          "ci_contains_zero": false,
+          "ci_contains_half": false,
+          "replications": 100,
+          "verdict": "Strictly negative (rules out 0), rejects 0.5"
+        },
+        {
+          "estimator": "Tier-Binned OLS",
+          "parameter": "gamma",
+          "inference_method": "Moving Block Bootstrap (b=100)",
+          "block_size_events": 100,
+          "unit_description": "100 events (~1.5s short memory)",
+          "point_estimate": -0.04492310029349704,
+          "standard_error": 0.023739833594215744,
+          "ci_95": [
+            -0.09583600470134936,
+            -0.008342348561858861
+          ],
+          "ci_contains_zero": false,
+          "ci_contains_half": false,
+          "replications": 100,
+          "verdict": "Strictly negative (rules out 0), rejects 0.5"
+        },
+        {
+          "estimator": "Weighted Least Squares (WLS)",
+          "parameter": "gamma",
+          "inference_method": "Moving Block Bootstrap (b=250)",
+          "block_size_events": 250,
+          "unit_description": "250 events (~4.0s primary decay horizon)",
+          "point_estimate": -0.06840831223548599,
+          "standard_error": 0.010390976849492493,
+          "ci_95": [
+            -0.08635697116535568,
+            -0.05101442989569354
+          ],
+          "ci_contains_zero": false,
+          "ci_contains_half": false,
+          "replications": 100,
+          "verdict": "Strictly negative (rules out 0), rejects 0.5"
+        },
+        {
+          "estimator": "Tier-Binned OLS",
+          "parameter": "gamma",
+          "inference_method": "Moving Block Bootstrap (b=250)",
+          "block_size_events": 250,
+          "unit_description": "250 events (~4.0s primary decay horizon)",
+          "point_estimate": -0.04998171047712249,
+          "standard_error": 0.02710964981436548,
+          "ci_95": [
+            -0.11890440068728743,
+            -0.009314256243559398
+          ],
+          "ci_contains_zero": false,
+          "ci_contains_half": false,
+          "replications": 100,
+          "verdict": "Strictly negative (rules out 0), rejects 0.5"
+        },
+        {
+          "estimator": "Weighted Least Squares (WLS)",
+          "parameter": "gamma",
+          "inference_method": "Moving Block Bootstrap (b=500)",
+          "block_size_events": 500,
+          "unit_description": "500 events (~8.0s macro-trade horizon)",
+          "point_estimate": -0.06747455477699295,
+          "standard_error": 0.009503182008569798,
+          "ci_95": [
+            -0.08632622675869829,
+            -0.05067835083789954
+          ],
+          "ci_contains_zero": false,
+          "ci_contains_half": false,
+          "replications": 100,
+          "verdict": "Strictly negative (rules out 0), rejects 0.5"
+        },
+        {
+          "estimator": "Tier-Binned OLS",
+          "parameter": "gamma",
+          "inference_method": "Moving Block Bootstrap (b=500)",
+          "block_size_events": 500,
+          "unit_description": "500 events (~8.0s macro-trade horizon)",
+          "point_estimate": -0.044287802280250504,
+          "standard_error": 0.022538794427839317,
+          "ci_95": [
+            -0.1028352699909612,
+            -0.004531436656467132
+          ],
+          "ci_contains_zero": false,
+          "ci_contains_half": false,
+          "replications": 100,
+          "verdict": "Strictly negative (rules out 0), rejects 0.5"
+        }
+      ],
+      "sensitivity_verdict": "STABLE_ACROSS_BLOCK_SIZES",
+      "sensitivity_summary": "Confidence interval zero-containment behavior is uniform across evaluated block lengths."
     },
     "rejects_square_root_half": true,
     "ci_contains_zero": true,
@@ -852,34 +1378,68 @@
       "p_value_wls": 0.0,
       "is_rejected_at_5pct": true,
       "ols_test": {
+        "name": "Tier-Binned OLS (Unweighted)",
+        "schema_version": "1.3.0",
         "status": "ESTIMATED",
-        "estimator": "Tier-Binned OLS (Unweighted)",
+        "is_estimable": true,
+        "fit": {
+          "gamma": -0.04102860999383329,
+          "se": 0.045411079982394555,
+          "ci_95": [
+            -0.1300343267593266,
+            0.04797710677166003
+          ],
+          "t_statistic": -11.914022088961218,
+          "p_value": 0.0,
+          "is_rejected_at_5pct": true
+        },
+        "error": null,
+        "input_diagnostics": {},
+        "metrics_diagnostics": {},
         "gamma": -0.04102860999383329,
         "se": 0.045411079982394555,
-        "se_type": "Classical OLS SE",
         "ci_95": [
           -0.1300343267593266,
           0.04797710677166003
         ],
         "t_statistic": -11.914022088961218,
         "p_value": 0.0,
-        "is_rejected_at_5pct": true
+        "is_rejected_at_5pct": true,
+        "estimator": "Tier-Binned OLS (Unweighted)",
+        "se_type": "Classical OLS SE"
       },
       "wls_test": {
+        "name": "Weighted Least Squares (Tier Sample Weights)",
+        "schema_version": "1.3.0",
         "status": "ESTIMATED",
-        "estimator": "Weighted Least Squares (Tier Sample Weights)",
+        "is_estimable": true,
+        "fit": {
+          "gamma": -0.0649656625630226,
+          "se": 0.037491664209802995,
+          "ci_95": [
+            -0.13844932441423646,
+            0.008517999288191275
+          ],
+          "t_statistic": -15.06910067799285,
+          "p_value": 0.0,
+          "is_rejected_at_5pct": true
+        },
+        "error": null,
+        "input_diagnostics": {},
+        "metrics_diagnostics": {},
         "gamma": -0.0649656625630226,
         "se": 0.037491664209802995,
-        "se_type": "Classical WLS SE",
         "ci_95": [
           -0.13844932441423646,
           0.008517999288191275
         ],
         "t_statistic": -15.06910067799285,
         "p_value": 0.0,
-        "is_rejected_at_5pct": true
+        "is_rejected_at_5pct": true,
+        "estimator": "Weighted Least Squares (Tier Sample Weights)",
+        "se_type": "Classical WLS SE"
       },
-      "interpretation": "Exploratory single child-order estimation: WLS power-law exponent gamma = -0.0650 (Classical WLS SE: 0.0375, 95% WLS CI: [-0.1384, 0.0085], encompasses zero) rejects the square-root null hypothesis H0: gamma = 0.5 (t = -15.07, p = 0.0000e+00); and binned OLS exponent gamma = -0.0410 (Classical OLS SE: 0.0454, 95% OLS CI: [-0.1300, 0.0480], encompasses zero) rejects H0: gamma = 0.5 (t = -11.91, p = 0.0000e+00). Child-order models exhibit low in-sample and out-of-sample explanatory power (R\u00b2 < 0.02), with stratified power-law estimates varying across dates and weighting specifications. Note: WLS standard errors are classical weighted SEs unadjusted for cross-tier residual autocorrelation. This finding strictly characterizes individual child-order conditional price response R(v, k). It does NOT constitute an empirical refutation of the classical Square-Root Law of Meta-Orders (which governs cumulative parent-order execution over hours or days), nor does it directly prove specific unobserved microstructure mechanisms (such as book replenishment or adverse selection ratios)."
+      "interpretation": "Square-root price impact is an empirical scaling relationship. This study estimates the power-law exponent under specified assets, intraday sample intervals, and regression specifications to evaluate compatibility with gamma = 0.5 (WLS gamma = -0.0650, 95% WLS CI: [-0.1384, 0.0085], encompasses zero) rejects compatibility with square-root exponent gamma = 0.5 (t = -15.07, p = 0.0000e+00); OLS gamma = -0.0410, 95% OLS CI: [-0.1300, 0.0480], encompasses zero) rejects H0: gamma = 0.5 (t = -11.91, p = 0.0000e+00). Results do not demonstrate universal or cross-asset validity. Child-order tick response cannot be conflated with exogenous meta-order impact or guaranteed execution alpha. Models exhibit low in-sample and out-of-sample explanatory power."
     }
   },
   "power_law_wls": {
@@ -887,10 +1447,17 @@
     "status": "ESTIMATED",
     "estimator": "Classical WLS (weights = tier count)",
     "se_type": "Classical WLS SE (unadjusted for cross-tier residual autocorrelation)",
+    "gamma": -0.0649656625630226,
     "gamma_wls": -0.0649656625630226,
+    "se": 0.037491664209802995,
     "gamma_wls_se": 0.037491664209802995,
+    "ci_95": [
+      -0.13844932441423646,
+      0.008517999288191275
+    ],
     "ci_95_lower": -0.13844932441423646,
     "ci_95_upper": 0.008517999288191275,
+    "r_squared": 0.27289951054559636,
     "r_squared_wls": 0.27289951054559636
   },
   "trade_level_fit": {
@@ -1079,6 +1646,7 @@
     "status": "SUCCESS",
     "methodology": "Moving Block Bootstrap with economic tier re-stratification",
     "block_sizes_evaluated": [
+      50,
       100,
       250,
       500
@@ -1086,87 +1654,411 @@
     "primary_block_size": 250,
     "primary_result": {
       "block_size": 250,
+      "unit_label": "250 events (~4.0s primary decay horizon)",
       "replications_completed": 100,
       "replications_attempted": 100,
       "fit_failure_rate_pct": 0.0,
-      "wls_gamma_bootstrap_mean": -0.06604601291497814,
-      "wls_gamma_bootstrap_se": 0.009758252372505168,
+      "wls_gamma_bootstrap_mean": -0.06840831223548599,
+      "wls_gamma_bootstrap_se": 0.010390976849492493,
       "wls_gamma_ci_95": [
-        -0.08405395824309865,
-        -0.0481813795570963
+        -0.08635697116535568,
+        -0.05101442989569354
       ],
-      "ols_gamma_bootstrap_mean": -0.04537283968773728,
-      "ols_gamma_bootstrap_se": 0.02440964045365212,
+      "ols_gamma_bootstrap_mean": -0.04998171047712249,
+      "ols_gamma_bootstrap_se": 0.02710964981436548,
       "ols_gamma_ci_95": [
-        -0.08635793595548459,
-        -0.0032784077995794214
+        -0.11890440068728743,
+        -0.009314256243559398
       ],
+      "ci_contains_zero_wls": false,
+      "ci_contains_half_wls": false,
+      "ci_contains_zero_ols": false,
+      "ci_contains_half_ols": false,
       "ci_contains_half": false,
       "ci_contains_zero": false
     },
     "results_by_block_size": {
-      "block_100": {
-        "block_size": 100,
+      "block_50": {
+        "block_size": 50,
+        "unit_label": "50 events (~0.8s micro-clustering)",
         "replications_completed": 100,
         "replications_attempted": 100,
         "fit_failure_rate_pct": 0.0,
-        "wls_gamma_bootstrap_mean": -0.06581389391927285,
-        "wls_gamma_bootstrap_se": 0.009580776116311661,
+        "wls_gamma_bootstrap_mean": -0.06499789925912366,
+        "wls_gamma_bootstrap_se": 0.008318854948612137,
         "wls_gamma_ci_95": [
-          -0.08364933027006277,
-          -0.048595175463282396
+          -0.08134709480411186,
+          -0.05019419500072339
         ],
-        "ols_gamma_bootstrap_mean": -0.045038082567800085,
-        "ols_gamma_bootstrap_se": 0.026228170887155795,
+        "ols_gamma_bootstrap_mean": -0.04400716770734067,
+        "ols_gamma_bootstrap_se": 0.024826730447994216,
         "ols_gamma_ci_95": [
-          -0.10520315003518917,
-          -0.005313946067914069
+          -0.11005982668886588,
+          -0.006546936555027142
         ],
+        "ci_contains_zero_wls": false,
+        "ci_contains_half_wls": false,
+        "ci_contains_zero_ols": false,
+        "ci_contains_half_ols": false,
+        "ci_contains_half": false,
+        "ci_contains_zero": false
+      },
+      "block_100": {
+        "block_size": 100,
+        "unit_label": "100 events (~1.5s short memory)",
+        "replications_completed": 100,
+        "replications_attempted": 100,
+        "fit_failure_rate_pct": 0.0,
+        "wls_gamma_bootstrap_mean": -0.06614494498772118,
+        "wls_gamma_bootstrap_se": 0.008367542011536366,
+        "wls_gamma_ci_95": [
+          -0.08167256516158156,
+          -0.04946242773959766
+        ],
+        "ols_gamma_bootstrap_mean": -0.04492310029349704,
+        "ols_gamma_bootstrap_se": 0.023739833594215744,
+        "ols_gamma_ci_95": [
+          -0.09583600470134936,
+          -0.008342348561858861
+        ],
+        "ci_contains_zero_wls": false,
+        "ci_contains_half_wls": false,
+        "ci_contains_zero_ols": false,
+        "ci_contains_half_ols": false,
         "ci_contains_half": false,
         "ci_contains_zero": false
       },
       "block_250": {
         "block_size": 250,
+        "unit_label": "250 events (~4.0s primary decay horizon)",
         "replications_completed": 100,
         "replications_attempted": 100,
         "fit_failure_rate_pct": 0.0,
-        "wls_gamma_bootstrap_mean": -0.06604601291497814,
-        "wls_gamma_bootstrap_se": 0.009758252372505168,
+        "wls_gamma_bootstrap_mean": -0.06840831223548599,
+        "wls_gamma_bootstrap_se": 0.010390976849492493,
         "wls_gamma_ci_95": [
-          -0.08405395824309865,
-          -0.0481813795570963
+          -0.08635697116535568,
+          -0.05101442989569354
         ],
-        "ols_gamma_bootstrap_mean": -0.04537283968773728,
-        "ols_gamma_bootstrap_se": 0.02440964045365212,
+        "ols_gamma_bootstrap_mean": -0.04998171047712249,
+        "ols_gamma_bootstrap_se": 0.02710964981436548,
         "ols_gamma_ci_95": [
-          -0.08635793595548459,
-          -0.0032784077995794214
+          -0.11890440068728743,
+          -0.009314256243559398
         ],
+        "ci_contains_zero_wls": false,
+        "ci_contains_half_wls": false,
+        "ci_contains_zero_ols": false,
+        "ci_contains_half_ols": false,
         "ci_contains_half": false,
         "ci_contains_zero": false
       },
       "block_500": {
         "block_size": 500,
+        "unit_label": "500 events (~8.0s macro-trade horizon)",
         "replications_completed": 100,
         "replications_attempted": 100,
         "fit_failure_rate_pct": 0.0,
-        "wls_gamma_bootstrap_mean": -0.06464746115138081,
-        "wls_gamma_bootstrap_se": 0.010490308632275413,
+        "wls_gamma_bootstrap_mean": -0.06747455477699295,
+        "wls_gamma_bootstrap_se": 0.009503182008569798,
         "wls_gamma_ci_95": [
-          -0.08500584445963842,
-          -0.046011293825046484
+          -0.08632622675869829,
+          -0.05067835083789954
         ],
-        "ols_gamma_bootstrap_mean": -0.04042124253365086,
-        "ols_gamma_bootstrap_se": 0.025114920765407545,
+        "ols_gamma_bootstrap_mean": -0.044287802280250504,
+        "ols_gamma_bootstrap_se": 0.022538794427839317,
         "ols_gamma_ci_95": [
-          -0.09766568018712864,
-          -0.0023164232671761516
+          -0.1028352699909612,
+          -0.004531436656467132
         ],
+        "ci_contains_zero_wls": false,
+        "ci_contains_half_wls": false,
+        "ci_contains_zero_ols": false,
+        "ci_contains_half_ols": false,
         "ci_contains_half": false,
         "ci_contains_zero": false
       }
-    }
+    },
+    "sensitivity_table": [
+      {
+        "estimator": "Weighted Least Squares (WLS)",
+        "parameter": "gamma",
+        "inference_method": "Moving Block Bootstrap (b=50)",
+        "block_size_events": 50,
+        "unit_description": "50 events (~0.8s micro-clustering)",
+        "point_estimate": -0.06499789925912366,
+        "standard_error": 0.008318854948612137,
+        "ci_95": [
+          -0.08134709480411186,
+          -0.05019419500072339
+        ],
+        "ci_contains_zero": false,
+        "ci_contains_half": false,
+        "replications": 100,
+        "verdict": "Strictly negative (rules out 0), rejects 0.5"
+      },
+      {
+        "estimator": "Tier-Binned OLS",
+        "parameter": "gamma",
+        "inference_method": "Moving Block Bootstrap (b=50)",
+        "block_size_events": 50,
+        "unit_description": "50 events (~0.8s micro-clustering)",
+        "point_estimate": -0.04400716770734067,
+        "standard_error": 0.024826730447994216,
+        "ci_95": [
+          -0.11005982668886588,
+          -0.006546936555027142
+        ],
+        "ci_contains_zero": false,
+        "ci_contains_half": false,
+        "replications": 100,
+        "verdict": "Strictly negative (rules out 0), rejects 0.5"
+      },
+      {
+        "estimator": "Weighted Least Squares (WLS)",
+        "parameter": "gamma",
+        "inference_method": "Moving Block Bootstrap (b=100)",
+        "block_size_events": 100,
+        "unit_description": "100 events (~1.5s short memory)",
+        "point_estimate": -0.06614494498772118,
+        "standard_error": 0.008367542011536366,
+        "ci_95": [
+          -0.08167256516158156,
+          -0.04946242773959766
+        ],
+        "ci_contains_zero": false,
+        "ci_contains_half": false,
+        "replications": 100,
+        "verdict": "Strictly negative (rules out 0), rejects 0.5"
+      },
+      {
+        "estimator": "Tier-Binned OLS",
+        "parameter": "gamma",
+        "inference_method": "Moving Block Bootstrap (b=100)",
+        "block_size_events": 100,
+        "unit_description": "100 events (~1.5s short memory)",
+        "point_estimate": -0.04492310029349704,
+        "standard_error": 0.023739833594215744,
+        "ci_95": [
+          -0.09583600470134936,
+          -0.008342348561858861
+        ],
+        "ci_contains_zero": false,
+        "ci_contains_half": false,
+        "replications": 100,
+        "verdict": "Strictly negative (rules out 0), rejects 0.5"
+      },
+      {
+        "estimator": "Weighted Least Squares (WLS)",
+        "parameter": "gamma",
+        "inference_method": "Moving Block Bootstrap (b=250)",
+        "block_size_events": 250,
+        "unit_description": "250 events (~4.0s primary decay horizon)",
+        "point_estimate": -0.06840831223548599,
+        "standard_error": 0.010390976849492493,
+        "ci_95": [
+          -0.08635697116535568,
+          -0.05101442989569354
+        ],
+        "ci_contains_zero": false,
+        "ci_contains_half": false,
+        "replications": 100,
+        "verdict": "Strictly negative (rules out 0), rejects 0.5"
+      },
+      {
+        "estimator": "Tier-Binned OLS",
+        "parameter": "gamma",
+        "inference_method": "Moving Block Bootstrap (b=250)",
+        "block_size_events": 250,
+        "unit_description": "250 events (~4.0s primary decay horizon)",
+        "point_estimate": -0.04998171047712249,
+        "standard_error": 0.02710964981436548,
+        "ci_95": [
+          -0.11890440068728743,
+          -0.009314256243559398
+        ],
+        "ci_contains_zero": false,
+        "ci_contains_half": false,
+        "replications": 100,
+        "verdict": "Strictly negative (rules out 0), rejects 0.5"
+      },
+      {
+        "estimator": "Weighted Least Squares (WLS)",
+        "parameter": "gamma",
+        "inference_method": "Moving Block Bootstrap (b=500)",
+        "block_size_events": 500,
+        "unit_description": "500 events (~8.0s macro-trade horizon)",
+        "point_estimate": -0.06747455477699295,
+        "standard_error": 0.009503182008569798,
+        "ci_95": [
+          -0.08632622675869829,
+          -0.05067835083789954
+        ],
+        "ci_contains_zero": false,
+        "ci_contains_half": false,
+        "replications": 100,
+        "verdict": "Strictly negative (rules out 0), rejects 0.5"
+      },
+      {
+        "estimator": "Tier-Binned OLS",
+        "parameter": "gamma",
+        "inference_method": "Moving Block Bootstrap (b=500)",
+        "block_size_events": 500,
+        "unit_description": "500 events (~8.0s macro-trade horizon)",
+        "point_estimate": -0.044287802280250504,
+        "standard_error": 0.022538794427839317,
+        "ci_95": [
+          -0.1028352699909612,
+          -0.004531436656467132
+        ],
+        "ci_contains_zero": false,
+        "ci_contains_half": false,
+        "replications": 100,
+        "verdict": "Strictly negative (rules out 0), rejects 0.5"
+      }
+    ],
+    "sensitivity_verdict": "STABLE_ACROSS_BLOCK_SIZES",
+    "sensitivity_summary": "Confidence interval zero-containment behavior is uniform across evaluated block lengths."
   },
+  "inference_sensitivity_table": [
+    {
+      "estimator": "Weighted Least Squares (WLS)",
+      "parameter": "gamma",
+      "inference_method": "Moving Block Bootstrap (b=50)",
+      "block_size_events": 50,
+      "unit_description": "50 events (~0.8s micro-clustering)",
+      "point_estimate": -0.06499789925912366,
+      "standard_error": 0.008318854948612137,
+      "ci_95": [
+        -0.08134709480411186,
+        -0.05019419500072339
+      ],
+      "ci_contains_zero": false,
+      "ci_contains_half": false,
+      "replications": 100,
+      "verdict": "Strictly negative (rules out 0), rejects 0.5"
+    },
+    {
+      "estimator": "Tier-Binned OLS",
+      "parameter": "gamma",
+      "inference_method": "Moving Block Bootstrap (b=50)",
+      "block_size_events": 50,
+      "unit_description": "50 events (~0.8s micro-clustering)",
+      "point_estimate": -0.04400716770734067,
+      "standard_error": 0.024826730447994216,
+      "ci_95": [
+        -0.11005982668886588,
+        -0.006546936555027142
+      ],
+      "ci_contains_zero": false,
+      "ci_contains_half": false,
+      "replications": 100,
+      "verdict": "Strictly negative (rules out 0), rejects 0.5"
+    },
+    {
+      "estimator": "Weighted Least Squares (WLS)",
+      "parameter": "gamma",
+      "inference_method": "Moving Block Bootstrap (b=100)",
+      "block_size_events": 100,
+      "unit_description": "100 events (~1.5s short memory)",
+      "point_estimate": -0.06614494498772118,
+      "standard_error": 0.008367542011536366,
+      "ci_95": [
+        -0.08167256516158156,
+        -0.04946242773959766
+      ],
+      "ci_contains_zero": false,
+      "ci_contains_half": false,
+      "replications": 100,
+      "verdict": "Strictly negative (rules out 0), rejects 0.5"
+    },
+    {
+      "estimator": "Tier-Binned OLS",
+      "parameter": "gamma",
+      "inference_method": "Moving Block Bootstrap (b=100)",
+      "block_size_events": 100,
+      "unit_description": "100 events (~1.5s short memory)",
+      "point_estimate": -0.04492310029349704,
+      "standard_error": 0.023739833594215744,
+      "ci_95": [
+        -0.09583600470134936,
+        -0.008342348561858861
+      ],
+      "ci_contains_zero": false,
+      "ci_contains_half": false,
+      "replications": 100,
+      "verdict": "Strictly negative (rules out 0), rejects 0.5"
+    },
+    {
+      "estimator": "Weighted Least Squares (WLS)",
+      "parameter": "gamma",
+      "inference_method": "Moving Block Bootstrap (b=250)",
+      "block_size_events": 250,
+      "unit_description": "250 events (~4.0s primary decay horizon)",
+      "point_estimate": -0.06840831223548599,
+      "standard_error": 0.010390976849492493,
+      "ci_95": [
+        -0.08635697116535568,
+        -0.05101442989569354
+      ],
+      "ci_contains_zero": false,
+      "ci_contains_half": false,
+      "replications": 100,
+      "verdict": "Strictly negative (rules out 0), rejects 0.5"
+    },
+    {
+      "estimator": "Tier-Binned OLS",
+      "parameter": "gamma",
+      "inference_method": "Moving Block Bootstrap (b=250)",
+      "block_size_events": 250,
+      "unit_description": "250 events (~4.0s primary decay horizon)",
+      "point_estimate": -0.04998171047712249,
+      "standard_error": 0.02710964981436548,
+      "ci_95": [
+        -0.11890440068728743,
+        -0.009314256243559398
+      ],
+      "ci_contains_zero": false,
+      "ci_contains_half": false,
+      "replications": 100,
+      "verdict": "Strictly negative (rules out 0), rejects 0.5"
+    },
+    {
+      "estimator": "Weighted Least Squares (WLS)",
+      "parameter": "gamma",
+      "inference_method": "Moving Block Bootstrap (b=500)",
+      "block_size_events": 500,
+      "unit_description": "500 events (~8.0s macro-trade horizon)",
+      "point_estimate": -0.06747455477699295,
+      "standard_error": 0.009503182008569798,
+      "ci_95": [
+        -0.08632622675869829,
+        -0.05067835083789954
+      ],
+      "ci_contains_zero": false,
+      "ci_contains_half": false,
+      "replications": 100,
+      "verdict": "Strictly negative (rules out 0), rejects 0.5"
+    },
+    {
+      "estimator": "Tier-Binned OLS",
+      "parameter": "gamma",
+      "inference_method": "Moving Block Bootstrap (b=500)",
+      "block_size_events": 500,
+      "unit_description": "500 events (~8.0s macro-trade horizon)",
+      "point_estimate": -0.044287802280250504,
+      "standard_error": 0.022538794427839317,
+      "ci_95": [
+        -0.1028352699909612,
+        -0.004531436656467132
+      ],
+      "ci_contains_zero": false,
+      "ci_contains_half": false,
+      "replications": 100,
+      "verdict": "Strictly negative (rules out 0), rejects 0.5"
+    }
+  ],
+  "sensitivity_verdict": "STABLE_ACROSS_BLOCK_SIZES",
   "time_chunk_stability": [
     {
       "chunk_index": 1,
@@ -1218,9 +2110,9 @@
     }
   ],
   "artifact_metadata": {
-    "schema_version": "1.2.0",
-    "build_commit": "f7fea24",
-    "generation_timestamp_utc": "2026-10-21T11:20:45.972014+00:00",
+    "schema_version": "1.3.0",
+    "build_commit": "5792d5a",
+    "generation_timestamp_utc": "2026-10-21T12:07:23.569190+00:00",
     "dataset_source": "NORMALIZED_PARQUET",
     "dataset_file": "normalized/exchange=binance/market=spot/symbol=BTCUSDT/date=2026-07-02/trades.parquet",
     "dataset_sha256": "79b97982029522afa2c87c844f42e3d446d4b314e6ea7948fbfa97d7eb38cfd8",

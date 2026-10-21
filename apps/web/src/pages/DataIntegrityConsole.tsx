@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { fetchDatasets, fetchAuditReport } from '../api/client';
 import { DatasetItem, QualityAuditReport } from '../types';
 import { ShieldCheck, CheckCircle2, AlertTriangle } from 'lucide-react';
@@ -11,9 +11,10 @@ export const DataIntegrityConsole: React.FC<DataIntegrityConsoleProps> = ({ curr
   const [datasets, setDatasets] = useState<DatasetItem[]>([]);
   const [audit, setAudit] = useState<QualityAuditReport | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const activeQueryIdRef = useRef<number>(0);
 
   useEffect(() => {
-    let isMounted = true;
+    const currentQueryId = ++activeQueryIdRef.current;
     setAudit(null);
     setError(null);
 
@@ -22,19 +23,21 @@ export const DataIntegrityConsole: React.FC<DataIntegrityConsoleProps> = ({ curr
       fetchAuditReport('BTCUSDT', currentDate)
     ])
       .then(([dList, aReport]) => {
-        if (isMounted) {
+        if (currentQueryId === activeQueryIdRef.current) {
           setDatasets(dList);
           setAudit(aReport);
         }
       })
       .catch((err) => {
         console.error(err);
-        if (isMounted) {
+        if (currentQueryId === activeQueryIdRef.current) {
           setError(err.message || 'Failed to load integrity audit');
         }
       });
 
-    return () => { isMounted = false; };
+    return () => {
+      // Ignored superseded queries
+    };
   }, [currentDate]);
 
   return (

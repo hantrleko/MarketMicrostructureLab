@@ -21,6 +21,51 @@ from scipy.stats import norm
 import statsmodels.api as sm
 
 
+def make_fit_result(
+    model_name: str,
+    status: str,  # "ESTIMATED", "NOT_ESTIMABLE", "FIT_FAILED"
+    fit_params: Optional[Dict[str, Any]] = None,
+    error: Optional[Dict[str, Any]] = None,
+    input_diagnostics: Optional[Dict[str, Any]] = None,
+    metrics_diagnostics: Optional[Dict[str, Any]] = None,
+    **extra_fields
+) -> Dict[str, Any]:
+    """
+    Constructs a status-driven model fit result adhering to M1 contract.
+    Ensures that when status != 'ESTIMATED', fit is None and numeric parameters are None (not 0.0).
+    """
+    is_estimated = (status == "ESTIMATED")
+    res = {
+        "name": model_name,
+        "schema_version": "1.3.0",
+        "status": status,
+        "is_estimable": is_estimated,
+        "fit": fit_params if is_estimated else None,
+        "error": None if is_estimated else (error or {
+            "code": "FIT_FAILED",
+            "message": "Model estimation failed.",
+            "retryable": False
+        }),
+        "input_diagnostics": input_diagnostics or {},
+        "metrics_diagnostics": metrics_diagnostics or {}
+    }
+
+    # Expose top-level fields for backwards compatibility with consumers
+    if is_estimated and fit_params:
+        for k, v in fit_params.items():
+            res[k] = v
+    else:
+        # Explicitly set regression outputs to None on failure/inestimable (never 0.0!)
+        for k in ["alpha", "beta", "gamma", "r_squared", "aic", "bic", "se", "ci_95", "t_statistic", "p_value"]:
+            if k not in res:
+                res[k] = None
+
+    for k, v in extra_fields.items():
+        res[k] = v
+
+    return res
+
+
 class NonlinearImpactModel:
     def __init__(self):
         pass
@@ -42,7 +87,12 @@ class NonlinearImpactModel:
             return {
                 "status": "NOT_ESTIMABLE",
                 "is_estimable": False,
-                "reason": "Sample size below minimum threshold (20).",
+                "fit": None,
+                "error": {
+                    "code": "INSUFFICIENT_DATA",
+                    "message": "Sample size below minimum threshold (20).",
+                    "retryable": False
+                },
                 "alpha": None,
                 "gamma": None,
                 "r_squared": None,
@@ -50,7 +100,8 @@ class NonlinearImpactModel:
                 "gamma_wls": None,
                 "r_squared_wls": None,
                 "positive_tiers_count": 0,
-                "training_observations": len(q_sub)
+                "training_observations": len(q_sub),
+                "reason": "Sample size below minimum threshold (20)."
             }
 
         q_pts, r_pts, counts = [], [], []
@@ -64,11 +115,16 @@ class NonlinearImpactModel:
                     r_pts.append(mean_r)
                     counts.append(float(cnt))
 
-        if len(q_pts) < min_pos_tiers or np.var(np.log(q_pts)) <= 1e-12 or np.var(np.log(r_pts)) <= 1e-12:
+        if len(q_pts) < min_pos_tiers:
             return {
                 "status": "NOT_ESTIMABLE",
                 "is_estimable": False,
-                "reason": f"Insufficient positive response tiers in training sample (found {len(q_pts)}, minimum {min_pos_tiers} required with non-zero variance).",
+                "fit": None,
+                "error": {
+                    "code": "INSUFFICIENT_DATA",
+                    "message": f"Insufficient positive response tiers in training sample (found {len(q_pts)}, minimum {min_pos_tiers} required).",
+                    "retryable": False
+                },
                 "alpha": None,
                 "gamma": None,
                 "r_squared": None,
@@ -76,7 +132,29 @@ class NonlinearImpactModel:
                 "gamma_wls": None,
                 "r_squared_wls": None,
                 "positive_tiers_count": len(q_pts),
-                "training_observations": len(q_sub)
+                "training_observations": len(q_sub),
+                "reason": f"Insufficient positive response tiers in training sample (found {len(q_pts)}, minimum {min_pos_tiers} required)."
+            }
+
+        if np.var(np.log(q_pts)) <= 1e-12 or np.var(np.log(r_pts)) <= 1e-12:
+            return {
+                "status": "NOT_ESTIMABLE",
+                "is_estimable": False,
+                "fit": None,
+                "error": {
+                    "code": "SINGULAR_DESIGN",
+                    "message": "Near-zero variance across positive tiers in log volume or log return.",
+                    "retryable": False
+                },
+                "alpha": None,
+                "gamma": None,
+                "r_squared": None,
+                "alpha_wls": None,
+                "gamma_wls": None,
+                "r_squared_wls": None,
+                "positive_tiers_count": len(q_pts),
+                "training_observations": len(q_sub),
+                "reason": "Near-zero variance across positive tiers."
             }
 
         log_q = np.log(q_pts)
@@ -86,14 +164,21 @@ class NonlinearImpactModel:
         # OLS on positive binned conditional means
         try:
             res_ols = sm.OLS(log_r, X_pow).fit()
-            alpha_ols = float(np.exp(res_ols.params[0])) if len(res_ols.params) > 0 else 1.0
-            gamma_ols = float(res_ols.params[1]) if len(res_ols.params) > 1 else 0.0
-            r2_ols = float(res_ols.rsquared) if hasattr(res_ols, "rsquared") and np.isfinite(res_ols.rsquared) else 0.0
-        except Exception:
+            alpha_ols = float(np.exp(res_ols.params[0])) if len(res_ols.params) > 0 else None
+            gamma_ols = float(res_ols.params[1]) if len(res_ols.params) > 1 else None
+            r2_ols = float(res_ols.rsquared) if hasattr(res_ols, "rsquared") and np.isfinite(res_ols.rsquared) else None
+            if alpha_ols is None or gamma_ols is None or not (np.isfinite(alpha_ols) and np.isfinite(gamma_ols)):
+                raise ValueError("Non-finite OLS parameters.")
+        except Exception as e:
             return {
                 "status": "FIT_FAILED",
                 "is_estimable": False,
-                "reason": "Numerical optimization error in OLS fit.",
+                "fit": None,
+                "error": {
+                    "code": "SOLVER_ERROR",
+                    "message": f"Numerical optimization error in OLS fit: {str(e)}",
+                    "retryable": False
+                },
                 "alpha": None,
                 "gamma": None,
                 "r_squared": None,
@@ -101,21 +186,33 @@ class NonlinearImpactModel:
                 "gamma_wls": None,
                 "r_squared_wls": None,
                 "positive_tiers_count": len(q_pts),
-                "training_observations": len(q_sub)
+                "training_observations": len(q_sub),
+                "reason": f"Numerical optimization error in OLS fit: {str(e)}"
             }
 
         # WLS weighted by tier sample count
         try:
             res_wls = sm.WLS(log_r, X_pow, weights=counts).fit()
-            alpha_wls = float(np.exp(res_wls.params[0])) if len(res_wls.params) > 0 else alpha_ols
-            gamma_wls = float(res_wls.params[1]) if len(res_wls.params) > 1 else gamma_ols
-            r2_wls = float(res_wls.rsquared) if hasattr(res_wls, "rsquared") and np.isfinite(res_wls.rsquared) else r2_ols
+            alpha_wls = float(np.exp(res_wls.params[0])) if len(res_wls.params) > 0 else None
+            gamma_wls = float(res_wls.params[1]) if len(res_wls.params) > 1 else None
+            r2_wls = float(res_wls.rsquared) if hasattr(res_wls, "rsquared") and np.isfinite(res_wls.rsquared) else None
+            if alpha_wls is None or gamma_wls is None or not (np.isfinite(alpha_wls) and np.isfinite(gamma_wls)):
+                alpha_wls, gamma_wls, r2_wls = None, None, None
         except Exception:
-            alpha_wls, gamma_wls, r2_wls = alpha_ols, gamma_ols, r2_ols
+            alpha_wls, gamma_wls, r2_wls = None, None, None
 
         return {
             "status": "ESTIMATED",
             "is_estimable": True,
+            "fit": {
+                "alpha": alpha_ols,
+                "gamma": gamma_ols,
+                "r_squared": r2_ols,
+                "alpha_wls": alpha_wls,
+                "gamma_wls": gamma_wls,
+                "r_squared_wls": r2_wls
+            },
+            "error": None,
             "reason": None,
             "alpha": alpha_ols,
             "gamma": gamma_ols,
@@ -228,67 +325,192 @@ class NonlinearImpactModel:
                 })
 
         # 2. Linear Model: R = alpha + beta * Q with HAC inference
-        if is_invariant_data:
-            res_lin_params = [0.0, 0.0]
-            res_lin_bse = [None, None]
-            res_lin_tvalues = [None, None]
-            res_lin_pvalues = [1.0, 1.0]
-            res_lin_rsquared = 0.0
-            res_lin_aic = None
-            res_lin_bic = None
+        lin_fit_params = None
+        lin_error = None
+        lin_metrics_diag = {}
+        if n_obs < 20:
             lin_status = "NOT_ESTIMABLE"
+            lin_error = {
+                "code": "INSUFFICIENT_DATA",
+                "message": f"Sample size below minimum threshold (found {n_obs}, minimum 20 required).",
+                "retryable": False
+            }
+        elif q_var < 1e-12:
+            lin_status = "NOT_ESTIMABLE"
+            lin_error = {
+                "code": "SINGULAR_DESIGN",
+                "message": "Trade quantity feature exhibits zero or invariant variance (< 1e-12).",
+                "retryable": False
+            }
+        elif ret_var < 1e-12:
+            # Constant target returns: alpha = mean(R), beta = 0.0, but R^2 is undefined (SS_tot = 0)
+            lin_status = "ESTIMATED"
+            mean_r_val = float(np.mean(R_clean))
+            lin_fit_params = {
+                "alpha": mean_r_val,
+                "alpha_se": None,
+                "beta": 0.0,
+                "beta_se": None,
+                "beta_t_stat": None,
+                "beta_p_value": None,
+                "r_squared": None,
+                "aic": None,
+                "bic": None
+            }
+            lin_metrics_diag = {
+                "r_squared": {
+                    "status": "UNDEFINED_METRIC",
+                    "reason": "Target return is constant across sample; total sum of squares SS_tot is zero."
+                }
+            }
         else:
             try:
                 X_lin = sm.add_constant(Q_clean)
                 res_lin = sm.OLS(R_clean, X_lin).fit(cov_type="HAC", cov_kwds={"maxlags": min(k, 30)})
-                res_lin_params = [float(p) for p in res_lin.params]
-                res_lin_bse = [float(b) for b in res_lin.bse]
-                res_lin_tvalues = [float(t) for t in res_lin.tvalues]
-                res_lin_pvalues = [float(p) for p in res_lin.pvalues]
-                res_lin_rsquared = float(res_lin.rsquared) if np.isfinite(res_lin.rsquared) else 0.0
-                res_lin_aic = float(res_lin.aic) if np.isfinite(res_lin.aic) else None
-                res_lin_bic = float(res_lin.bic) if np.isfinite(res_lin.bic) else None
-                lin_status = "ESTIMATED"
-            except Exception:
-                res_lin_params = [0.0, 0.0]
-                res_lin_bse = [None, None]
-                res_lin_tvalues = [None, None]
-                res_lin_pvalues = [1.0, 1.0]
-                res_lin_rsquared = 0.0
-                res_lin_aic, res_lin_bic = None, None
+                p0 = float(res_lin.params[0]) if len(res_lin.params) > 0 else 0.0
+                p1 = float(res_lin.params[1]) if len(res_lin.params) > 1 else 0.0
+                b0 = float(res_lin.bse[0]) if len(res_lin.bse) > 0 else None
+                b1 = float(res_lin.bse[1]) if len(res_lin.bse) > 1 else None
+                t1 = float(res_lin.tvalues[1]) if len(res_lin.tvalues) > 1 else None
+                pv1 = float(res_lin.pvalues[1]) if len(res_lin.pvalues) > 1 else None
+                r2_val = float(res_lin.rsquared) if np.isfinite(res_lin.rsquared) else None
+                aic_val = float(res_lin.aic) if np.isfinite(res_lin.aic) else None
+                bic_val = float(res_lin.bic) if np.isfinite(res_lin.bic) else None
+
+                if not (np.isfinite(p0) and np.isfinite(p1)):
+                    lin_status = "FIT_FAILED"
+                    lin_error = {
+                        "code": "NON_FINITE_OUTPUT",
+                        "message": "Model parameter estimates or standard errors are non-finite.",
+                        "retryable": False
+                    }
+                else:
+                    lin_status = "ESTIMATED"
+                    lin_fit_params = {
+                        "alpha": p0,
+                        "alpha_se": b0,
+                        "beta": p1,
+                        "beta_se": b1,
+                        "beta_t_stat": t1,
+                        "beta_p_value": pv1,
+                        "r_squared": r2_val,
+                        "aic": aic_val,
+                        "bic": bic_val
+                    }
+            except Exception as e:
                 lin_status = "FIT_FAILED"
+                lin_error = {
+                    "code": "SOLVER_ERROR",
+                    "message": f"Numerical optimization error in OLS fit: {str(e)}",
+                    "retryable": False
+                }
+
+        linear_model_dict = make_fit_result(
+            model_name="Linear (R = alpha + beta * Q)",
+            status=lin_status,
+            fit_params=lin_fit_params,
+            error=lin_error,
+            input_diagnostics={"total_observations": n_obs, "quantity_variance": q_var, "return_variance": ret_var},
+            metrics_diagnostics=lin_metrics_diag
+        )
 
         # 3. Logarithmic Model: R = alpha + beta * ln(Q) with HAC inference
-        if is_invariant_data:
-            res_log_params = [0.0, 0.0]
-            res_log_bse = [None, None]
-            res_log_tvalues = [None, None]
-            res_log_pvalues = [1.0, 1.0]
-            res_log_rsquared = 0.0
-            res_log_aic = None
-            res_log_bic = None
+        log_fit_params = None
+        log_error = None
+        log_metrics_diag = {}
+        if np.any(Q_clean <= 0):
+            log_status = "FIT_FAILED"
+            log_error = {
+                "code": "INVALID_INPUT",
+                "message": "Non-positive trade quantities encountered for logarithmic transform.",
+                "retryable": False
+            }
+        elif n_obs < 20:
             log_status = "NOT_ESTIMABLE"
+            log_error = {
+                "code": "INSUFFICIENT_DATA",
+                "message": f"Sample size below minimum threshold (found {n_obs}, minimum 20 required).",
+                "retryable": False
+            }
+        elif np.var(np.log(Q_clean)) < 1e-12:
+            log_status = "NOT_ESTIMABLE"
+            log_error = {
+                "code": "SINGULAR_DESIGN",
+                "message": "Log trade quantity feature exhibits zero or invariant variance (< 1e-12).",
+                "retryable": False
+            }
+        elif ret_var < 1e-12:
+            # Constant target returns: alpha = mean(R), beta = 0.0, but R^2 is undefined
+            log_status = "ESTIMATED"
+            mean_r_val = float(np.mean(R_clean))
+            log_fit_params = {
+                "alpha": mean_r_val,
+                "alpha_se": None,
+                "beta": 0.0,
+                "beta_se": None,
+                "beta_t_stat": None,
+                "beta_p_value": None,
+                "r_squared": None,
+                "aic": None,
+                "bic": None
+            }
+            log_metrics_diag = {
+                "r_squared": {
+                    "status": "UNDEFINED_METRIC",
+                    "reason": "Target return is constant across sample; total sum of squares SS_tot is zero."
+                }
+            }
         else:
             try:
                 log_Q = np.log(Q_clean)
                 X_log = sm.add_constant(log_Q)
                 res_log = sm.OLS(R_clean, X_log).fit(cov_type="HAC", cov_kwds={"maxlags": min(k, 30)})
-                res_log_params = [float(p) for p in res_log.params]
-                res_log_bse = [float(b) for b in res_log.bse]
-                res_log_tvalues = [float(t) for t in res_log.tvalues]
-                res_log_pvalues = [float(p) for p in res_log.pvalues]
-                res_log_rsquared = float(res_log.rsquared) if np.isfinite(res_log.rsquared) else 0.0
-                res_log_aic = float(res_log.aic) if np.isfinite(res_log.aic) else None
-                res_log_bic = float(res_log.bic) if np.isfinite(res_log.bic) else None
-                log_status = "ESTIMATED"
-            except Exception:
-                res_log_params = [0.0, 0.0]
-                res_log_bse = [None, None]
-                res_log_tvalues = [None, None]
-                res_log_pvalues = [1.0, 1.0]
-                res_log_rsquared = 0.0
-                res_log_aic, res_log_bic = None, None
+                p0 = float(res_log.params[0]) if len(res_log.params) > 0 else 0.0
+                p1 = float(res_log.params[1]) if len(res_log.params) > 1 else 0.0
+                b0 = float(res_log.bse[0]) if len(res_log.bse) > 0 else None
+                b1 = float(res_log.bse[1]) if len(res_log.bse) > 1 else None
+                t1 = float(res_log.tvalues[1]) if len(res_log.tvalues) > 1 else None
+                pv1 = float(res_log.pvalues[1]) if len(res_log.pvalues) > 1 else None
+                r2_val = float(res_log.rsquared) if np.isfinite(res_log.rsquared) else None
+                aic_val = float(res_log.aic) if np.isfinite(res_log.aic) else None
+                bic_val = float(res_log.bic) if np.isfinite(res_log.bic) else None
+
+                if not (np.isfinite(p0) and np.isfinite(p1)):
+                    log_status = "FIT_FAILED"
+                    log_error = {
+                        "code": "NON_FINITE_OUTPUT",
+                        "message": "Model parameter estimates or standard errors are non-finite.",
+                        "retryable": False
+                    }
+                else:
+                    log_status = "ESTIMATED"
+                    log_fit_params = {
+                        "alpha": p0,
+                        "alpha_se": b0,
+                        "beta": p1,
+                        "beta_se": b1,
+                        "beta_t_stat": t1,
+                        "beta_p_value": pv1,
+                        "r_squared": r2_val,
+                        "aic": aic_val,
+                        "bic": bic_val
+                    }
+            except Exception as e:
                 log_status = "FIT_FAILED"
+                log_error = {
+                    "code": "SOLVER_ERROR",
+                    "message": f"Numerical optimization error in Log fit: {str(e)}",
+                    "retryable": False
+                }
+
+        logarithmic_model_dict = make_fit_result(
+            model_name="Logarithmic (R = alpha + beta * ln(Q))",
+            status=log_status,
+            fit_params=log_fit_params,
+            error=log_error,
+            input_diagnostics={"total_observations": n_obs, "quantity_variance": q_var, "return_variance": ret_var},
+            metrics_diagnostics=log_metrics_diag
+        )
 
         # 4. Power Law Model: R = alpha * Q^gamma
         # Fit on strictly positive empirical conditional expectation points
@@ -298,20 +520,32 @@ class NonlinearImpactModel:
         pos_mask = (binned_r > 0)
         n_pos_tiers = int(np.sum(pos_mask))
 
+        pow_error = None
         is_power_law_estimable = False
-        if n_pos_tiers >= 4:
+        if n_pos_tiers < 4:
+            power_law_status = "NOT_ESTIMABLE"
+            pow_error = {
+                "code": "INSUFFICIENT_DATA",
+                "message": f"Insufficient positive conditional response tiers (found {n_pos_tiers}, minimum 4 required). Underlying price displacement lacks positive upward variation.",
+                "retryable": False
+            }
+        else:
             q_fit = binned_q[pos_mask]
             r_fit = binned_r[pos_mask]
             counts_fit = binned_counts[pos_mask]
-            if np.var(np.log(q_fit)) > 1e-12 and np.var(np.log(r_fit)) > 1e-12:
+            if np.var(np.log(q_fit)) <= 1e-12 or np.var(np.log(r_fit)) <= 1e-12:
+                power_law_status = "NOT_ESTIMABLE"
+                pow_error = {
+                    "code": "SINGULAR_DESIGN",
+                    "message": "Near-zero variance in log tier volume or log conditional return across positive tiers.",
+                    "retryable": False
+                }
+            else:
                 is_power_law_estimable = True
+                power_law_status = "ESTIMATED"
 
         if not is_power_law_estimable:
-            power_law_status = "NOT_ESTIMABLE"
-            unestimable_reason = (
-                f"Insufficient positive conditional response tiers (found {n_pos_tiers} positive tiers, "
-                f"minimum 4 required with non-zero variance). Underlying price displacement is invariant or lacks upward variation."
-            )
+            unestimable_reason = pow_error["message"] if pow_error else "Inestimable power law."
             gamma_est = None
             alpha_est = None
             gamma_se = None
@@ -333,118 +567,143 @@ class NonlinearImpactModel:
             rejects_sqrt = False
             ci_contains_zero = False
 
-            wls_test_dict = {
-                "status": "NOT_ESTIMABLE",
-                "estimator": "Weighted Least Squares (Tier Sample Weights)",
-                "gamma": None,
-                "se": None,
-                "se_type": "Classical WLS SE",
-                "ci_95": None,
-                "t_statistic": None,
-                "p_value": None,
-                "is_rejected_at_5pct": False,
-                "reason": unestimable_reason
-            }
+            wls_test_dict = make_fit_result(
+                model_name="Weighted Least Squares (Tier Sample Weights)",
+                status="NOT_ESTIMABLE",
+                error=pow_error,
+                estimator="Weighted Least Squares (Tier Sample Weights)",
+                se_type="Classical WLS SE",
+                is_rejected_at_5pct=False,
+                reason=unestimable_reason
+            )
 
-            ols_test_dict = {
-                "status": "NOT_ESTIMABLE",
-                "estimator": "Tier-Binned OLS (Unweighted)",
-                "gamma": None,
-                "se": None,
-                "se_type": "Classical OLS SE",
-                "ci_95": None,
-                "t_statistic": None,
-                "p_value": None,
-                "is_rejected_at_5pct": False,
-                "reason": unestimable_reason
-            }
+            ols_test_dict = make_fit_result(
+                model_name="Tier-Binned OLS (Unweighted)",
+                status="NOT_ESTIMABLE",
+                error=pow_error,
+                estimator="Tier-Binned OLS (Unweighted)",
+                se_type="Classical OLS SE",
+                is_rejected_at_5pct=False,
+                reason=unestimable_reason
+            )
 
             interpretation_text = (
                 f"Power-law child-order scaling model is NOT_ESTIMABLE: {unestimable_reason} "
                 "No parameter values, confidence intervals, or null hypothesis refutations are fabricated."
             )
         else:
-            power_law_status = "ESTIMATED"
             unestimable_reason = ""
             log_q = np.log(q_fit)
             log_r = np.log(r_fit)
-
             X_pow = sm.add_constant(log_q)
+
             # Unweighted OLS on binned conditional means
-            res_power = sm.OLS(log_r, X_pow).fit()
-            alpha_est = float(np.exp(res_power.params[0])) if len(res_power.params) > 0 else 1.0
-            gamma_est = float(res_power.params[1]) if len(res_power.params) > 1 else 0.0
-            gamma_se = float(res_power.bse[1]) if len(res_power.bse) > 1 else 0.05
-            ci_lower = float(gamma_est - 1.96 * gamma_se)
-            ci_upper = float(gamma_est + 1.96 * gamma_se)
-            r2_power = float(res_power.rsquared)
+            try:
+                res_power = sm.OLS(log_r, X_pow).fit()
+                alpha_est = float(np.exp(res_power.params[0])) if len(res_power.params) > 0 else None
+                gamma_est = float(res_power.params[1]) if len(res_power.params) > 1 else None
+                gamma_se = float(res_power.bse[1]) if len(res_power.bse) > 1 else None
+                ci_lower = float(gamma_est - 1.96 * gamma_se) if (gamma_est is not None and gamma_se is not None) else None
+                ci_upper = float(gamma_est + 1.96 * gamma_se) if (gamma_est is not None and gamma_se is not None) else None
+                r2_power = float(res_power.rsquared) if np.isfinite(res_power.rsquared) else None
+            except Exception as e:
+                alpha_est, gamma_est, gamma_se, ci_lower, ci_upper, r2_power = None, None, None, None, None, None
 
             # Weighted Least Squares (WLS) weighted by sample count per tier
             try:
                 res_wls = sm.WLS(log_r, X_pow, weights=counts_fit).fit()
-                gamma_wls = float(res_wls.params[1]) if len(res_wls.params) > 1 else gamma_est
-                gamma_wls_se = float(res_wls.bse[1]) if len(res_wls.bse) > 1 else gamma_se
-                ci_wls_lower = float(gamma_wls - 1.96 * gamma_wls_se)
-                ci_wls_upper = float(gamma_wls + 1.96 * gamma_wls_se)
-                r2_wls = float(res_wls.rsquared)
-            except Exception:
-                gamma_wls, gamma_wls_se = gamma_est, gamma_se
-                ci_wls_lower, ci_wls_upper = ci_lower, ci_upper
-                r2_wls = r2_power
+                gamma_wls = float(res_wls.params[1]) if len(res_wls.params) > 1 else None
+                gamma_wls_se = float(res_wls.bse[1]) if len(res_wls.bse) > 1 else None
+                ci_wls_lower = float(gamma_wls - 1.96 * gamma_wls_se) if (gamma_wls is not None and gamma_wls_se is not None) else None
+                ci_wls_upper = float(gamma_wls + 1.96 * gamma_wls_se) if (gamma_wls is not None and gamma_wls_se is not None) else None
+                r2_wls = float(res_wls.rsquared) if np.isfinite(res_wls.rsquared) else None
+                wls_status = "ESTIMATED"
+                wls_err = None
+            except Exception as e:
+                gamma_wls, gamma_wls_se, ci_wls_lower, ci_wls_upper, r2_wls = None, None, None, None, None
+                wls_status = "FIT_FAILED"
+                wls_err = {"code": "SOLVER_ERROR", "message": f"WLS optimization failure: {str(e)}", "retryable": False}
 
-            # Hypothesis tests on both OLS and WLS: H0: gamma = 0.5 (Square-Root Law for Child Trades)
-            t_ols = (gamma_est - 0.5) / gamma_se if gamma_se and gamma_se > 0 else 0.0
-            p_val_ols = float(2.0 * (1.0 - norm.cdf(abs(t_ols))))
+            # Hypothesis tests on both OLS and WLS: H0: gamma = 0.5 (Compatibility with Square-Root Law)
+            t_ols = ((gamma_est - 0.5) / gamma_se) if (gamma_est is not None and gamma_se and gamma_se > 0) else None
+            p_val_ols = float(2.0 * (1.0 - norm.cdf(abs(t_ols)))) if t_ols is not None else None
 
-            t_wls = (gamma_wls - 0.5) / gamma_wls_se if gamma_wls_se and gamma_wls_se > 0 else 0.0
-            p_val_wls = float(2.0 * (1.0 - norm.cdf(abs(t_wls))))
+            t_wls = ((gamma_wls - 0.5) / gamma_wls_se) if (gamma_wls is not None and gamma_wls_se and gamma_wls_se > 0) else None
+            p_val_wls = float(2.0 * (1.0 - norm.cdf(abs(t_wls)))) if t_wls is not None else None
 
             t_sqrt = t_wls
             p_val_sqrt = p_val_wls
-            rejects_sqrt = bool(p_val_wls < 0.05)
-            ci_contains_zero = bool(ci_wls_lower <= 0.0 <= ci_wls_upper or ci_lower <= 0.0 <= ci_upper)
+            rejects_sqrt = bool(p_val_wls is not None and p_val_wls < 0.05)
+            ci_contains_zero = bool(
+                (ci_wls_lower is not None and ci_wls_upper is not None and ci_wls_lower <= 0.0 <= ci_wls_upper) or
+                (ci_lower is not None and ci_upper is not None and ci_lower <= 0.0 <= ci_upper)
+            )
 
-            wls_ci_note = "encompasses zero" if (ci_wls_lower <= 0.0 <= ci_wls_upper) else f"is strictly {'negative' if ci_wls_upper < 0 else 'positive'} (excludes zero)"
-            ols_ci_note = "encompasses zero" if (ci_lower <= 0.0 <= ci_upper) else f"is strictly {'negative' if ci_upper < 0 else 'positive'} (excludes zero)"
+            wls_ci_note = "encompasses zero" if (ci_wls_lower is not None and ci_wls_lower <= 0.0 <= ci_wls_upper) else (
+                f"is strictly {'negative' if (ci_wls_upper and ci_wls_upper < 0) else 'positive'} (excludes zero)" if ci_wls_upper is not None else "unavailable"
+            )
+            ols_ci_note = "encompasses zero" if (ci_lower is not None and ci_lower <= 0.0 <= ci_upper) else (
+                f"is strictly {'negative' if (ci_upper and ci_upper < 0) else 'positive'} (excludes zero)" if ci_upper is not None else "unavailable"
+            )
 
-            wls_verdict = f"rejects the square-root null hypothesis H0: gamma = 0.5 (t = {t_wls:.2f}, p = {p_val_wls:.4e})" if p_val_wls < 0.05 else f"fails to reject H0: gamma = 0.5 (t = {t_wls:.2f}, p = {p_val_wls:.4f})"
-            ols_verdict = f"rejects H0: gamma = 0.5 (t = {t_ols:.2f}, p = {p_val_ols:.4e})" if p_val_ols < 0.05 else f"fails to reject H0: gamma = 0.5 (t = {t_ols:.2f}, p = {p_val_ols:.4f})"
+            wls_verdict = (
+                f"rejects compatibility with square-root exponent gamma = 0.5 (t = {t_wls:.2f}, p = {p_val_wls:.4e})"
+                if (p_val_wls is not None and p_val_wls < 0.05)
+                else (f"fails to reject H0: gamma = 0.5 (t = {t_wls:.2f}, p = {p_val_wls:.4f})" if p_val_wls is not None else "WLS test unavailable")
+            )
+            ols_verdict = (
+                f"rejects H0: gamma = 0.5 (t = {t_ols:.2f}, p = {p_val_ols:.4e})"
+                if (p_val_ols is not None and p_val_ols < 0.05)
+                else (f"fails to reject H0: gamma = 0.5 (t = {t_ols:.2f}, p = {p_val_ols:.4f})" if p_val_ols is not None else "OLS test unavailable")
+            )
 
-            wls_test_dict = {
-                "status": "ESTIMATED",
-                "estimator": "Weighted Least Squares (Tier Sample Weights)",
-                "gamma": gamma_wls,
-                "se": gamma_wls_se,
-                "se_type": "Classical WLS SE",
-                "ci_95": [ci_wls_lower, ci_wls_upper],
-                "t_statistic": float(t_wls),
-                "p_value": float(p_val_wls),
-                "is_rejected_at_5pct": bool(p_val_wls < 0.05)
-            }
+            wls_test_dict = make_fit_result(
+                model_name="Weighted Least Squares (Tier Sample Weights)",
+                status=wls_status,
+                fit_params={
+                    "gamma": gamma_wls,
+                    "se": gamma_wls_se,
+                    "ci_95": [ci_wls_lower, ci_wls_upper] if ci_wls_lower is not None else None,
+                    "t_statistic": float(t_wls) if t_wls is not None else None,
+                    "p_value": float(p_val_wls) if p_val_wls is not None else None,
+                    "is_rejected_at_5pct": bool(p_val_wls is not None and p_val_wls < 0.05)
+                } if wls_status == "ESTIMATED" else None,
+                error=wls_err,
+                estimator="Weighted Least Squares (Tier Sample Weights)",
+                se_type="Classical WLS SE"
+            )
 
-            ols_test_dict = {
-                "status": "ESTIMATED",
-                "estimator": "Tier-Binned OLS (Unweighted)",
-                "gamma": gamma_est,
-                "se": gamma_se,
-                "se_type": "Classical OLS SE",
-                "ci_95": [ci_lower, ci_upper],
-                "t_statistic": float(t_ols),
-                "p_value": float(p_val_ols),
-                "is_rejected_at_5pct": bool(p_val_ols < 0.05)
-            }
+            ols_test_dict = make_fit_result(
+                model_name="Tier-Binned OLS (Unweighted)",
+                status="ESTIMATED" if gamma_est is not None else "FIT_FAILED",
+                fit_params={
+                    "gamma": gamma_est,
+                    "se": gamma_se,
+                    "ci_95": [ci_lower, ci_upper] if ci_lower is not None else None,
+                    "t_statistic": float(t_ols) if t_ols is not None else None,
+                    "p_value": float(p_val_ols) if p_val_ols is not None else None,
+                    "is_rejected_at_5pct": bool(p_val_ols is not None and p_val_ols < 0.05)
+                } if gamma_est is not None else None,
+                estimator="Tier-Binned OLS (Unweighted)",
+                se_type="Classical OLS SE"
+            )
 
+            str_gamma_wls = f"{gamma_wls:.4f}" if gamma_wls is not None else "NA"
+            str_wls_lower = f"{ci_wls_lower:.4f}" if ci_wls_lower is not None else "NA"
+            str_wls_upper = f"{ci_wls_upper:.4f}" if ci_wls_upper is not None else "NA"
+            str_gamma_ols = f"{gamma_est:.4f}" if gamma_est is not None else "NA"
+            str_ols_lower = f"{ci_lower:.4f}" if ci_lower is not None else "NA"
+            str_ols_upper = f"{ci_upper:.4f}" if ci_upper is not None else "NA"
+
+            # Bounded empirical expression per M4
             interpretation_text = (
-                f"Exploratory single child-order estimation: WLS power-law exponent gamma = {gamma_wls:.4f} "
-                f"(Classical WLS SE: {gamma_wls_se:.4f}, 95% WLS CI: [{ci_wls_lower:.4f}, {ci_wls_upper:.4f}], {wls_ci_note}) {wls_verdict}; "
-                f"and binned OLS exponent gamma = {gamma_est:.4f} "
-                f"(Classical OLS SE: {gamma_se:.4f}, 95% OLS CI: [{ci_lower:.4f}, {ci_upper:.4f}], {ols_ci_note}) {ols_verdict}. "
-                "Child-order models exhibit low in-sample and out-of-sample explanatory power (R² < 0.02), with stratified power-law estimates varying across dates and weighting specifications. "
-                "Note: WLS standard errors are classical weighted SEs unadjusted for cross-tier residual autocorrelation. "
-                "This finding strictly characterizes individual child-order conditional price response R(v, k). "
-                "It does NOT constitute an empirical refutation of the classical Square-Root Law of Meta-Orders "
-                "(which governs cumulative parent-order execution over hours or days), nor does it directly prove "
-                "specific unobserved microstructure mechanisms (such as book replenishment or adverse selection ratios)."
+                "Square-root price impact is an empirical scaling relationship. This study estimates "
+                "the power-law exponent under specified assets, intraday sample intervals, and regression specifications "
+                f"to evaluate compatibility with gamma = 0.5 (WLS gamma = {str_gamma_wls}, "
+                f"95% WLS CI: [{str_wls_lower}, {str_wls_upper}], {wls_ci_note}) {wls_verdict}; "
+                f"OLS gamma = {str_gamma_ols}, 95% OLS CI: [{str_ols_lower}, {str_ols_upper}], {ols_ci_note}) {ols_verdict}. "
+                "Results do not demonstrate universal or cross-asset validity. Child-order tick response cannot be conflated "
+                "with exogenous meta-order impact or guaranteed execution alpha. Models exhibit low in-sample and out-of-sample explanatory power."
             )
 
         # Trade-level estimation on individual positive trades (subsample up to 50k for tractability)
@@ -459,8 +718,24 @@ class NonlinearImpactModel:
         trade_level_gamma_se = None
         trade_level_r2 = None
         trade_level_status = "NOT_ESTIMABLE"
+        trade_level_err = None
+        trade_level_fit_params = None
 
-        if np.sum(trade_pos_mask) >= 100 and np.var(np.log(Q_clean[trade_pos_mask])) > 1e-12 and np.var(np.log(R_clean[trade_pos_mask])) > 1e-12:
+        if trade_pos_count < 100:
+            trade_level_status = "NOT_ESTIMABLE"
+            trade_level_err = {
+                "code": "INSUFFICIENT_DATA",
+                "message": f"Insufficient positive return trades (found {trade_pos_count}, minimum 100 required for log-log regression).",
+                "retryable": False
+            }
+        elif np.var(np.log(Q_clean[trade_pos_mask])) <= 1e-12 or np.var(np.log(R_clean[trade_pos_mask])) <= 1e-12:
+            trade_level_status = "NOT_ESTIMABLE"
+            trade_level_err = {
+                "code": "SINGULAR_DESIGN",
+                "message": "Near-zero variance in positive trades log volume or log return.",
+                "retryable": False
+            }
+        else:
             try:
                 q_tr = Q_clean[trade_pos_mask]
                 r_tr = R_clean[trade_pos_mask]
@@ -470,12 +745,58 @@ class NonlinearImpactModel:
                     r_tr = r_tr[::step]
                 X_tr = sm.add_constant(np.log(q_tr))
                 res_tr = sm.OLS(np.log(r_tr), X_tr).fit(cov_type="HAC", cov_kwds={"maxlags": min(k, 30)})
-                trade_level_gamma = float(res_tr.params[1]) if len(res_tr.params) > 1 else None
-                trade_level_gamma_se = float(res_tr.bse[1]) if len(res_tr.bse) > 1 else None
-                trade_level_r2 = float(res_tr.rsquared) if hasattr(res_tr, "rsquared") and np.isfinite(res_tr.rsquared) else None
-                trade_level_status = "ESTIMATED"
-            except Exception:
+                g_tr = float(res_tr.params[1]) if len(res_tr.params) > 1 else None
+                se_tr = float(res_tr.bse[1]) if len(res_tr.bse) > 1 else None
+                r2_tr = float(res_tr.rsquared) if hasattr(res_tr, "rsquared") and np.isfinite(res_tr.rsquared) else None
+
+                if g_tr is not None and np.isfinite(g_tr):
+                    trade_level_status = "ESTIMATED"
+                    trade_level_gamma = g_tr
+                    trade_level_gamma_se = se_tr
+                    trade_level_r2 = r2_tr
+                    trade_level_fit_params = {
+                        "gamma_trade": g_tr,
+                        "gamma_trade_se": se_tr,
+                        "r_squared_trade": r2_tr
+                    }
+                else:
+                    trade_level_status = "FIT_FAILED"
+                    trade_level_err = {
+                        "code": "NON_FINITE_OUTPUT",
+                        "message": "Non-finite parameter estimates in trade-level regression.",
+                        "retryable": False
+                    }
+            except Exception as e:
                 trade_level_status = "FIT_FAILED"
+                trade_level_err = {
+                    "code": "SOLVER_ERROR",
+                    "message": f"Solver error in trade-level HAC: {str(e)}",
+                    "retryable": False
+                }
+
+        trade_level_dict = make_fit_result(
+            model_name="Trade-Level Log-Log HAC (Positive Response Sub-Sample: R > 0)",
+            status=trade_level_status,
+            fit_params=trade_level_fit_params,
+            error=trade_level_err,
+            estimator="OLS with Newey-West HAC covariance",
+            sample_type="POSITIVE_RESPONSE_SUBSAMPLE",
+            conditioning="Strictly conditional on positive signed price displacement (R_i > 0)",
+            caveat=(
+                "Evaluated strictly on the conditional positive-response sub-sample (R_i > 0); "
+                "cannot serve as an unconditional full-sample validation because zero and adverse price moves "
+                f"({trade_zero_count + trade_neg_count:,} trades, {(100.0 - pos_pct):.1f}% of sample) "
+                "are dropped by the log transform."
+            ),
+            gamma_trade=trade_level_gamma,
+            gamma_trade_se=trade_level_gamma_se,
+            r_squared_trade=trade_level_r2,
+            positive_trades_count=trade_pos_count,
+            zero_trades_count=trade_zero_count,
+            negative_trades_count=trade_neg_count,
+            total_trades_count=trade_total_count,
+            positive_trades_pct=pos_pct
+        )
 
         # Out-of-sample (OOS) cross-validation with boundary purging
         half = n_obs // 2
@@ -795,7 +1116,7 @@ class NonlinearImpactModel:
                 Q=Q_clean,
                 R=R_clean,
                 tier_definitions=tier_definitions,
-                block_sizes=[100, 250, 500],
+                block_sizes=[50, 100, 250, 500],
                 num_bootstraps=100,
                 random_seed=42
             )
@@ -804,7 +1125,9 @@ class NonlinearImpactModel:
                 "status": "NOT_ESTIMABLE",
                 "reason": "Sample size below threshold or power law inestimable on full dataset.",
                 "replications": 0,
-                "block_sizes_evaluated": [100, 250, 500]
+                "block_sizes_evaluated": [50, 100, 250, 500],
+                "sensitivity_table": [],
+                "sensitivity_verdict": "NOT_ESTIMABLE"
             }
 
         power_law_dict = {
@@ -823,10 +1146,14 @@ class NonlinearImpactModel:
                 "status": power_law_status,
                 "estimator": "Classical WLS (weights = tier count)",
                 "se_type": "Classical WLS SE (unadjusted for cross-tier residual autocorrelation)",
+                "gamma": gamma_wls,
                 "gamma_wls": gamma_wls,
+                "se": gamma_wls_se,
                 "gamma_wls_se": gamma_wls_se,
+                "ci_95": [ci_wls_lower, ci_wls_upper] if ci_wls_lower is not None else None,
                 "ci_95_lower": ci_wls_lower,
                 "ci_95_upper": ci_wls_upper,
+                "r_squared": r2_wls,
                 "r_squared_wls": r2_wls
             },
             "trade_level_fit": {
@@ -957,32 +1284,10 @@ class NonlinearImpactModel:
                 ) if sample_duration_s else "Consecutive tick execution sample."
             },
             "binned_empirical": binned_empirical,
-            "linear_model": {
-                "name": "Linear (R = alpha + beta * Q)",
-                "status": lin_status,
-                "alpha": res_lin_params[0],
-                "alpha_se": res_lin_bse[0],
-                "beta": res_lin_params[1],
-                "beta_se": res_lin_bse[1],
-                "beta_t_stat": res_lin_tvalues[1],
-                "beta_p_value": res_lin_pvalues[1],
-                "r_squared": res_lin_rsquared,
-                "aic": res_lin_aic,
-                "bic": res_lin_bic
-            },
-            "logarithmic_model": {
-                "name": "Logarithmic (R = alpha + beta * ln(Q))",
-                "status": log_status,
-                "alpha": res_log_params[0],
-                "alpha_se": res_log_bse[0],
-                "beta": res_log_params[1],
-                "beta_se": res_log_bse[1],
-                "beta_t_stat": res_log_tvalues[1],
-                "beta_p_value": res_log_pvalues[1],
-                "r_squared": res_log_rsquared,
-                "aic": res_log_aic,
-                "bic": res_log_bic
-            },
+            "linear_model": linear_model_dict,
+            "linear_fit": linear_model_dict,
+            "logarithmic_model": logarithmic_model_dict,
+            "logarithmic_fit": logarithmic_model_dict,
             "power_law_model": power_law_dict,
             "power_law_fit": power_law_dict,
             "power_law_wls": power_law_dict["wls_fit"],
@@ -990,6 +1295,8 @@ class NonlinearImpactModel:
             "out_of_sample_validation": power_law_dict["out_of_sample_validation"],
             "walk_forward_validation": power_law_dict["walk_forward_validation"],
             "moving_block_bootstrap": mbb_results,
+            "inference_sensitivity_table": mbb_results.get("sensitivity_table", []),
+            "sensitivity_verdict": mbb_results.get("sensitivity_verdict", "UNAVAILABLE"),
             "time_chunk_stability": time_chunks
         }
 
@@ -998,7 +1305,7 @@ class NonlinearImpactModel:
         Q: np.ndarray,
         R: np.ndarray,
         tier_definitions: list,
-        block_sizes: list = [100, 250, 500],
+        block_sizes: list = [50, 100, 250, 500],
         num_bootstraps: int = 100,
         random_seed: int = 42
     ) -> Dict[str, Any]:
@@ -1006,21 +1313,32 @@ class NonlinearImpactModel:
         Moving Block Bootstrap (MBB) for robust empirical child-order power-law inference.
         Resamples contiguous blocks of trades to preserve serial dependence,
         re-stratifying empirical economic tiers and refitting WLS & OLS on each replication.
+        Evaluates sensitivity of confidence intervals to temporal block size (M3).
         """
         n = len(Q)
+        block_unit_labels = {
+            50: "50 events (~0.8s micro-clustering)",
+            100: "100 events (~1.5s short memory)",
+            250: "250 events (~4.0s primary decay horizon)",
+            500: "500 events (~8.0s macro-trade horizon)"
+        }
+
         if n < 200 or np.var(R) < 1e-12 or np.var(Q) < 1e-12:
             return {
                 "status": "NOT_ESTIMABLE",
                 "reason": "Insufficient observations or zero variance for block bootstrap.",
                 "replications": num_bootstraps,
-                "block_sizes_evaluated": block_sizes
+                "block_sizes_evaluated": block_sizes,
+                "sensitivity_table": [],
+                "sensitivity_verdict": "NOT_ESTIMABLE"
             }
 
         rng = np.random.default_rng(random_seed)
         results = {}
+        sensitivity_table = []
 
         for b_size in block_sizes:
-            if b_size >= n // 2:
+            if b_size >= n:
                 continue
             n_blocks = int(np.ceil(n / b_size))
             max_start = n - b_size
@@ -1037,11 +1355,12 @@ class NonlinearImpactModel:
                 r_b = R[boot_idx]
 
                 # Economic binning on resampled data
+                min_sample_tier = max(5, min(15, n // 100))
                 b_q, b_r, b_cnts = [], [], []
                 for _, cond, _ in tier_definitions:
                     m = cond(q_b)
                     cnt = int(np.sum(m))
-                    if cnt >= 15:
+                    if cnt >= min_sample_tier:
                         m_r = float(np.mean(r_b[m]))
                         if m_r > 0:
                             b_q.append(float(np.mean(q_b[m])))
@@ -1067,39 +1386,145 @@ class NonlinearImpactModel:
                     failures += 1
 
             fail_rate = float((failures / num_bootstraps) * 100.0)
+            u_label = block_unit_labels.get(b_size, f"{b_size} events")
+
             if len(wls_gammas) >= 20:
                 wls_arr = np.array(wls_gammas)
                 ols_arr = np.array(ols_gammas)
+                ci_wls = [float(np.percentile(wls_arr, 2.5)), float(np.percentile(wls_arr, 97.5))]
+                ci_ols = [float(np.percentile(ols_arr, 2.5)), float(np.percentile(ols_arr, 97.5))]
+                wls_has_zero = bool(ci_wls[0] <= 0.0 <= ci_wls[1])
+                wls_has_half = bool(ci_wls[0] <= 0.5 <= ci_wls[1])
+                ols_has_zero = bool(ci_ols[0] <= 0.0 <= ci_ols[1])
+                ols_has_half = bool(ci_ols[0] <= 0.5 <= ci_ols[1])
+
                 results[f"block_{b_size}"] = {
                     "block_size": b_size,
+                    "unit_label": u_label,
                     "replications_completed": len(wls_gammas),
                     "replications_attempted": num_bootstraps,
                     "fit_failure_rate_pct": fail_rate,
                     "wls_gamma_bootstrap_mean": float(np.mean(wls_arr)),
                     "wls_gamma_bootstrap_se": float(np.std(wls_arr)),
-                    "wls_gamma_ci_95": [float(np.percentile(wls_arr, 2.5)), float(np.percentile(wls_arr, 97.5))],
+                    "wls_gamma_ci_95": ci_wls,
                     "ols_gamma_bootstrap_mean": float(np.mean(ols_arr)),
                     "ols_gamma_bootstrap_se": float(np.std(ols_arr)),
-                    "ols_gamma_ci_95": [float(np.percentile(ols_arr, 2.5)), float(np.percentile(ols_arr, 97.5))],
-                    "ci_contains_half": bool(np.percentile(wls_arr, 2.5) <= 0.5 <= np.percentile(wls_arr, 97.5)),
-                    "ci_contains_zero": bool(np.percentile(wls_arr, 2.5) <= 0.0 <= np.percentile(wls_arr, 97.5))
+                    "ols_gamma_ci_95": ci_ols,
+                    "ci_contains_zero_wls": wls_has_zero,
+                    "ci_contains_half_wls": wls_has_half,
+                    "ci_contains_zero_ols": ols_has_zero,
+                    "ci_contains_half_ols": ols_has_half,
+                    "ci_contains_half": wls_has_half,
+                    "ci_contains_zero": wls_has_zero
                 }
+
+                # Sensitivity table row for WLS
+                sensitivity_table.append({
+                    "estimator": "Weighted Least Squares (WLS)",
+                    "parameter": "gamma",
+                    "inference_method": f"Moving Block Bootstrap (b={b_size})",
+                    "block_size_events": b_size,
+                    "unit_description": u_label,
+                    "point_estimate": float(np.mean(wls_arr)),
+                    "standard_error": float(np.std(wls_arr)),
+                    "ci_95": ci_wls,
+                    "ci_contains_zero": wls_has_zero,
+                    "ci_contains_half": wls_has_half,
+                    "replications": len(wls_gammas),
+                    "verdict": ("Contains 0 (cannot rule out 0)" if wls_has_zero else f"Strictly {'negative' if ci_wls[1] < 0 else 'positive'} (rules out 0)") + (", rejects 0.5" if not wls_has_half else ", compatible with 0.5")
+                })
+
+                # Sensitivity table row for Tier OLS
+                sensitivity_table.append({
+                    "estimator": "Tier-Binned OLS",
+                    "parameter": "gamma",
+                    "inference_method": f"Moving Block Bootstrap (b={b_size})",
+                    "block_size_events": b_size,
+                    "unit_description": u_label,
+                    "point_estimate": float(np.mean(ols_arr)),
+                    "standard_error": float(np.std(ols_arr)),
+                    "ci_95": ci_ols,
+                    "ci_contains_zero": ols_has_zero,
+                    "ci_contains_half": ols_has_half,
+                    "replications": len(ols_gammas),
+                    "verdict": ("Contains 0 (cannot rule out 0)" if ols_has_zero else f"Strictly {'negative' if ci_ols[1] < 0 else 'positive'} (rules out 0)") + (", rejects 0.5" if not ols_has_half else ", compatible with 0.5")
+                })
             else:
                 results[f"block_{b_size}"] = {
                     "block_size": b_size,
-                    "status": "HIGH_FAILURE_RATE",
+                    "unit_label": u_label,
+                    "status": "UNAVAILABLE",
+                    "reason": f"Insufficient valid bootstrap replications ({len(wls_gammas)} completed, failure rate {fail_rate:.1f}%).",
                     "fit_failure_rate_pct": fail_rate,
-                    "replications_completed": len(wls_gammas)
+                    "replications_completed": len(wls_gammas),
+                    "replications_attempted": num_bootstraps,
+                    "wls_gamma_ci_95": None,
+                    "ols_gamma_ci_95": None
                 }
 
-        primary_key = "block_250" if "block_250" in results and "wls_gamma_ci_95" in results["block_250"] else (list(results.keys())[0] if results else None)
+                # Sensitivity table entry for high-failure block size (M3)
+                sensitivity_table.append({
+                    "estimator": "Weighted Least Squares (WLS)",
+                    "parameter": "gamma",
+                    "inference_method": f"Moving Block Bootstrap (b={b_size})",
+                    "block_size_events": b_size,
+                    "unit_description": u_label,
+                    "point_estimate": None,
+                    "standard_error": None,
+                    "ci_95": None,
+                    "ci_contains_zero": None,
+                    "ci_contains_half": None,
+                    "replications": len(wls_gammas),
+                    "verdict": f"Unavailable (replications < 20, failure rate {fail_rate:.1f}%)"
+                })
+                sensitivity_table.append({
+                    "estimator": "Tier-Binned OLS",
+                    "parameter": "gamma",
+                    "inference_method": f"Moving Block Bootstrap (b={b_size})",
+                    "block_size_events": b_size,
+                    "unit_description": u_label,
+                    "point_estimate": None,
+                    "standard_error": None,
+                    "ci_95": None,
+                    "ci_contains_zero": None,
+                    "ci_contains_half": None,
+                    "replications": len(ols_gammas),
+                    "verdict": f"Unavailable (replications < 20, failure rate {fail_rate:.1f}%)"
+                })
+
+        primary_key = "block_250" if ("block_250" in results and results["block_250"].get("wls_gamma_ci_95")) else (
+            next((k for k, v in results.items() if v.get("wls_gamma_ci_95")), list(results.keys())[0] if results else None)
+        )
         primary_res = results.get(primary_key, {})
 
+        # Evaluate if conclusions flip across block sizes (M3)
+        wls_zeros = [r["ci_contains_zero_wls"] for r in results.values() if "ci_contains_zero_wls" in r]
+        has_wls_flip = len(set(wls_zeros)) > 1 if wls_zeros else False
+
+        if has_wls_flip:
+            sensitivity_verdict = "SENSITIVE_TO_TEMPORAL_DEPENDENCE_SPECIFICATION"
+            sensitivity_summary = (
+                "Child-order scaling confidence intervals flip between containing zero and excluding zero across temporal block sizes. "
+                "Inference conclusions are sensitive to dependence assumptions and cannot be asserted as unconditionally robust."
+            )
+        else:
+            sensitivity_verdict = "STABLE_ACROSS_BLOCK_SIZES"
+            sensitivity_summary = (
+                "Confidence interval zero-containment behavior is uniform across evaluated block lengths."
+            )
+
+        has_any_success = any(v.get("wls_gamma_ci_95") is not None for v in results.values())
+        all_success = all(v.get("wls_gamma_ci_95") is not None for v in results.values())
+        mbb_status = "SUCCESS" if all_success else ("PARTIAL" if has_any_success else "ESTIMATION_DEGRADED")
+
         return {
-            "status": "SUCCESS" if primary_res.get("wls_gamma_ci_95") else "ESTIMATION_DEGRADED",
+            "status": mbb_status,
             "methodology": "Moving Block Bootstrap with economic tier re-stratification",
             "block_sizes_evaluated": block_sizes,
             "primary_block_size": 250,
             "primary_result": primary_res,
-            "results_by_block_size": results
+            "results_by_block_size": results,
+            "sensitivity_table": sensitivity_table,
+            "sensitivity_verdict": sensitivity_verdict,
+            "sensitivity_summary": sensitivity_summary
         }

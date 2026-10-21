@@ -23,6 +23,7 @@ export const MarketReplay: React.FC<MarketReplayProps> = ({ date }) => {
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1);
   const [playbackMode, setPlaybackMode] = useState<'EVENT_INDEX' | 'REAL_CLOCK'>('EVENT_INDEX');
   const timerRef = useRef<any>(null);
+  const activeQueryIdRef = useRef<number>(0);
 
   // Available pre-indexed intraday market sessions
   const sessions = [
@@ -34,7 +35,7 @@ export const MarketReplay: React.FC<MarketReplayProps> = ({ date }) => {
 
   // Load trade window
   useEffect(() => {
-    let isMounted = true;
+    const currentQueryId = ++activeQueryIdRef.current;
     setLoading(true);
     setError(null);
     setIsPlaying(false);
@@ -44,7 +45,7 @@ export const MarketReplay: React.FC<MarketReplayProps> = ({ date }) => {
 
     fetchReplayWindow('BTCUSDT', date, startSecond, durationSeconds, 2000)
       .then((data) => {
-        if (isMounted) {
+        if (currentQueryId === activeQueryIdRef.current) {
           setTrades(data.trades);
           setTotalInWindow(data.total_in_window || data.trades.length);
           setIsTruncated(Boolean(data.is_truncated));
@@ -53,14 +54,13 @@ export const MarketReplay: React.FC<MarketReplayProps> = ({ date }) => {
       })
       .catch((err) => {
         console.error(err);
-        if (isMounted) {
+        if (currentQueryId === activeQueryIdRef.current) {
           setError(err.message || 'Failed to load replay window');
           setLoading(false);
         }
       });
 
     return () => {
-      isMounted = false;
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [date, startSecond, durationSeconds]);
@@ -248,6 +248,26 @@ export const MarketReplay: React.FC<MarketReplayProps> = ({ date }) => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      {/* Historical Event Replay Disclosure Banner (M2) */}
+      <div className="mml-card" style={{ borderLeft: '4px solid var(--color-buy)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <Clock size={22} color="var(--color-buy)" />
+          <div>
+            <div style={{ fontWeight: 700, fontSize: '0.88rem', letterSpacing: '0.03em' }}>
+              HISTORICAL EVENT-TIME REPLAY &bull; BINANCE VISION SPOT ARCHIVE (BTC/USDT)
+            </div>
+            <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+              Offline deterministic event playback of normalized tick-level trades. This is an archival research tool for visualizing high-frequency execution sequences, not an active real-time market data feed.
+            </div>
+          </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '0.68rem', fontFamily: 'var(--font-mono)', background: 'rgba(16, 185, 129, 0.15)', color: 'var(--color-buy)', padding: '2px 8px', borderRadius: '3px', fontWeight: 700 }}>
+            HISTORICAL ARCHIVE &bull; NON-REALTIME
+          </span>
+        </div>
+      </div>
+
       {/* Error Banner */}
       {error && (
         <div className="mml-card" style={{ borderLeft: '4px solid var(--color-sell)', display: 'flex', alignItems: 'center', gap: '12px' }}>

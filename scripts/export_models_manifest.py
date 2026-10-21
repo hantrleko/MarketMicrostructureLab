@@ -77,7 +77,7 @@ def main():
 
             # Inject institutional artifact metadata and provenance
             res["artifact_metadata"] = {
-                "schema_version": "1.2.0",
+                "schema_version": "1.3.0",
                 "build_commit": git_commit,
                 "generation_timestamp_utc": datetime.now(timezone.utc).isoformat(),
                 "dataset_source": entry.source_type,
@@ -124,7 +124,7 @@ def main():
         }
 
     provenance_manifest = {
-        "schema_version": "1.2.0",
+        "schema_version": "1.3.0",
         "generated_timestamp_utc": datetime.now(timezone.utc).isoformat(),
         "build_commit": git_commit,
         "evaluation_protocol": "NON_OVERLAPPING_PURGED_WALK_FORWARD",

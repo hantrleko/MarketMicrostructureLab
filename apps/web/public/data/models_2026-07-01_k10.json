@@ -10,7 +10,7 @@
     "sample_end_utc": "2026-07-01T07:48:27.491649Z",
     "sample_duration_seconds": 7112.92822,
     "sampling_method": "CHRONOLOGICAL_TICK_RESPONSE",
-    "generation_timestamp_utc": "2026-10-21T08:48:28.060527+00:00",
+    "generation_timestamp_utc": "2026-10-21T10:08:18.790175+00:00",
     "status": "EXPLORATORY_RESEARCH",
     "scope_limitation_disclosure": "Analyzed sample covers consecutive chronological window from 2026-07-01T05:49:54.563429Z to 2026-07-01T07:48:27.491649Z (7112.9s, 249,990 tick executions). Microstructure empirical parameters (scaling exponent, autocorrelation, point-mass proportions) reflect this specific intraday regime and cannot be extrapolated to full 24-hour trading without cross-regime validation."
   },
@@ -228,41 +228,144 @@
       "train_r2": 0.0012470555426589147,
       "test_r2": -0.000517835932474453,
       "log_model_oos_r2": -0.000517835932474453,
-      "power_law_oos_r2": -0.019896549135898,
+      "power_law_oos_r2": -0.011591137771392201,
+      "power_law_train_fit": {
+        "status": "ESTIMATED",
+        "gamma_train": -0.023489890124581858,
+        "alpha_train": 0.035284175242639056,
+        "gamma_train_wls": -0.05331921447582,
+        "alpha_train_wls": 0.03599783605793192
+      },
       "is_power_law_oos": false,
-      "note": "Evaluates the logarithmic model on the full sample. Conditioning on positive returns for power-law models is reported separately."
+      "note": "Evaluates training-fitted parameters on held-out test data. Power-law and logarithmic parameters are strictly fitted on the training split prior to lookahead purge buffer."
     },
     "walk_forward_validation": {
+      "protocol": "EXPANDING_WINDOW_NON_OVERLAPPING_TEST",
       "folds_count": 3,
+      "valid_folds_count": 3,
+      "failed_folds_count": 0,
+      "purged_trades_per_boundary": 10,
+      "total_purged_boundary_trades": 30,
+      "pooled_oos": {
+        "aggregation_method": "CONCATENATED_UNIQUE_NON_OVERLAPPING_PREDICTIONS",
+        "total_unique_predictions": 149994,
+        "total_purged_boundary_trades": 30,
+        "log_oos_r2": -0.0007752875274453785,
+        "power_oos_r2": -0.024112005501812472,
+        "denominator_ss_tot": 1483.826950392201
+      },
+      "fold_macro_metrics": {
+        "mean_log_oos_r2": -0.0024609683237259983,
+        "std_log_oos_r2": 0.0027841799032368624,
+        "mean_power_oos_r2": -0.024779993818272377,
+        "std_power_oos_r2": 0.013885198459061287
+      },
+      "mean_log_oos_r2": -0.0024609683237259983,
+      "mean_power_oos_r2": -0.024779993818272377,
       "folds": [
         {
           "fold": 1,
+          "train_indices": [
+            0,
+            99986
+          ],
+          "test_indices": [
+            99996,
+            149994
+          ],
           "train_observations": 99986,
-          "test_observations": 74997,
+          "test_observations": 49998,
           "purged_observations": 10,
-          "log_oos_r2": -0.0015469169251487447,
-          "power_oos_r2": -0.03207566149009766
+          "train_start_utc": "2026-07-01T05:49:54.563429Z",
+          "train_end_utc": "2026-07-01T06:35:06.965394Z",
+          "test_start_utc": "2026-07-01T06:35:06.965394Z",
+          "test_end_utc": "2026-07-01T06:56:11.565294Z",
+          "log_model": {
+            "alpha": 0.031764859633189556,
+            "beta": -0.002684207410510471,
+            "train_r2": 0.002221994154956719
+          },
+          "power_law_model": {
+            "status": "ESTIMATED",
+            "alpha": 0.029370364330014283,
+            "gamma": -0.03690950088706274,
+            "alpha_wls": 0.029286088423547116,
+            "gamma_wls": -0.07080319053083707,
+            "train_r2_binned": 0.07660724069421809,
+            "train_r2_wls": 0.27774130806478325
+          },
+          "log_oos_r2": -0.005700549745286221,
+          "power_oos_r2": -0.044277341754998645
         },
         {
           "fold": 2,
+          "train_indices": [
+            0,
+            149984
+          ],
+          "test_indices": [
+            149994,
+            199992
+          ],
           "train_observations": 149984,
-          "test_observations": 62497,
+          "test_observations": 49998,
           "purged_observations": 10,
-          "log_oos_r2": -0.0019513220606910409,
-          "power_oos_r2": -0.018636087705576232
+          "train_start_utc": "2026-07-01T05:49:54.563429Z",
+          "train_end_utc": "2026-07-01T06:56:11.565091Z",
+          "test_start_utc": "2026-07-01T06:56:11.565294Z",
+          "test_end_utc": "2026-07-01T07:21:35.240516Z",
+          "log_model": {
+            "alpha": 0.03880508480939135,
+            "beta": -0.0021753214294869152,
+            "train_r2": 0.001463523743331474
+          },
+          "power_law_model": {
+            "status": "ESTIMATED",
+            "alpha": 0.03297256372440343,
+            "gamma": -0.02788329800471634,
+            "alpha_wls": 0.03407086609594281,
+            "gamma_wls": -0.05879331667270887,
+            "train_r2_binned": 0.04139706809880572,
+            "train_r2_wls": 0.2036387276994822
+          },
+          "log_oos_r2": -0.002779300612188562,
+          "power_oos_r2": -0.013009397015834256
         },
         {
           "fold": 3,
-          "train_observations": 187482,
-          "test_observations": 62498,
+          "train_indices": [
+            0,
+            199982
+          ],
+          "test_indices": [
+            199992,
+            249990
+          ],
+          "train_observations": 199982,
+          "test_observations": 49998,
           "purged_observations": 10,
-          "log_oos_r2": 0.0005166119623756238,
-          "power_oos_r2": -0.020880679065811814
+          "train_start_utc": "2026-07-01T05:49:54.563429Z",
+          "train_end_utc": "2026-07-01T07:21:35.090759Z",
+          "test_start_utc": "2026-07-01T07:21:35.317553Z",
+          "test_end_utc": "2026-07-01T07:48:27.491649Z",
+          "log_model": {
+            "alpha": 0.040595960748608176,
+            "beta": -0.0018279063035737326,
+            "train_r2": 0.001044561231693053
+          },
+          "power_law_model": {
+            "status": "ESTIMATED",
+            "alpha": 0.02872064144060454,
+            "gamma": -0.04114469316172337,
+            "alpha_wls": 0.03396596643754582,
+            "gamma_wls": -0.056596735888395824,
+            "train_r2_binned": 0.07544459729078823,
+            "train_r2_wls": 0.1777977823017487
+          },
+          "log_oos_r2": 0.0010969453862967882,
+          "power_oos_r2": -0.017053242683984227
         }
-      ],
-      "mean_log_oos_r2": -0.000993875674488054,
-      "mean_power_oos_r2": -0.02386414275382857,
-      "purged_trades_per_boundary": 10
+      ]
     },
     "moving_block_bootstrap": {
       "status": "SUCCESS",
@@ -471,41 +574,144 @@
       "train_r2": 0.0012470555426589147,
       "test_r2": -0.000517835932474453,
       "log_model_oos_r2": -0.000517835932474453,
-      "power_law_oos_r2": -0.019896549135898,
+      "power_law_oos_r2": -0.011591137771392201,
+      "power_law_train_fit": {
+        "status": "ESTIMATED",
+        "gamma_train": -0.023489890124581858,
+        "alpha_train": 0.035284175242639056,
+        "gamma_train_wls": -0.05331921447582,
+        "alpha_train_wls": 0.03599783605793192
+      },
       "is_power_law_oos": false,
-      "note": "Evaluates the logarithmic model on the full sample. Conditioning on positive returns for power-law models is reported separately."
+      "note": "Evaluates training-fitted parameters on held-out test data. Power-law and logarithmic parameters are strictly fitted on the training split prior to lookahead purge buffer."
     },
     "walk_forward_validation": {
+      "protocol": "EXPANDING_WINDOW_NON_OVERLAPPING_TEST",
       "folds_count": 3,
+      "valid_folds_count": 3,
+      "failed_folds_count": 0,
+      "purged_trades_per_boundary": 10,
+      "total_purged_boundary_trades": 30,
+      "pooled_oos": {
+        "aggregation_method": "CONCATENATED_UNIQUE_NON_OVERLAPPING_PREDICTIONS",
+        "total_unique_predictions": 149994,
+        "total_purged_boundary_trades": 30,
+        "log_oos_r2": -0.0007752875274453785,
+        "power_oos_r2": -0.024112005501812472,
+        "denominator_ss_tot": 1483.826950392201
+      },
+      "fold_macro_metrics": {
+        "mean_log_oos_r2": -0.0024609683237259983,
+        "std_log_oos_r2": 0.0027841799032368624,
+        "mean_power_oos_r2": -0.024779993818272377,
+        "std_power_oos_r2": 0.013885198459061287
+      },
+      "mean_log_oos_r2": -0.0024609683237259983,
+      "mean_power_oos_r2": -0.024779993818272377,
       "folds": [
         {
           "fold": 1,
+          "train_indices": [
+            0,
+            99986
+          ],
+          "test_indices": [
+            99996,
+            149994
+          ],
           "train_observations": 99986,
-          "test_observations": 74997,
+          "test_observations": 49998,
           "purged_observations": 10,
-          "log_oos_r2": -0.0015469169251487447,
-          "power_oos_r2": -0.03207566149009766
+          "train_start_utc": "2026-07-01T05:49:54.563429Z",
+          "train_end_utc": "2026-07-01T06:35:06.965394Z",
+          "test_start_utc": "2026-07-01T06:35:06.965394Z",
+          "test_end_utc": "2026-07-01T06:56:11.565294Z",
+          "log_model": {
+            "alpha": 0.031764859633189556,
+            "beta": -0.002684207410510471,
+            "train_r2": 0.002221994154956719
+          },
+          "power_law_model": {
+            "status": "ESTIMATED",
+            "alpha": 0.029370364330014283,
+            "gamma": -0.03690950088706274,
+            "alpha_wls": 0.029286088423547116,
+            "gamma_wls": -0.07080319053083707,
+            "train_r2_binned": 0.07660724069421809,
+            "train_r2_wls": 0.27774130806478325
+          },
+          "log_oos_r2": -0.005700549745286221,
+          "power_oos_r2": -0.044277341754998645
         },
         {
           "fold": 2,
+          "train_indices": [
+            0,
+            149984
+          ],
+          "test_indices": [
+            149994,
+            199992
+          ],
           "train_observations": 149984,
-          "test_observations": 62497,
+          "test_observations": 49998,
           "purged_observations": 10,
-          "log_oos_r2": -0.0019513220606910409,
-          "power_oos_r2": -0.018636087705576232
+          "train_start_utc": "2026-07-01T05:49:54.563429Z",
+          "train_end_utc": "2026-07-01T06:56:11.565091Z",
+          "test_start_utc": "2026-07-01T06:56:11.565294Z",
+          "test_end_utc": "2026-07-01T07:21:35.240516Z",
+          "log_model": {
+            "alpha": 0.03880508480939135,
+            "beta": -0.0021753214294869152,
+            "train_r2": 0.001463523743331474
+          },
+          "power_law_model": {
+            "status": "ESTIMATED",
+            "alpha": 0.03297256372440343,
+            "gamma": -0.02788329800471634,
+            "alpha_wls": 0.03407086609594281,
+            "gamma_wls": -0.05879331667270887,
+            "train_r2_binned": 0.04139706809880572,
+            "train_r2_wls": 0.2036387276994822
+          },
+          "log_oos_r2": -0.002779300612188562,
+          "power_oos_r2": -0.013009397015834256
         },
         {
           "fold": 3,
-          "train_observations": 187482,
-          "test_observations": 62498,
+          "train_indices": [
+            0,
+            199982
+          ],
+          "test_indices": [
+            199992,
+            249990
+          ],
+          "train_observations": 199982,
+          "test_observations": 49998,
           "purged_observations": 10,
-          "log_oos_r2": 0.0005166119623756238,
-          "power_oos_r2": -0.020880679065811814
+          "train_start_utc": "2026-07-01T05:49:54.563429Z",
+          "train_end_utc": "2026-07-01T07:21:35.090759Z",
+          "test_start_utc": "2026-07-01T07:21:35.317553Z",
+          "test_end_utc": "2026-07-01T07:48:27.491649Z",
+          "log_model": {
+            "alpha": 0.040595960748608176,
+            "beta": -0.0018279063035737326,
+            "train_r2": 0.001044561231693053
+          },
+          "power_law_model": {
+            "status": "ESTIMATED",
+            "alpha": 0.02872064144060454,
+            "gamma": -0.04114469316172337,
+            "alpha_wls": 0.03396596643754582,
+            "gamma_wls": -0.056596735888395824,
+            "train_r2_binned": 0.07544459729078823,
+            "train_r2_wls": 0.1777977823017487
+          },
+          "log_oos_r2": 0.0010969453862967882,
+          "power_oos_r2": -0.017053242683984227
         }
-      ],
-      "mean_log_oos_r2": -0.000993875674488054,
-      "mean_power_oos_r2": -0.02386414275382857,
-      "purged_trades_per_boundary": 10
+      ]
     },
     "moving_block_bootstrap": {
       "status": "SUCCESS",
@@ -703,41 +909,144 @@
     "train_r2": 0.0012470555426589147,
     "test_r2": -0.000517835932474453,
     "log_model_oos_r2": -0.000517835932474453,
-    "power_law_oos_r2": -0.019896549135898,
+    "power_law_oos_r2": -0.011591137771392201,
+    "power_law_train_fit": {
+      "status": "ESTIMATED",
+      "gamma_train": -0.023489890124581858,
+      "alpha_train": 0.035284175242639056,
+      "gamma_train_wls": -0.05331921447582,
+      "alpha_train_wls": 0.03599783605793192
+    },
     "is_power_law_oos": false,
-    "note": "Evaluates the logarithmic model on the full sample. Conditioning on positive returns for power-law models is reported separately."
+    "note": "Evaluates training-fitted parameters on held-out test data. Power-law and logarithmic parameters are strictly fitted on the training split prior to lookahead purge buffer."
   },
   "walk_forward_validation": {
+    "protocol": "EXPANDING_WINDOW_NON_OVERLAPPING_TEST",
     "folds_count": 3,
+    "valid_folds_count": 3,
+    "failed_folds_count": 0,
+    "purged_trades_per_boundary": 10,
+    "total_purged_boundary_trades": 30,
+    "pooled_oos": {
+      "aggregation_method": "CONCATENATED_UNIQUE_NON_OVERLAPPING_PREDICTIONS",
+      "total_unique_predictions": 149994,
+      "total_purged_boundary_trades": 30,
+      "log_oos_r2": -0.0007752875274453785,
+      "power_oos_r2": -0.024112005501812472,
+      "denominator_ss_tot": 1483.826950392201
+    },
+    "fold_macro_metrics": {
+      "mean_log_oos_r2": -0.0024609683237259983,
+      "std_log_oos_r2": 0.0027841799032368624,
+      "mean_power_oos_r2": -0.024779993818272377,
+      "std_power_oos_r2": 0.013885198459061287
+    },
+    "mean_log_oos_r2": -0.0024609683237259983,
+    "mean_power_oos_r2": -0.024779993818272377,
     "folds": [
       {
         "fold": 1,
+        "train_indices": [
+          0,
+          99986
+        ],
+        "test_indices": [
+          99996,
+          149994
+        ],
         "train_observations": 99986,
-        "test_observations": 74997,
+        "test_observations": 49998,
         "purged_observations": 10,
-        "log_oos_r2": -0.0015469169251487447,
-        "power_oos_r2": -0.03207566149009766
+        "train_start_utc": "2026-07-01T05:49:54.563429Z",
+        "train_end_utc": "2026-07-01T06:35:06.965394Z",
+        "test_start_utc": "2026-07-01T06:35:06.965394Z",
+        "test_end_utc": "2026-07-01T06:56:11.565294Z",
+        "log_model": {
+          "alpha": 0.031764859633189556,
+          "beta": -0.002684207410510471,
+          "train_r2": 0.002221994154956719
+        },
+        "power_law_model": {
+          "status": "ESTIMATED",
+          "alpha": 0.029370364330014283,
+          "gamma": -0.03690950088706274,
+          "alpha_wls": 0.029286088423547116,
+          "gamma_wls": -0.07080319053083707,
+          "train_r2_binned": 0.07660724069421809,
+          "train_r2_wls": 0.27774130806478325
+        },
+        "log_oos_r2": -0.005700549745286221,
+        "power_oos_r2": -0.044277341754998645
       },
       {
         "fold": 2,
+        "train_indices": [
+          0,
+          149984
+        ],
+        "test_indices": [
+          149994,
+          199992
+        ],
         "train_observations": 149984,
-        "test_observations": 62497,
+        "test_observations": 49998,
         "purged_observations": 10,
-        "log_oos_r2": -0.0019513220606910409,
-        "power_oos_r2": -0.018636087705576232
+        "train_start_utc": "2026-07-01T05:49:54.563429Z",
+        "train_end_utc": "2026-07-01T06:56:11.565091Z",
+        "test_start_utc": "2026-07-01T06:56:11.565294Z",
+        "test_end_utc": "2026-07-01T07:21:35.240516Z",
+        "log_model": {
+          "alpha": 0.03880508480939135,
+          "beta": -0.0021753214294869152,
+          "train_r2": 0.001463523743331474
+        },
+        "power_law_model": {
+          "status": "ESTIMATED",
+          "alpha": 0.03297256372440343,
+          "gamma": -0.02788329800471634,
+          "alpha_wls": 0.03407086609594281,
+          "gamma_wls": -0.05879331667270887,
+          "train_r2_binned": 0.04139706809880572,
+          "train_r2_wls": 0.2036387276994822
+        },
+        "log_oos_r2": -0.002779300612188562,
+        "power_oos_r2": -0.013009397015834256
       },
       {
         "fold": 3,
-        "train_observations": 187482,
-        "test_observations": 62498,
+        "train_indices": [
+          0,
+          199982
+        ],
+        "test_indices": [
+          199992,
+          249990
+        ],
+        "train_observations": 199982,
+        "test_observations": 49998,
         "purged_observations": 10,
-        "log_oos_r2": 0.0005166119623756238,
-        "power_oos_r2": -0.020880679065811814
+        "train_start_utc": "2026-07-01T05:49:54.563429Z",
+        "train_end_utc": "2026-07-01T07:21:35.090759Z",
+        "test_start_utc": "2026-07-01T07:21:35.317553Z",
+        "test_end_utc": "2026-07-01T07:48:27.491649Z",
+        "log_model": {
+          "alpha": 0.040595960748608176,
+          "beta": -0.0018279063035737326,
+          "train_r2": 0.001044561231693053
+        },
+        "power_law_model": {
+          "status": "ESTIMATED",
+          "alpha": 0.02872064144060454,
+          "gamma": -0.04114469316172337,
+          "alpha_wls": 0.03396596643754582,
+          "gamma_wls": -0.056596735888395824,
+          "train_r2_binned": 0.07544459729078823,
+          "train_r2_wls": 0.1777977823017487
+        },
+        "log_oos_r2": 0.0010969453862967882,
+        "power_oos_r2": -0.017053242683984227
       }
-    ],
-    "mean_log_oos_r2": -0.000993875674488054,
-    "mean_power_oos_r2": -0.02386414275382857,
-    "purged_trades_per_boundary": 10
+    ]
   },
   "moving_block_bootstrap": {
     "status": "SUCCESS",
@@ -882,19 +1191,21 @@
     }
   ],
   "artifact_metadata": {
-    "schema_version": "1.1.2",
-    "build_commit": "49b64ef",
-    "generation_timestamp_utc": "2026-10-21T08:48:28.094833+00:00",
+    "schema_version": "1.2.0",
+    "build_commit": "7601663",
+    "generation_timestamp_utc": "2026-10-21T10:08:18.822925+00:00",
     "dataset_source": "NORMALIZED_PARQUET",
     "dataset_file": "normalized/exchange=binance/market=spot/symbol=BTCUSDT/date=2026-07-01/trades.parquet",
     "dataset_sha256": "3f5afa0760d52a6eb54b670e685c83e21414d7b4c43a2ad11346ba1b0db21ce1",
     "dataset_row_count": 4166849,
-    "evaluation_protocol": "PURGED_WALK_FORWARD_EXPANDING_WINDOW",
+    "evaluation_protocol": "NON_OVERLAPPING_PURGED_WALK_FORWARD",
+    "leakage_prevention": "STRICT_TRAINING_ONLY_FIT_ZERO_TEST_LEAKAGE",
     "purged_boundary_trades": 10,
     "models_compared": [
       "Logarithmic (Full Sample)",
       "Power-Law (WLS Stratified)",
       "Power-Law (Trade-Level R>0)"
-    ]
+    ],
+    "validity_declaration": "CERTIFIED_ZERO_LEAKAGE_TRAINING_ONLY_FIT"
   }
 }

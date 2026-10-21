@@ -321,19 +321,61 @@ export interface HawkesData {
 
 export interface WalkForwardFold {
   fold: number;
+  train_indices?: [number, number];
+  test_indices?: [number, number];
   train_observations: number;
   test_observations: number;
   purged_observations: number;
+  train_start_utc?: string;
+  train_end_utc?: string;
+  test_start_utc?: string;
+  test_end_utc?: string;
+  log_model?: {
+    alpha: number;
+    beta: number;
+    train_r2: number;
+  };
+  power_law_model?: {
+    status: string;
+    alpha?: number | null;
+    gamma?: number | null;
+    alpha_wls?: number | null;
+    gamma_wls?: number | null;
+    train_r2_binned?: number | null;
+    train_r2_wls?: number | null;
+  };
   log_oos_r2: number;
   power_oos_r2?: number | null;
 }
 
+export interface PooledOOSMetrics {
+  aggregation_method: string;
+  total_unique_predictions: number;
+  total_purged_boundary_trades: number;
+  log_oos_r2: number;
+  power_oos_r2?: number | null;
+  denominator_ss_tot: number;
+}
+
+export interface FoldMacroMetrics {
+  mean_log_oos_r2: number;
+  std_log_oos_r2: number;
+  mean_power_oos_r2?: number | null;
+  std_power_oos_r2?: number | null;
+}
+
 export interface WalkForwardValidation {
+  protocol?: string;
   folds_count: number;
-  folds: WalkForwardFold[];
+  valid_folds_count?: number;
+  failed_folds_count?: number;
+  purged_trades_per_boundary: number;
+  total_purged_boundary_trades?: number;
+  pooled_oos?: PooledOOSMetrics;
+  fold_macro_metrics?: FoldMacroMetrics;
   mean_log_oos_r2: number;
   mean_power_oos_r2?: number | null;
-  purged_trades_per_boundary: number;
+  folds: WalkForwardFold[];
 }
 
 export interface ArtifactMetadata {

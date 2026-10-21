@@ -673,38 +673,44 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
             </div>
 
             {/* Metric Summary Strip */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', marginBottom: '16px' }}>
               <div style={{ background: 'var(--bg-dark)', padding: '10px 14px', borderRadius: '4px', borderLeft: '3px solid var(--color-gold)' }}>
                 <div style={{ fontSize: '0.65rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Validation Protocol</div>
-                <div className="mono" style={{ fontSize: '0.92rem', fontWeight: 700, color: '#fff', marginTop: '3px' }}>
+                <div className="mono" style={{ fontSize: '0.90rem', fontWeight: 700, color: '#fff', marginTop: '3px' }}>
                   Expanding ({wf.folds.length}-Fold WF)
                 </div>
-                <div style={{ fontSize: '0.64rem', color: 'var(--text-dim)' }}>Purge Buffer: {wf.purged_trades_per_boundary || horizon} boundary ticks</div>
+                <div style={{ fontSize: '0.64rem', color: 'var(--color-buy)', marginTop: '2px' }}>
+                  Non-Overlapping Test Partitions &bull; Purge: {wf.purged_trades_per_boundary || horizon} ticks
+                </div>
+              </div>
+
+              <div style={{ background: 'var(--bg-dark)', padding: '10px 14px', borderRadius: '4px', borderLeft: '3px solid #38bdf8' }}>
+                <div style={{ fontSize: '0.65rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Pooled Unique OOS R² (Unified)</div>
+                <div className="mono" style={{ fontSize: '0.88rem', fontWeight: 700, color: '#38bdf8', marginTop: '3px' }}>
+                  Log: {wf.pooled_oos ? wf.pooled_oos.log_oos_r2.toFixed(5) : wf.mean_log_oos_r2.toFixed(5)} &bull; Pow: {wf.pooled_oos?.power_oos_r2 !== null && wf.pooled_oos?.power_oos_r2 !== undefined ? wf.pooled_oos.power_oos_r2.toFixed(5) : '---'}
+                </div>
+                <div style={{ fontSize: '0.64rem', color: 'var(--text-dim)', marginTop: '2px' }}>
+                  {wf.pooled_oos?.total_unique_predictions ? `${wf.pooled_oos.total_unique_predictions.toLocaleString()} unique out-of-sample ticks` : 'Concatenated unique test series'}
+                </div>
               </div>
 
               <div style={{ background: 'var(--bg-dark)', padding: '10px 14px', borderRadius: '4px', borderLeft: '3px solid #a78bfa' }}>
-                <div style={{ fontSize: '0.65rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Mean Logarithmic OOS R²</div>
-                <div className="mono" style={{ fontSize: '0.92rem', fontWeight: 700, color: '#a78bfa', marginTop: '3px' }}>
-                  {wf.mean_log_oos_r2 !== undefined && wf.mean_log_oos_r2 !== null ? wf.mean_log_oos_r2.toFixed(5) : '---'}
+                <div style={{ fontSize: '0.65rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Fold Macro-Average &amp; Dispersion</div>
+                <div className="mono" style={{ fontSize: '0.88rem', fontWeight: 700, color: '#a78bfa', marginTop: '3px' }}>
+                  Log: {wf.fold_macro_metrics?.mean_log_oos_r2.toFixed(5) ?? wf.mean_log_oos_r2.toFixed(5)} (±{wf.fold_macro_metrics?.std_log_oos_r2?.toFixed(4) ?? '0.0000'})
                 </div>
-                <div style={{ fontSize: '0.64rem', color: 'var(--text-dim)' }}>Modest directional correlation preserved</div>
-              </div>
-
-              <div style={{ background: 'var(--bg-dark)', padding: '10px 14px', borderRadius: '4px', borderLeft: '3px solid #f59e0b' }}>
-                <div style={{ fontSize: '0.65rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Mean Power-Law OOS R²</div>
-                <div className="mono" style={{ fontSize: '0.92rem', fontWeight: 700, color: '#f59e0b', marginTop: '3px' }}>
-                  {wf.mean_power_oos_r2 !== undefined && wf.mean_power_oos_r2 !== null ? wf.mean_power_oos_r2.toFixed(5) : '---'}
+                <div style={{ fontSize: '0.64rem', color: '#f59e0b', marginTop: '2px' }}>
+                  Pow: {wf.fold_macro_metrics?.mean_power_oos_r2 !== null && wf.fold_macro_metrics?.mean_power_oos_r2 !== undefined ? wf.fold_macro_metrics.mean_power_oos_r2.toFixed(5) : (wf.mean_power_oos_r2 !== null && wf.mean_power_oos_r2 !== undefined ? wf.mean_power_oos_r2.toFixed(5) : '---')} (±{wf.fold_macro_metrics?.std_power_oos_r2?.toFixed(4) ?? '---'})
                 </div>
-                <div style={{ fontSize: '0.64rem', color: 'var(--text-dim)' }}>Negative out-of-sample explanatory fit</div>
               </div>
 
               <div style={{ background: 'var(--bg-dark)', padding: '10px 14px', borderRadius: '4px', borderLeft: '3px solid var(--color-buy)' }}>
-                <div style={{ fontSize: '0.65rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Research Provenance</div>
-                <div className="mono" style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--color-buy)', marginTop: '3px' }}>
-                  Commit {meta?.build_commit || '49b64ef'}
+                <div style={{ fontSize: '0.65rem', color: 'var(--text-dim)', textTransform: 'uppercase' }}>Provenance &amp; Governance</div>
+                <div className="mono" style={{ fontSize: '0.90rem', fontWeight: 700, color: 'var(--color-buy)', marginTop: '3px' }}>
+                  Commit {meta?.build_commit || '7601663'}
                 </div>
-                <div style={{ fontSize: '0.64rem', color: 'var(--text-dim)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  SHA: {meta?.dataset_sha256 ? `${meta.dataset_sha256.slice(0, 12)}...` : 'Binance 24h Verified'}
+                <div style={{ fontSize: '0.64rem', color: 'var(--color-buy)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: '2px' }}>
+                  Zero Leakage (Training-Only Fit) &bull; SHA: {meta?.dataset_sha256 ? `${meta.dataset_sha256.slice(0, 10)}...` : 'Verified'}
                 </div>
               </div>
             </div>
@@ -717,7 +723,8 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
                     <th>FOLD</th>
                     <th>TRAINING OBSERVATIONS</th>
                     <th>LOOKAHEAD PURGE</th>
-                    <th>TEST OBSERVATIONS</th>
+                    <th>NON-OVERLAPPING TEST</th>
+                    <th>TRAIN-FITTED PARAMETERS</th>
                     <th>LOGARITHMIC OOS R²</th>
                     <th>POWER-LAW OOS R²</th>
                     <th>MICROSTRUCTURE INFERENCE</th>
@@ -726,12 +733,22 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
                 <tbody>
                   {wf.folds.map((f: WalkForwardFold) => {
                     const logPositive = f.log_oos_r2 > 0;
+                    const gammaStr = f.power_law_model?.gamma !== null && f.power_law_model?.gamma !== undefined
+                      ? `γ=${f.power_law_model.gamma.toFixed(4)}`
+                      : 'γ=N/A';
+                    const betaStr = f.log_model?.beta !== undefined
+                      ? `β=${f.log_model.beta.toFixed(4)}`
+                      : 'β=---';
+
                     return (
                       <tr key={f.fold}>
                         <td style={{ fontWeight: 600, color: 'var(--color-gold)' }}>Fold {f.fold}</td>
                         <td>{f.train_observations.toLocaleString()} ticks</td>
                         <td style={{ color: 'var(--text-dim)' }}>{f.purged_observations} trades (k={horizon})</td>
                         <td>{f.test_observations.toLocaleString()} ticks</td>
+                        <td style={{ color: '#38bdf8', fontSize: '0.72rem' }}>
+                          {gammaStr} &bull; {betaStr}
+                        </td>
                         <td style={{ color: logPositive ? 'var(--color-buy)' : 'var(--color-sell)', fontWeight: 600 }}>
                           {f.log_oos_r2.toFixed(6)}
                         </td>

@@ -25,6 +25,108 @@ class NonlinearImpactModel:
     def __init__(self):
         pass
 
+    @staticmethod
+    def fit_power_law_from_sample(
+        q_sub: np.ndarray,
+        r_sub: np.ndarray,
+        tier_definitions: list,
+        min_tier_count: int = 15,
+        min_pos_tiers: int = 4
+    ) -> Dict[str, Any]:
+        """
+        Fits child-order power-law scaling model strictly from a given sample subset (e.g. training set),
+        with zero access to or leakage from held-out test data.
+        Returns dictionary with status, is_estimable, alpha, gamma, r2, and binned points.
+        """
+        if len(q_sub) < 20 or len(r_sub) < 20:
+            return {
+                "status": "NOT_ESTIMABLE",
+                "is_estimable": False,
+                "reason": "Sample size below minimum threshold (20).",
+                "alpha": None,
+                "gamma": None,
+                "r_squared": None,
+                "alpha_wls": None,
+                "gamma_wls": None,
+                "r_squared_wls": None,
+                "positive_tiers_count": 0,
+                "training_observations": len(q_sub)
+            }
+
+        q_pts, r_pts, counts = [], [], []
+        for _, cond, _ in tier_definitions:
+            mask = cond(q_sub)
+            cnt = int(np.sum(mask))
+            if cnt >= min_tier_count:
+                mean_r = float(np.mean(r_sub[mask]))
+                if mean_r > 0:
+                    q_pts.append(float(np.mean(q_sub[mask])))
+                    r_pts.append(mean_r)
+                    counts.append(float(cnt))
+
+        if len(q_pts) < min_pos_tiers or np.var(np.log(q_pts)) <= 1e-12 or np.var(np.log(r_pts)) <= 1e-12:
+            return {
+                "status": "NOT_ESTIMABLE",
+                "is_estimable": False,
+                "reason": f"Insufficient positive response tiers in training sample (found {len(q_pts)}, minimum {min_pos_tiers} required with non-zero variance).",
+                "alpha": None,
+                "gamma": None,
+                "r_squared": None,
+                "alpha_wls": None,
+                "gamma_wls": None,
+                "r_squared_wls": None,
+                "positive_tiers_count": len(q_pts),
+                "training_observations": len(q_sub)
+            }
+
+        log_q = np.log(q_pts)
+        log_r = np.log(r_pts)
+        X_pow = sm.add_constant(log_q)
+
+        # OLS on positive binned conditional means
+        try:
+            res_ols = sm.OLS(log_r, X_pow).fit()
+            alpha_ols = float(np.exp(res_ols.params[0])) if len(res_ols.params) > 0 else 1.0
+            gamma_ols = float(res_ols.params[1]) if len(res_ols.params) > 1 else 0.0
+            r2_ols = float(res_ols.rsquared) if hasattr(res_ols, "rsquared") and np.isfinite(res_ols.rsquared) else 0.0
+        except Exception:
+            return {
+                "status": "FIT_FAILED",
+                "is_estimable": False,
+                "reason": "Numerical optimization error in OLS fit.",
+                "alpha": None,
+                "gamma": None,
+                "r_squared": None,
+                "alpha_wls": None,
+                "gamma_wls": None,
+                "r_squared_wls": None,
+                "positive_tiers_count": len(q_pts),
+                "training_observations": len(q_sub)
+            }
+
+        # WLS weighted by tier sample count
+        try:
+            res_wls = sm.WLS(log_r, X_pow, weights=counts).fit()
+            alpha_wls = float(np.exp(res_wls.params[0])) if len(res_wls.params) > 0 else alpha_ols
+            gamma_wls = float(res_wls.params[1]) if len(res_wls.params) > 1 else gamma_ols
+            r2_wls = float(res_wls.rsquared) if hasattr(res_wls, "rsquared") and np.isfinite(res_wls.rsquared) else r2_ols
+        except Exception:
+            alpha_wls, gamma_wls, r2_wls = alpha_ols, gamma_ols, r2_ols
+
+        return {
+            "status": "ESTIMATED",
+            "is_estimable": True,
+            "reason": None,
+            "alpha": alpha_ols,
+            "gamma": gamma_ols,
+            "r_squared": r2_ols,
+            "alpha_wls": alpha_wls,
+            "gamma_wls": gamma_wls,
+            "r_squared_wls": r2_wls,
+            "positive_tiers_count": len(q_pts),
+            "training_observations": len(q_sub)
+        }
+
     def fit_impact_models(
         self,
         df: pl.DataFrame,
@@ -393,64 +495,164 @@ class NonlinearImpactModel:
 
         train_r2_val = 0.0
         oos_r2_log = 0.0
-        oos_r2_power = 0.0
-        if train_obs >= 20 and test_obs >= 20 and np.var(q_train) > 1e-12 and np.var(r_train) > 1e-12 and np.var(r_test) > 1e-12:
-            try:
-                res_tr_log = sm.OLS(r_train, sm.add_constant(np.log(q_train))).fit()
-                pred_test = res_tr_log.predict(sm.add_constant(np.log(q_test)))
-                ss_res = np.sum((r_test - pred_test) ** 2)
-                ss_tot = np.sum((r_test - np.mean(r_test)) ** 2)
-                oos_r2_log = float(max(-1.0, 1.0 - (ss_res / ss_tot))) if ss_tot > 0 else 0.0
-                train_r2_val = float(res_tr_log.rsquared)
+        oos_r2_power = None
+        oos_power_status = "NOT_ESTIMABLE"
+        oos_power_train_gamma = None
+        oos_power_train_alpha = None
+        pow_tr_fit = {}
 
-                # Power law out-of-sample comparison on identical test set targets
-                if is_power_law_estimable and alpha_est > 0:
-                    pred_test_pow = alpha_est * (q_test ** gamma_est)
-                    ss_res_pow = np.sum((r_test - pred_test_pow) ** 2)
-                    oos_r2_power = float(max(-1.0, 1.0 - (ss_res_pow / ss_tot))) if ss_tot > 0 else 0.0
+        if train_obs >= 20 and test_obs >= 20 and np.var(q_train) > 1e-12 and np.var(r_train) > 1e-12 and np.var(r_test) > 1e-12:
+            ss_tot = np.sum((r_test - np.mean(r_test)) ** 2)
+            try:
+                # 1. Logarithmic model strictly fitted on training split
+                res_tr_log = sm.OLS(r_train, sm.add_constant(np.log(q_train))).fit()
+                pred_test_log = res_tr_log.predict(sm.add_constant(np.log(q_test)))
+                ss_res_log = np.sum((r_test - pred_test_log) ** 2)
+                oos_r2_log = float(max(-1.0, 1.0 - (ss_res_log / ss_tot))) if ss_tot > 0 else 0.0
+                train_r2_val = float(res_tr_log.rsquared) if hasattr(res_tr_log, "rsquared") and np.isfinite(res_tr_log.rsquared) else 0.0
             except Exception:
                 oos_r2_log = 0.0
-                oos_r2_power = 0.0
 
-        # Multi-window expanding Walk-Forward Purged Evaluation
+            # 2. Power-law model strictly fitted on training split (ZERO full-sample leakage)
+            pow_tr_fit = self.fit_power_law_from_sample(q_train, r_train, tier_definitions)
+            if pow_tr_fit["is_estimable"] and pow_tr_fit["alpha"] is not None and pow_tr_fit["alpha"] > 0:
+                alpha_tr = pow_tr_fit["alpha"]
+                gamma_tr = pow_tr_fit["gamma"]
+                pred_test_pow = alpha_tr * (q_test ** gamma_tr)
+                ss_res_pow = np.sum((r_test - pred_test_pow) ** 2)
+                oos_r2_power = float(max(-1.0, 1.0 - (ss_res_pow / ss_tot))) if ss_tot > 0 else 0.0
+                oos_power_status = "ESTIMATED"
+                oos_power_train_gamma = gamma_tr
+                oos_power_train_alpha = alpha_tr
+            else:
+                oos_r2_power = None
+                oos_power_status = pow_tr_fit.get("status", "NOT_ESTIMABLE")
+
+        # Multi-window expanding Walk-Forward Purged Evaluation with Non-Overlapping Test Windows
         wf_folds = []
+        all_test_targets = []
+        all_test_preds_log = []
+        all_test_preds_pow = []
+        all_pow_estimable = True
+
         if n_obs >= 300:
+            # 3 Expanding folds with strictly non-overlapping test partitions
+            # Warmup: first 40%. Test windows: [0.40, 0.60], [0.60, 0.80], [0.80, 1.00]
             split_points = [
-                (0.0, 0.4, 0.4, 0.7),
-                (0.0, 0.6, 0.6, 0.85),
-                (0.0, 0.75, 0.75, 1.0)
+                (0.0, 0.40, 0.40, 0.60),
+                (0.0, 0.60, 0.60, 0.80),
+                (0.0, 0.80, 0.80, 1.00)
             ]
             for fold_idx, (tr_s, tr_e, te_s, te_e) in enumerate(split_points, 1):
-                tr_end = max(10, int(n_obs * tr_e) - purge_k)
-                tr_start = int(n_obs * tr_s)
                 te_start = int(n_obs * te_s)
-                te_end = min(n_obs, int(n_obs * te_e))
+                te_end = min(n_obs, int(n_obs * te_e)) if fold_idx < len(split_points) else n_obs
+                tr_end = max(10, te_start - purge_k)
+                tr_start = int(n_obs * tr_s)
+
+                # Assert label coverage separation (train label end < test start)
+                assert tr_end + purge_k <= te_start, f"Purge violation in fold {fold_idx}: tr_end={tr_end}, te_start={te_start}, purge_k={purge_k}"
 
                 q_tr, r_tr = Q_clean[tr_start:tr_end], R_clean[tr_start:tr_end]
                 q_te, r_te = Q_clean[te_start:te_end], R_clean[te_start:te_end]
 
+                c_tr_start = clean_times[tr_start] if clean_times and tr_start < len(clean_times) else ""
+                c_tr_end = clean_times[tr_end - 1] if clean_times and tr_end > 0 and tr_end <= len(clean_times) else ""
+                c_te_start = clean_times[te_start] if clean_times and te_start < len(clean_times) else ""
+                c_te_end = clean_times[te_end - 1] if clean_times and te_end > 0 and te_end <= len(clean_times) else ""
+
                 if len(q_tr) >= 20 and len(q_te) >= 20 and np.var(q_tr) > 1e-12 and np.var(r_te) > 1e-12:
+                    ss_tot_f = np.sum((r_te - np.mean(r_te)) ** 2)
+
+                    # 1. Fit log model strictly on fold training set
                     try:
                         m_log = sm.OLS(r_tr, sm.add_constant(np.log(q_tr))).fit()
                         p_log = m_log.predict(sm.add_constant(np.log(q_te)))
-                        ss_tot_f = np.sum((r_te - np.mean(r_te)) ** 2)
                         r2_log_f = float(max(-1.0, 1.0 - (np.sum((r_te - p_log) ** 2) / ss_tot_f))) if ss_tot_f > 0 else 0.0
-
-                        r2_pow_f = None
-                        if is_power_law_estimable and alpha_est > 0:
-                            p_pow = alpha_est * (q_te ** gamma_est)
-                            r2_pow_f = float(max(-1.0, 1.0 - (np.sum((r_te - p_pow) ** 2) / ss_tot_f))) if ss_tot_f > 0 else 0.0
-
-                        wf_folds.append({
-                            "fold": fold_idx,
-                            "train_observations": len(q_tr),
-                            "test_observations": len(q_te),
-                            "purged_observations": purge_k,
-                            "log_oos_r2": r2_log_f,
-                            "power_oos_r2": r2_pow_f
-                        })
+                        log_f_alpha = float(m_log.params[0]) if len(m_log.params) > 0 else 0.0
+                        log_f_beta = float(m_log.params[1]) if len(m_log.params) > 1 else 0.0
+                        log_f_r2 = float(m_log.rsquared) if hasattr(m_log, "rsquared") and np.isfinite(m_log.rsquared) else 0.0
                     except Exception:
-                        continue
+                        p_log = np.zeros_like(r_te)
+                        r2_log_f = 0.0
+                        log_f_alpha, log_f_beta, log_f_r2 = 0.0, 0.0, 0.0
+
+                    # 2. Fit power law model strictly on fold training set (ZERO full-sample leakage)
+                    pow_f_fit = self.fit_power_law_from_sample(q_tr, r_tr, tier_definitions)
+                    if pow_f_fit["is_estimable"] and pow_f_fit["alpha"] is not None and pow_f_fit["alpha"] > 0:
+                        p_pow = pow_f_fit["alpha"] * (q_te ** pow_f_fit["gamma"])
+                        r2_pow_f = float(max(-1.0, 1.0 - (np.sum((r_te - p_pow) ** 2) / ss_tot_f))) if ss_tot_f > 0 else 0.0
+                        pow_f_status = "ESTIMATED"
+                        pow_f_gamma = pow_f_fit["gamma"]
+                        pow_f_alpha = pow_f_fit["alpha"]
+                        pow_f_train_r2 = pow_f_fit.get("r_squared")
+                    else:
+                        p_pow = None
+                        r2_pow_f = None
+                        pow_f_status = pow_f_fit.get("status", "NOT_ESTIMABLE")
+                        pow_f_gamma = None
+                        pow_f_alpha = None
+                        pow_f_train_r2 = None
+                        all_pow_estimable = False
+
+                    # Append to pooled predictions
+                    all_test_targets.extend(r_te.tolist())
+                    all_test_preds_log.extend(p_log.tolist())
+                    if p_pow is not None:
+                        all_test_preds_pow.extend(p_pow.tolist())
+
+                    wf_folds.append({
+                        "fold": fold_idx,
+                        "train_indices": [tr_start, tr_end],
+                        "test_indices": [te_start, te_end],
+                        "train_observations": len(q_tr),
+                        "test_observations": len(q_te),
+                        "purged_observations": purge_k,
+                        "train_start_utc": c_tr_start,
+                        "train_end_utc": c_tr_end,
+                        "test_start_utc": c_te_start,
+                        "test_end_utc": c_te_end,
+                        "log_model": {
+                            "alpha": log_f_alpha,
+                            "beta": log_f_beta,
+                            "train_r2": log_f_r2
+                        },
+                        "power_law_model": {
+                            "status": pow_f_status,
+                            "alpha": pow_f_alpha,
+                            "gamma": pow_f_gamma,
+                            "alpha_wls": pow_f_fit.get("alpha_wls"),
+                            "gamma_wls": pow_f_fit.get("gamma_wls"),
+                            "train_r2_binned": pow_f_train_r2,
+                            "train_r2_wls": pow_f_fit.get("r_squared_wls")
+                        },
+                        "log_oos_r2": r2_log_f,
+                        "power_oos_r2": r2_pow_f
+                    })
+
+        # Calculate Pooled Unique OOS Metrics across all non-overlapping test partitions
+        pooled_log_r2 = 0.0
+        pooled_pow_r2 = None
+        ss_tot_pooled = 0.0
+
+        if len(all_test_targets) > 0:
+            y_arr = np.array(all_test_targets)
+            p_log_arr = np.array(all_test_preds_log)
+            ss_tot_pooled = float(np.sum((y_arr - np.mean(y_arr)) ** 2))
+            if ss_tot_pooled > 0:
+                pooled_log_r2 = float(max(-1.0, 1.0 - (np.sum((y_arr - p_log_arr) ** 2) / ss_tot_pooled)))
+
+            if all_pow_estimable and len(all_test_preds_pow) == len(y_arr) and ss_tot_pooled > 0:
+                p_pow_arr = np.array(all_test_preds_pow)
+                pooled_pow_r2 = float(max(-1.0, 1.0 - (np.sum((y_arr - p_pow_arr) ** 2) / ss_tot_pooled)))
+
+        # Calculate Fold Macro-Averages and Dispersion
+        valid_log = [f["log_oos_r2"] for f in wf_folds if f.get("log_oos_r2") is not None]
+        valid_pow = [f["power_oos_r2"] for f in wf_folds if f.get("power_oos_r2") is not None]
+
+        mean_log_r2 = float(np.mean(valid_log)) if valid_log else 0.0
+        std_log_r2 = float(np.std(valid_log)) if len(valid_log) > 1 else 0.0
+        mean_pow_r2 = float(np.mean(valid_pow)) if valid_pow else None
+        std_pow_r2 = float(np.std(valid_pow)) if len(valid_pow) > 1 else (0.0 if valid_pow else None)
 
         # 5. Time-Chunk / Sub-period Stability Analysis based on True Timestamps
         time_chunks = []
@@ -607,16 +809,41 @@ class NonlinearImpactModel:
                 "train_r2": train_r2_val,
                 "test_r2": oos_r2_log,
                 "log_model_oos_r2": oos_r2_log,
-                "power_law_oos_r2": oos_r2_power if is_power_law_estimable else None,
+                "power_law_oos_r2": oos_r2_power,
+                "power_law_train_fit": {
+                    "status": oos_power_status,
+                    "gamma_train": oos_power_train_gamma,
+                    "alpha_train": oos_power_train_alpha,
+                    "gamma_train_wls": pow_tr_fit.get("gamma_wls"),
+                    "alpha_train_wls": pow_tr_fit.get("alpha_wls")
+                },
                 "is_power_law_oos": False,
-                "note": "Evaluates the logarithmic model on the full sample. Conditioning on positive returns for power-law models is reported separately."
+                "note": "Evaluates training-fitted parameters on held-out test data. Power-law and logarithmic parameters are strictly fitted on the training split prior to lookahead purge buffer."
             },
             "walk_forward_validation": {
+                "protocol": "EXPANDING_WINDOW_NON_OVERLAPPING_TEST",
                 "folds_count": len(wf_folds),
-                "folds": wf_folds,
-                "mean_log_oos_r2": float(np.mean([f["log_oos_r2"] for f in wf_folds])) if wf_folds else 0.0,
-                "mean_power_oos_r2": float(np.mean([f["power_oos_r2"] for f in wf_folds if f["power_oos_r2"] is not None])) if any(f["power_oos_r2"] is not None for f in wf_folds) else None,
-                "purged_trades_per_boundary": purge_k
+                "valid_folds_count": len(valid_log),
+                "failed_folds_count": len(wf_folds) - len(valid_pow),
+                "purged_trades_per_boundary": purge_k,
+                "total_purged_boundary_trades": len(wf_folds) * purge_k,
+                "pooled_oos": {
+                    "aggregation_method": "CONCATENATED_UNIQUE_NON_OVERLAPPING_PREDICTIONS",
+                    "total_unique_predictions": len(all_test_targets),
+                    "total_purged_boundary_trades": len(wf_folds) * purge_k,
+                    "log_oos_r2": pooled_log_r2,
+                    "power_oos_r2": pooled_pow_r2,
+                    "denominator_ss_tot": float(ss_tot_pooled) if ss_tot_pooled > 0 else 0.0
+                },
+                "fold_macro_metrics": {
+                    "mean_log_oos_r2": mean_log_r2,
+                    "std_log_oos_r2": std_log_r2,
+                    "mean_power_oos_r2": mean_pow_r2,
+                    "std_power_oos_r2": std_pow_r2
+                },
+                "mean_log_oos_r2": mean_log_r2,
+                "mean_power_oos_r2": mean_pow_r2,
+                "folds": wf_folds
             },
             "moving_block_bootstrap": mbb_results,
             "rejects_square_root_half": rejects_sqrt,

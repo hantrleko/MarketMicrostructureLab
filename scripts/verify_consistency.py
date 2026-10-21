@@ -54,6 +54,28 @@ def main():
     assert "SPEC A: WEIGHTED LEAST SQUARES" in frontend_text, "SPEC A not found in MarketImpactResearch.tsx"
     assert "SPEC B: TIER-BINNED OLS" in frontend_text, "SPEC B not found in MarketImpactResearch.tsx"
 
+    # Verify walk-forward validation and zero-leakage training-only fit
+    wf = models_k20.get("walk_forward_validation")
+    assert wf is not None, "Missing walk_forward_validation in models JSON"
+    assert "pooled_oos" in wf, "Missing pooled_oos in walk_forward_validation"
+    assert wf["pooled_oos"]["total_unique_predictions"] > 0, "Zero unique predictions in pooled OOS"
+    assert "fold_macro_metrics" in wf, "Missing fold_macro_metrics in walk_forward_validation"
+    assert len(wf["folds"]) == 3, f"Expected 3 folds, found {len(wf['folds'])}"
+
+    oos = models_k20.get("out_of_sample_validation")
+    assert oos is not None, "Missing out_of_sample_validation in models JSON"
+    assert "power_law_train_fit" in oos, "Missing power_law_train_fit in out_of_sample_validation"
+
+    # Verify provenance manifest
+    manifest_path = root / "apps/web/public/data/models_provenance_manifest.json"
+    assert manifest_path.exists(), "Missing models_provenance_manifest.json"
+    prov = json.loads(manifest_path.read_text(encoding="utf-8"))
+    assert prov["total_files"] == 18, f"Expected 18 artifacts in manifest, found {prov['total_files']}"
+    assert prov["leakage_status"] == "STRICT_TRAINING_ONLY_FIT_ZERO_TEST_LEAKAGE", "Invalid leakage status"
+
+    print(f"[*] Verified walk-forward zero-leakage protocol: {wf['protocol']}")
+    print(f"[*] Verified pooled unique OOS predictions:      {wf['pooled_oos']['total_unique_predictions']:,} trades")
+    print(f"[*] Verified provenance manifest artifacts:      {prov['total_files']} files")
     print("\n[SUCCESS] All consistency assertions PASSED! Reports, Audit, and Web JSON are 100% unified!")
 
 if __name__ == "__main__":

@@ -6,8 +6,11 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  contents: read
+
 jobs:
-  python-test-suite:
+  fixture-smoke-and-reproducibility:
     name: Python Regression & Research Reproducibility
     runs-on: ubuntu-latest
     steps:
@@ -29,11 +32,11 @@ jobs:
         run: |
           pip-audit -r requirements-lock.txt
 
-      - name: Run Pytest Suite (Econometric & Streaming Integrity)
+      - name: Run Pytest Suite (Regression & Leakage Prevention)
         run: |
           pytest tests/ -v
 
-      - name: Verify Multi-Day Empirical Consistency
+      - name: Verify Multi-Day Empirical Consistency & Leak-Free Provenance
         run: |
           python scripts/verify_consistency.py
 
@@ -63,16 +66,16 @@ jobs:
       - name: Production TypeScript & Vite Build
         run: npm run build
 
-  docker-smoke-test:
+  docker-container-smoke-test:
     name: Docker Container Build & Runtime Smoke Test
-    needs: [python-test-suite, frontend-build-and-audit]
+    needs: [fixture-smoke-and-reproducibility, frontend-build-and-audit]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
-        uses: actions/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v3
 
       - name: Build Container Image
         uses: docker/build-push-action@v6
@@ -83,7 +86,7 @@ jobs:
           tags: market-microstructure-lab:ci
           build-args: |
             BUILD_COMMIT=${{ github.sha }}
-            DATA_VERSION=V1.1.2 Institutional Rigor
+            DATA_VERSION=V1.2.0 Institutional Rigor
 
       - name: Start Container
         run: |
@@ -96,7 +99,6 @@ jobs:
           HEALTH=$(curl -s http://localhost:8000/api/v1/health)
           echo "$HEALTH" | jq .
           
-          # Assert health status
           STATUS=$(echo "$HEALTH" | jq -r .status)
           if [ "$STATUS" != "HEALTHY" ]; then
             echo "ERROR: Container health status is $STATUS"
@@ -104,7 +106,6 @@ jobs:
             exit 1
           fi
 
-          # Display commit, data version, and runtime mode
           COMMIT=$(echo "$HEALTH" | jq -r .build_commit)
           DATA_VER=$(echo "$HEALTH" | jq -r .data_version)
           MODE=$(echo "$HEALTH" | jq -r .runtime_mode)

@@ -97,7 +97,7 @@ def main():
 
             filename = f"models_{d}_k{k_val}.json"
             stage_path = STAGING_DIR / filename
-            with open(stage_path, "w", encoding="utf-8") as f:
+            with open(stage_path, "w", encoding="utf-8", newline="\n") as f:
                 json.dump(res, f, indent=2)
 
             exported_files.append((filename, stage_path))
@@ -106,7 +106,7 @@ def main():
             if k_val == 20:
                 base_filename = f"models_{d}.json"
                 base_stage_path = STAGING_DIR / base_filename
-                with open(base_stage_path, "w", encoding="utf-8") as f:
+                with open(base_stage_path, "w", encoding="utf-8", newline="\n") as f:
                     json.dump(res, f, indent=2)
                 exported_files.append((base_filename, base_stage_path))
                 print(f"    [+] Staged {base_filename} ({base_stage_path.stat().st_size:,} bytes)")
@@ -114,7 +114,7 @@ def main():
     # Assert all 18 files were staged
     assert len(exported_files) == 18, f"Expected 18 files, but found {len(exported_files)}"
 
-    # Generate Manifest with Checksums
+    # Generate Manifest with Checksums (strictly computed on LF bytes)
     manifest_records = {}
     for fname, fpath in exported_files:
         manifest_records[fname] = {
@@ -134,7 +134,7 @@ def main():
     }
 
     manifest_stage_path = STAGING_DIR / "models_provenance_manifest.json"
-    with open(manifest_stage_path, "w", encoding="utf-8") as f:
+    with open(manifest_stage_path, "w", encoding="utf-8", newline="\n") as f:
         json.dump(provenance_manifest, f, indent=2)
     print(f"\n[+] Staged models_provenance_manifest.json with {len(manifest_records)} artifacts.")
 

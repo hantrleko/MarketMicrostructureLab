@@ -22,6 +22,11 @@ export const OrderFlowObservatory: React.FC<OrderFlowObservatoryProps> = ({ date
     let isMounted = true;
     setLoading(true);
     setErrorMessage(null);
+    setBuckets([]);
+    setAutocorr(null);
+    setSizeDist(null);
+    setDurDist(null);
+    setHawkes(null);
 
     Promise.all([
       fetchFlowBuckets('BTCUSDT', date, interval),

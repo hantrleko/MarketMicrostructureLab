@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import ReactECharts from 'echarts-for-react';
-import { Play, Pause, SkipForward, RotateCcw, FastForward, Clock, Zap, Timer } from 'lucide-react';
+import { Play, Pause, SkipForward, RotateCcw, FastForward, Clock, Zap, Timer, AlertTriangle } from 'lucide-react';
 import { fetchReplayWindow } from '../api/client';
 import { ReplayTrade } from '../types';
 
@@ -15,6 +15,7 @@ export const MarketReplay: React.FC<MarketReplayProps> = ({ date }) => {
   const [totalInWindow, setTotalInWindow] = useState<number>(0);
   const [isTruncated, setIsTruncated] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   
   // Playback state
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
@@ -35,8 +36,11 @@ export const MarketReplay: React.FC<MarketReplayProps> = ({ date }) => {
   useEffect(() => {
     let isMounted = true;
     setLoading(true);
+    setError(null);
     setIsPlaying(false);
     setCurrentIndex(0);
+    setTrades([]);
+    setTotalInWindow(0);
 
     fetchReplayWindow('BTCUSDT', date, startSecond, durationSeconds, 2000)
       .then((data) => {
@@ -49,7 +53,10 @@ export const MarketReplay: React.FC<MarketReplayProps> = ({ date }) => {
       })
       .catch((err) => {
         console.error(err);
-        if (isMounted) setLoading(false);
+        if (isMounted) {
+          setError(err.message || 'Failed to load replay window');
+          setLoading(false);
+        }
       });
 
     return () => {
@@ -241,6 +248,17 @@ export const MarketReplay: React.FC<MarketReplayProps> = ({ date }) => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      {/* Error Banner */}
+      {error && (
+        <div className="mml-card" style={{ borderLeft: '4px solid var(--color-sell)', display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <AlertTriangle color="var(--color-sell)" size={24} />
+          <div>
+            <div style={{ fontWeight: 600, color: 'var(--color-sell)' }}>Replay Window Error</div>
+            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{error}</div>
+          </div>
+        </div>
+      )}
+
       {/* Session Jumper Bar */}
       <div className="mml-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>

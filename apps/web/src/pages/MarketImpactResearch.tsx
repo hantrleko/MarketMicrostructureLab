@@ -13,10 +13,14 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
   const [priceResp, setPriceResp] = useState<PriceResponseData | null>(null);
   const [modelsData, setModelsData] = useState<ImpactModelsData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
     setLoading(true);
+    setError(null);
+    setPriceResp(null);
+    setModelsData(null);
 
     Promise.all([
       fetchPriceResponse('BTCUSDT', date),
@@ -31,7 +35,10 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
       })
       .catch((err) => {
         console.error(err);
-        if (isMounted) setLoading(false);
+        if (isMounted) {
+          setError(err.message || 'Failed to load market impact data');
+          setLoading(false);
+        }
       });
 
     return () => { isMounted = false; };
@@ -237,6 +244,17 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
           ))}
         </div>
       </div>
+
+      {/* Error Banner */}
+      {error && (
+        <div className="mml-card" style={{ borderLeft: '4px solid var(--color-sell)', display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <AlertTriangle color="var(--color-sell)" size={24} />
+          <div>
+            <div style={{ fontWeight: 600, color: 'var(--color-sell)' }}>Data Query Error</div>
+            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{error}</div>
+          </div>
+        </div>
+      )}
 
       {/* Primary Chart: Price Response Function */}
       <div className="mml-card">

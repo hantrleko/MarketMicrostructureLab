@@ -493,40 +493,47 @@ class NonlinearImpactModel:
         train_obs = len(q_train)
         test_obs = len(q_test)
 
-        train_r2_val = 0.0
-        oos_r2_log = 0.0
+        train_r2_val = None
+        oos_r2_log = None
+        oos_log_status = "NOT_ESTIMABLE"
         oos_r2_power = None
         oos_power_status = "NOT_ESTIMABLE"
         oos_power_train_gamma = None
         oos_power_train_alpha = None
         pow_tr_fit = {}
+        oos_denominator_ss_tot = None
 
         if train_obs >= 20 and test_obs >= 20 and np.var(q_train) > 1e-12 and np.var(r_train) > 1e-12 and np.var(r_test) > 1e-12:
-            ss_tot = np.sum((r_test - np.mean(r_test)) ** 2)
-            try:
-                # 1. Logarithmic model strictly fitted on training split
-                res_tr_log = sm.OLS(r_train, sm.add_constant(np.log(q_train))).fit()
-                pred_test_log = res_tr_log.predict(sm.add_constant(np.log(q_test)))
-                ss_res_log = np.sum((r_test - pred_test_log) ** 2)
-                oos_r2_log = float(max(-1.0, 1.0 - (ss_res_log / ss_tot))) if ss_tot > 0 else 0.0
-                train_r2_val = float(res_tr_log.rsquared) if hasattr(res_tr_log, "rsquared") and np.isfinite(res_tr_log.rsquared) else 0.0
-            except Exception:
-                oos_r2_log = 0.0
+            ss_tot = float(np.sum((r_test - np.mean(r_test)) ** 2))
+            oos_denominator_ss_tot = ss_tot
+            if ss_tot > 0:
+                try:
+                    # 1. Logarithmic model strictly fitted on training split
+                    res_tr_log = sm.OLS(r_train, sm.add_constant(np.log(q_train))).fit()
+                    pred_test_log = res_tr_log.predict(sm.add_constant(np.log(q_test)))
+                    ss_res_log = float(np.sum((r_test - pred_test_log) ** 2))
+                    oos_r2_log = float(1.0 - (ss_res_log / ss_tot))  # Real unconstrained R^2
+                    train_r2_val = float(res_tr_log.rsquared) if hasattr(res_tr_log, "rsquared") and np.isfinite(res_tr_log.rsquared) else None
+                    oos_log_status = "ESTIMATED"
+                except Exception as e:
+                    oos_r2_log = None
+                    train_r2_val = None
+                    oos_log_status = f"FIT_FAILED: {str(e)}"
 
-            # 2. Power-law model strictly fitted on training split (ZERO full-sample leakage)
-            pow_tr_fit = self.fit_power_law_from_sample(q_train, r_train, tier_definitions)
-            if pow_tr_fit["is_estimable"] and pow_tr_fit["alpha"] is not None and pow_tr_fit["alpha"] > 0:
-                alpha_tr = pow_tr_fit["alpha"]
-                gamma_tr = pow_tr_fit["gamma"]
-                pred_test_pow = alpha_tr * (q_test ** gamma_tr)
-                ss_res_pow = np.sum((r_test - pred_test_pow) ** 2)
-                oos_r2_power = float(max(-1.0, 1.0 - (ss_res_pow / ss_tot))) if ss_tot > 0 else 0.0
-                oos_power_status = "ESTIMATED"
-                oos_power_train_gamma = gamma_tr
-                oos_power_train_alpha = alpha_tr
-            else:
-                oos_r2_power = None
-                oos_power_status = pow_tr_fit.get("status", "NOT_ESTIMABLE")
+                # 2. Power-law model strictly fitted on training split (ZERO full-sample leakage)
+                pow_tr_fit = self.fit_power_law_from_sample(q_train, r_train, tier_definitions)
+                if pow_tr_fit["is_estimable"] and pow_tr_fit["alpha"] is not None and pow_tr_fit["alpha"] > 0:
+                    alpha_tr = pow_tr_fit["alpha"]
+                    gamma_tr = pow_tr_fit["gamma"]
+                    pred_test_pow = alpha_tr * (q_test ** gamma_tr)
+                    ss_res_pow = float(np.sum((r_test - pred_test_pow) ** 2))
+                    oos_r2_power = float(1.0 - (ss_res_pow / ss_tot))  # Real unconstrained R^2
+                    oos_power_status = "ESTIMATED"
+                    oos_power_train_gamma = gamma_tr
+                    oos_power_train_alpha = alpha_tr
+                else:
+                    oos_r2_power = None
+                    oos_power_status = pow_tr_fit.get("status", "NOT_ESTIMABLE")
 
         # Multi-window expanding Walk-Forward Purged Evaluation with Non-Overlapping Test Windows
         wf_folds = []
@@ -534,123 +541,175 @@ class NonlinearImpactModel:
         all_test_preds_log = []
         all_test_preds_pow = []
         all_pow_estimable = True
+        all_log_estimable = True
 
-        if n_obs >= 300:
-            # 3 Expanding folds with strictly non-overlapping test partitions
-            # Warmup: first 40%. Test windows: [0.40, 0.60], [0.60, 0.80], [0.80, 1.00]
-            split_points = [
-                (0.0, 0.40, 0.40, 0.60),
-                (0.0, 0.60, 0.60, 0.80),
-                (0.0, 0.80, 0.80, 1.00)
-            ]
-            for fold_idx, (tr_s, tr_e, te_s, te_e) in enumerate(split_points, 1):
-                te_start = int(n_obs * te_s)
-                te_end = min(n_obs, int(n_obs * te_e)) if fold_idx < len(split_points) else n_obs
-                tr_end = max(10, te_start - purge_k)
-                tr_start = int(n_obs * tr_s)
+        split_points = [
+            (0.0, 0.40, 0.40, 0.60),
+            (0.0, 0.60, 0.60, 0.80),
+            (0.0, 0.80, 0.80, 1.00)
+        ]
 
-                # Assert label coverage separation (train label end < test start)
-                assert tr_end + purge_k <= te_start, f"Purge violation in fold {fold_idx}: tr_end={tr_end}, te_start={te_start}, purge_k={purge_k}"
+        for fold_idx, (tr_s, tr_e, te_s, te_e) in enumerate(split_points, 1):
+            te_start = int(n_obs * te_s)
+            te_end = min(n_obs, int(n_obs * te_e)) if fold_idx < len(split_points) else n_obs
+            tr_end = max(10, te_start - purge_k) if te_start > purge_k + 10 else 0
+            tr_start = int(n_obs * tr_s)
 
-                q_tr, r_tr = Q_clean[tr_start:tr_end], R_clean[tr_start:tr_end]
-                q_te, r_te = Q_clean[te_start:te_end], R_clean[te_start:te_end]
+            q_tr, r_tr = Q_clean[tr_start:tr_end], R_clean[tr_start:tr_end]
+            q_te, r_te = Q_clean[te_start:te_end], R_clean[te_start:te_end]
 
-                c_tr_start = clean_times[tr_start] if clean_times and tr_start < len(clean_times) else ""
-                c_tr_end = clean_times[tr_end - 1] if clean_times and tr_end > 0 and tr_end <= len(clean_times) else ""
-                c_te_start = clean_times[te_start] if clean_times and te_start < len(clean_times) else ""
-                c_te_end = clean_times[te_end - 1] if clean_times and te_end > 0 and te_end <= len(clean_times) else ""
+            c_tr_start = clean_times[tr_start] if clean_times and tr_start < len(clean_times) else ""
+            c_tr_end = clean_times[tr_end - 1] if clean_times and tr_end > 0 and tr_end <= len(clean_times) else ""
+            c_te_start = clean_times[te_start] if clean_times and te_start < len(clean_times) else ""
+            c_te_end = clean_times[te_end - 1] if clean_times and te_end > 0 and te_end <= len(clean_times) else ""
 
-                if len(q_tr) >= 20 and len(q_te) >= 20 and np.var(q_tr) > 1e-12 and np.var(r_te) > 1e-12:
-                    ss_tot_f = np.sum((r_te - np.mean(r_te)) ** 2)
+            is_fold_estimable = (
+                len(q_tr) >= 20 and len(q_te) >= 20 and
+                np.var(q_tr) > 1e-12 and np.var(r_te) > 1e-12
+            )
 
-                    # 1. Fit log model strictly on fold training set
-                    try:
-                        m_log = sm.OLS(r_tr, sm.add_constant(np.log(q_tr))).fit()
-                        p_log = m_log.predict(sm.add_constant(np.log(q_te)))
-                        r2_log_f = float(max(-1.0, 1.0 - (np.sum((r_te - p_log) ** 2) / ss_tot_f))) if ss_tot_f > 0 else 0.0
-                        log_f_alpha = float(m_log.params[0]) if len(m_log.params) > 0 else 0.0
-                        log_f_beta = float(m_log.params[1]) if len(m_log.params) > 1 else 0.0
-                        log_f_r2 = float(m_log.rsquared) if hasattr(m_log, "rsquared") and np.isfinite(m_log.rsquared) else 0.0
-                    except Exception:
-                        p_log = np.zeros_like(r_te)
-                        r2_log_f = 0.0
-                        log_f_alpha, log_f_beta, log_f_r2 = 0.0, 0.0, 0.0
+            if not is_fold_estimable:
+                all_log_estimable = False
+                all_pow_estimable = False
+                unest_reason = "Insufficient observations or zero variance in training window" if len(q_tr) < 20 else "Zero target variance in test set"
+                wf_folds.append({
+                    "fold": fold_idx,
+                    "train_indices": [tr_start, tr_end],
+                    "test_indices": [te_start, te_end],
+                    "train_observations": len(q_tr),
+                    "test_observations": len(q_te),
+                    "purged_observations": purge_k,
+                    "train_start_utc": c_tr_start,
+                    "train_end_utc": c_tr_end,
+                    "test_start_utc": c_te_start,
+                    "test_end_utc": c_te_end,
+                    "status": "NOT_ESTIMABLE",
+                    "unestimable_reason": unest_reason,
+                    "log_model": {
+                        "status": "NOT_ESTIMABLE",
+                        "alpha": None,
+                        "beta": None,
+                        "train_r2": None,
+                        "reason": unest_reason
+                    },
+                    "power_law_model": {
+                        "status": "NOT_ESTIMABLE",
+                        "alpha": None,
+                        "gamma": None,
+                        "alpha_wls": None,
+                        "gamma_wls": None,
+                        "train_r2_binned": None,
+                        "train_r2_wls": None,
+                        "reason": unest_reason
+                    },
+                    "log_oos_r2": None,
+                    "power_oos_r2": None,
+                    "effective_denominator_ss_tot": 0.0
+                })
+                continue
 
-                    # 2. Fit power law model strictly on fold training set (ZERO full-sample leakage)
-                    pow_f_fit = self.fit_power_law_from_sample(q_tr, r_tr, tier_definitions)
-                    if pow_f_fit["is_estimable"] and pow_f_fit["alpha"] is not None and pow_f_fit["alpha"] > 0:
-                        p_pow = pow_f_fit["alpha"] * (q_te ** pow_f_fit["gamma"])
-                        r2_pow_f = float(max(-1.0, 1.0 - (np.sum((r_te - p_pow) ** 2) / ss_tot_f))) if ss_tot_f > 0 else 0.0
-                        pow_f_status = "ESTIMATED"
-                        pow_f_gamma = pow_f_fit["gamma"]
-                        pow_f_alpha = pow_f_fit["alpha"]
-                        pow_f_train_r2 = pow_f_fit.get("r_squared")
-                    else:
-                        p_pow = None
-                        r2_pow_f = None
-                        pow_f_status = pow_f_fit.get("status", "NOT_ESTIMABLE")
-                        pow_f_gamma = None
-                        pow_f_alpha = None
-                        pow_f_train_r2 = None
-                        all_pow_estimable = False
+            # Assert label coverage separation (train label end < test start)
+            assert tr_end + purge_k <= te_start, f"Purge violation in fold {fold_idx}: tr_end={tr_end}, te_start={te_start}, purge_k={purge_k}"
 
-                    # Append to pooled predictions
-                    all_test_targets.extend(r_te.tolist())
-                    all_test_preds_log.extend(p_log.tolist())
-                    if p_pow is not None:
-                        all_test_preds_pow.extend(p_pow.tolist())
+            ss_tot_f = float(np.sum((r_te - np.mean(r_te)) ** 2))
 
-                    wf_folds.append({
-                        "fold": fold_idx,
-                        "train_indices": [tr_start, tr_end],
-                        "test_indices": [te_start, te_end],
-                        "train_observations": len(q_tr),
-                        "test_observations": len(q_te),
-                        "purged_observations": purge_k,
-                        "train_start_utc": c_tr_start,
-                        "train_end_utc": c_tr_end,
-                        "test_start_utc": c_te_start,
-                        "test_end_utc": c_te_end,
-                        "log_model": {
-                            "alpha": log_f_alpha,
-                            "beta": log_f_beta,
-                            "train_r2": log_f_r2
-                        },
-                        "power_law_model": {
-                            "status": pow_f_status,
-                            "alpha": pow_f_alpha,
-                            "gamma": pow_f_gamma,
-                            "alpha_wls": pow_f_fit.get("alpha_wls"),
-                            "gamma_wls": pow_f_fit.get("gamma_wls"),
-                            "train_r2_binned": pow_f_train_r2,
-                            "train_r2_wls": pow_f_fit.get("r_squared_wls")
-                        },
-                        "log_oos_r2": r2_log_f,
-                        "power_oos_r2": r2_pow_f
-                    })
+            # 1. Fit log model strictly on fold training set
+            log_f_status = "ESTIMATED"
+            p_log = None
+            r2_log_f = None
+            log_f_alpha, log_f_beta, log_f_r2 = None, None, None
+            try:
+                m_log = sm.OLS(r_tr, sm.add_constant(np.log(q_tr))).fit()
+                p_log = m_log.predict(sm.add_constant(np.log(q_te)))
+                r2_log_f = float(1.0 - (np.sum((r_te - p_log) ** 2) / ss_tot_f)) if ss_tot_f > 0 else None
+                log_f_alpha = float(m_log.params[0]) if len(m_log.params) > 0 else 0.0
+                log_f_beta = float(m_log.params[1]) if len(m_log.params) > 1 else 0.0
+                log_f_r2 = float(m_log.rsquared) if hasattr(m_log, "rsquared") and np.isfinite(m_log.rsquared) else None
+            except Exception as e:
+                p_log = None
+                r2_log_f = None
+                log_f_status = f"FIT_FAILED: {str(e)}"
+                all_log_estimable = False
+
+            # 2. Fit power law model strictly on fold training set (ZERO full-sample leakage)
+            pow_f_fit = self.fit_power_law_from_sample(q_tr, r_tr, tier_definitions)
+            if pow_f_fit["is_estimable"] and pow_f_fit["alpha"] is not None and pow_f_fit["alpha"] > 0:
+                p_pow = pow_f_fit["alpha"] * (q_te ** pow_f_fit["gamma"])
+                r2_pow_f = float(1.0 - (np.sum((r_te - p_pow) ** 2) / ss_tot_f)) if ss_tot_f > 0 else None
+                pow_f_status = "ESTIMATED"
+                pow_f_gamma = pow_f_fit["gamma"]
+                pow_f_alpha = pow_f_fit["alpha"]
+                pow_f_train_r2 = pow_f_fit.get("r_squared")
+            else:
+                p_pow = None
+                r2_pow_f = None
+                pow_f_status = pow_f_fit.get("status", "NOT_ESTIMABLE")
+                pow_f_gamma = None
+                pow_f_alpha = None
+                pow_f_train_r2 = None
+                all_pow_estimable = False
+
+            # Collect predictions for pooled metrics only if valid
+            all_test_targets.extend(r_te.tolist())
+            if p_log is not None:
+                all_test_preds_log.extend(p_log.tolist())
+            if p_pow is not None:
+                all_test_preds_pow.extend(p_pow.tolist())
+
+            wf_folds.append({
+                "fold": fold_idx,
+                "train_indices": [tr_start, tr_end],
+                "test_indices": [te_start, te_end],
+                "train_observations": len(q_tr),
+                "test_observations": len(q_te),
+                "purged_observations": purge_k,
+                "train_start_utc": c_tr_start,
+                "train_end_utc": c_tr_end,
+                "test_start_utc": c_te_start,
+                "test_end_utc": c_te_end,
+                "status": "ESTIMATED" if (log_f_status == "ESTIMATED" and pow_f_status == "ESTIMATED") else "PARTIAL",
+                "log_model": {
+                    "status": log_f_status,
+                    "alpha": log_f_alpha,
+                    "beta": log_f_beta,
+                    "train_r2": log_f_r2
+                },
+                "power_law_model": {
+                    "status": pow_f_status,
+                    "alpha": pow_f_alpha,
+                    "gamma": pow_f_gamma,
+                    "alpha_wls": pow_f_fit.get("alpha_wls"),
+                    "gamma_wls": pow_f_fit.get("gamma_wls"),
+                    "train_r2_binned": pow_f_train_r2,
+                    "train_r2_wls": pow_f_fit.get("r_squared_wls")
+                },
+                "log_oos_r2": r2_log_f,
+                "power_oos_r2": r2_pow_f,
+                "effective_denominator_ss_tot": ss_tot_f
+            })
 
         # Calculate Pooled Unique OOS Metrics across all non-overlapping test partitions
-        pooled_log_r2 = 0.0
+        pooled_log_r2 = None
         pooled_pow_r2 = None
         ss_tot_pooled = 0.0
 
         if len(all_test_targets) > 0:
             y_arr = np.array(all_test_targets)
-            p_log_arr = np.array(all_test_preds_log)
             ss_tot_pooled = float(np.sum((y_arr - np.mean(y_arr)) ** 2))
-            if ss_tot_pooled > 0:
-                pooled_log_r2 = float(max(-1.0, 1.0 - (np.sum((y_arr - p_log_arr) ** 2) / ss_tot_pooled)))
+            if all_log_estimable and len(all_test_preds_log) == len(y_arr) and ss_tot_pooled > 0:
+                p_log_arr = np.array(all_test_preds_log)
+                pooled_log_r2 = float(1.0 - (np.sum((y_arr - p_log_arr) ** 2) / ss_tot_pooled))
 
             if all_pow_estimable and len(all_test_preds_pow) == len(y_arr) and ss_tot_pooled > 0:
                 p_pow_arr = np.array(all_test_preds_pow)
-                pooled_pow_r2 = float(max(-1.0, 1.0 - (np.sum((y_arr - p_pow_arr) ** 2) / ss_tot_pooled)))
+                pooled_pow_r2 = float(1.0 - (np.sum((y_arr - p_pow_arr) ** 2) / ss_tot_pooled))
 
         # Calculate Fold Macro-Averages and Dispersion
         valid_log = [f["log_oos_r2"] for f in wf_folds if f.get("log_oos_r2") is not None]
         valid_pow = [f["power_oos_r2"] for f in wf_folds if f.get("power_oos_r2") is not None]
 
-        mean_log_r2 = float(np.mean(valid_log)) if valid_log else 0.0
-        std_log_r2 = float(np.std(valid_log)) if len(valid_log) > 1 else 0.0
+        mean_log_r2 = float(np.mean(valid_log)) if valid_log else None
+        std_log_r2 = float(np.std(valid_log)) if len(valid_log) > 1 else (0.0 if valid_log else None)
         mean_pow_r2 = float(np.mean(valid_pow)) if valid_pow else None
         std_pow_r2 = float(np.std(valid_pow)) if len(valid_pow) > 1 else (0.0 if valid_pow else None)
 

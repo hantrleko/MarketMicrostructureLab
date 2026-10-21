@@ -10,7 +10,7 @@
     "sample_end_utc": "2026-07-03T08:30:15.594872Z",
     "sample_duration_seconds": 10380.339416,
     "sampling_method": "CHRONOLOGICAL_TICK_RESPONSE",
-    "generation_timestamp_utc": "2026-10-21T10:10:31.507401+00:00",
+    "generation_timestamp_utc": "2026-10-21T11:21:38.392367+00:00",
     "status": "EXPLORATORY_RESEARCH",
     "scope_limitation_disclosure": "Analyzed sample covers consecutive chronological window from 2026-07-03T05:37:15.255456Z to 2026-07-03T08:30:15.594872Z (10380.3s, 249,995 tick executions). Microstructure empirical parameters (scaling exponent, autocorrelation, point-mass proportions) reflect this specific intraday regime and cannot be extrapolated to full 24-hour trading without cross-regime validation."
   },
@@ -280,7 +280,9 @@
           "train_end_utc": "2026-07-03T06:53:20.450552Z",
           "test_start_utc": "2026-07-03T06:53:20.828503Z",
           "test_end_utc": "2026-07-03T07:32:01.034991Z",
+          "status": "ESTIMATED",
           "log_model": {
+            "status": "ESTIMATED",
             "alpha": 0.008249179077074583,
             "beta": -0.001552967581472305,
             "train_r2": 0.001574234283366227
@@ -295,7 +297,8 @@
             "train_r2_wls": 0.3986343284347068
           },
           "log_oos_r2": -0.003784903976241427,
-          "power_oos_r2": -0.004440175166778859
+          "power_oos_r2": -0.004440175166778859,
+          "effective_denominator_ss_tot": 132.1880142134163
         },
         {
           "fold": 2,
@@ -314,7 +317,9 @@
           "train_end_utc": "2026-07-03T07:32:01.034991Z",
           "test_start_utc": "2026-07-03T07:32:01.034991Z",
           "test_end_utc": "2026-07-03T07:55:38.076278Z",
+          "status": "ESTIMATED",
           "log_model": {
+            "status": "ESTIMATED",
             "alpha": 0.007505821409441223,
             "beta": -0.0014840014448014574,
             "train_r2": 0.001670043763777107
@@ -329,7 +334,8 @@
             "train_r2_wls": 0.3274871024443372
           },
           "log_oos_r2": 0.005381115298726646,
-          "power_oos_r2": -0.009268183969614485
+          "power_oos_r2": -0.009268183969614485,
+          "effective_denominator_ss_tot": 135.22594008426097
         },
         {
           "fold": 3,
@@ -348,7 +354,9 @@
           "train_end_utc": "2026-07-03T07:55:36.772438Z",
           "test_start_utc": "2026-07-03T07:55:38.574632Z",
           "test_end_utc": "2026-07-03T08:30:15.594872Z",
+          "status": "ESTIMATED",
           "log_model": {
+            "status": "ESTIMATED",
             "alpha": 0.005737682047671023,
             "beta": -0.00164411188762845,
             "train_r2": 0.0026801294130035513
@@ -363,7 +371,8 @@
             "train_r2_wls": 0.46328558475070836
           },
           "log_oos_r2": 0.003606404500747895,
-          "power_oos_r2": -0.010594355086333662
+          "power_oos_r2": -0.010594355086333662,
+          "effective_denominator_ss_tot": 135.7512064231686
         }
       ]
     },
@@ -626,7 +635,9 @@
           "train_end_utc": "2026-07-03T06:53:20.450552Z",
           "test_start_utc": "2026-07-03T06:53:20.828503Z",
           "test_end_utc": "2026-07-03T07:32:01.034991Z",
+          "status": "ESTIMATED",
           "log_model": {
+            "status": "ESTIMATED",
             "alpha": 0.008249179077074583,
             "beta": -0.001552967581472305,
             "train_r2": 0.001574234283366227
@@ -641,7 +652,8 @@
             "train_r2_wls": 0.3986343284347068
           },
           "log_oos_r2": -0.003784903976241427,
-          "power_oos_r2": -0.004440175166778859
+          "power_oos_r2": -0.004440175166778859,
+          "effective_denominator_ss_tot": 132.1880142134163
         },
         {
           "fold": 2,
@@ -660,7 +672,9 @@
           "train_end_utc": "2026-07-03T07:32:01.034991Z",
           "test_start_utc": "2026-07-03T07:32:01.034991Z",
           "test_end_utc": "2026-07-03T07:55:38.076278Z",
+          "status": "ESTIMATED",
           "log_model": {
+            "status": "ESTIMATED",
             "alpha": 0.007505821409441223,
             "beta": -0.0014840014448014574,
             "train_r2": 0.001670043763777107
@@ -675,7 +689,8 @@
             "train_r2_wls": 0.3274871024443372
           },
           "log_oos_r2": 0.005381115298726646,
-          "power_oos_r2": -0.009268183969614485
+          "power_oos_r2": -0.009268183969614485,
+          "effective_denominator_ss_tot": 135.22594008426097
         },
         {
           "fold": 3,
@@ -694,7 +709,9 @@
           "train_end_utc": "2026-07-03T07:55:36.772438Z",
           "test_start_utc": "2026-07-03T07:55:38.574632Z",
           "test_end_utc": "2026-07-03T08:30:15.594872Z",
+          "status": "ESTIMATED",
           "log_model": {
+            "status": "ESTIMATED",
             "alpha": 0.005737682047671023,
             "beta": -0.00164411188762845,
             "train_r2": 0.0026801294130035513
@@ -709,7 +726,8 @@
             "train_r2_wls": 0.46328558475070836
           },
           "log_oos_r2": 0.003606404500747895,
-          "power_oos_r2": -0.010594355086333662
+          "power_oos_r2": -0.010594355086333662,
+          "effective_denominator_ss_tot": 135.7512064231686
         }
       ]
     },
@@ -961,7 +979,9 @@
         "train_end_utc": "2026-07-03T06:53:20.450552Z",
         "test_start_utc": "2026-07-03T06:53:20.828503Z",
         "test_end_utc": "2026-07-03T07:32:01.034991Z",
+        "status": "ESTIMATED",
         "log_model": {
+          "status": "ESTIMATED",
           "alpha": 0.008249179077074583,
           "beta": -0.001552967581472305,
           "train_r2": 0.001574234283366227
@@ -976,7 +996,8 @@
           "train_r2_wls": 0.3986343284347068
         },
         "log_oos_r2": -0.003784903976241427,
-        "power_oos_r2": -0.004440175166778859
+        "power_oos_r2": -0.004440175166778859,
+        "effective_denominator_ss_tot": 132.1880142134163
       },
       {
         "fold": 2,
@@ -995,7 +1016,9 @@
         "train_end_utc": "2026-07-03T07:32:01.034991Z",
         "test_start_utc": "2026-07-03T07:32:01.034991Z",
         "test_end_utc": "2026-07-03T07:55:38.076278Z",
+        "status": "ESTIMATED",
         "log_model": {
+          "status": "ESTIMATED",
           "alpha": 0.007505821409441223,
           "beta": -0.0014840014448014574,
           "train_r2": 0.001670043763777107
@@ -1010,7 +1033,8 @@
           "train_r2_wls": 0.3274871024443372
         },
         "log_oos_r2": 0.005381115298726646,
-        "power_oos_r2": -0.009268183969614485
+        "power_oos_r2": -0.009268183969614485,
+        "effective_denominator_ss_tot": 135.22594008426097
       },
       {
         "fold": 3,
@@ -1029,7 +1053,9 @@
         "train_end_utc": "2026-07-03T07:55:36.772438Z",
         "test_start_utc": "2026-07-03T07:55:38.574632Z",
         "test_end_utc": "2026-07-03T08:30:15.594872Z",
+        "status": "ESTIMATED",
         "log_model": {
+          "status": "ESTIMATED",
           "alpha": 0.005737682047671023,
           "beta": -0.00164411188762845,
           "train_r2": 0.0026801294130035513
@@ -1044,7 +1070,8 @@
           "train_r2_wls": 0.46328558475070836
         },
         "log_oos_r2": 0.003606404500747895,
-        "power_oos_r2": -0.010594355086333662
+        "power_oos_r2": -0.010594355086333662,
+        "effective_denominator_ss_tot": 135.7512064231686
       }
     ]
   },
@@ -1192,8 +1219,8 @@
   ],
   "artifact_metadata": {
     "schema_version": "1.2.0",
-    "build_commit": "7601663",
-    "generation_timestamp_utc": "2026-10-21T10:10:31.543074+00:00",
+    "build_commit": "f7fea24",
+    "generation_timestamp_utc": "2026-10-21T11:21:38.421640+00:00",
     "dataset_source": "NORMALIZED_PARQUET",
     "dataset_file": "normalized/exchange=binance/market=spot/symbol=BTCUSDT/date=2026-07-03/trades.parquet",
     "dataset_sha256": "89071f3f8b1a3e9518fdf2179e82c216e0084ed66a3e3dd38adc98c63861e0a4",

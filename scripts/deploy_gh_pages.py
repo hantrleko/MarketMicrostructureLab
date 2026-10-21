@@ -75,6 +75,11 @@ def main():
     run(["git", "init"], cwd=DIST)
     run(["git", "config", "user.name", "hantrleko"], cwd=DIST)
     run(["git", "config", "user.email", "hantrleko@users.noreply.github.com"], cwd=DIST)
+    run(["git", "config", "core.autocrlf", "false"], cwd=DIST)
+
+    # Enforce LF in dist git repo
+    (DIST / ".gitattributes").write_text("* text eol=lf\n", encoding="utf-8")
+
     run(["git", "checkout", "-B", "gh-pages"], cwd=DIST)
     run(["git", "add", "-A"], cwd=DIST)
     run(["git", "commit", "-m", "deploy: publish MML research terminal to GitHub Pages"], cwd=DIST)

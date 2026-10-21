@@ -44,19 +44,53 @@ export function getDataLayerState(): DataLayerState {
   return currentDataLayer;
 }
 
+export class ApiError extends Error {
+  status: number;
+  data?: any;
+  constructor(message: string, status: number, data?: any) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.data = data;
+  }
+}
+
+const STATIC_SUPPORTED_SYMBOLS = new Set(['BTCUSDT']);
+const STATIC_SUPPORTED_DATES = new Set(['2026-07-01', '2026-07-02', '2026-07-03']);
+
+function validateStaticRequest(symbol?: string, date?: string) {
+  if (symbol && !STATIC_SUPPORTED_SYMBOLS.has(symbol.toUpperCase())) {
+    throw new ApiError(
+      `Unsupported symbol '${symbol}' in static archive. Static demonstration mode strictly provides pre-indexed 'BTCUSDT' trades.`,
+      422
+    );
+  }
+  if (date && !STATIC_SUPPORTED_DATES.has(date)) {
+    throw new ApiError(
+      `Date '${date}' not found in static archive. Available dates: 2026-07-01, 2026-07-02, 2026-07-03.`,
+      404
+    );
+  }
+}
+
 function getStaticDataUrl(filename: string): string {
   const base = import.meta.env.BASE_URL || './';
   const cleanBase = base.endsWith('/') ? base : `${base}/`;
   return `${cleanBase}data/${filename}`;
 }
 
-async function safeFetch<T>(apiEndpoint: string, fallbackFilename: string): Promise<T> {
+async function safeFetch<T>(
+  apiEndpoint: string,
+  fallbackFilename: string,
+  context?: { symbol?: string; date?: string }
+): Promise<T> {
   // If in static deployment mode, load pre-computed static JSON directly (no failed /api 404s)
   if (currentDataLayer === 'STATIC') {
+    validateStaticRequest(context?.symbol, context?.date);
     const staticUrl = getStaticDataUrl(fallbackFilename);
     const staticRes = await fetch(staticUrl);
     if (!staticRes.ok) {
-      throw new Error(`Failed to load static fixture from ${staticUrl}`);
+      throw new ApiError(`Failed to load static fixture from ${staticUrl}`, staticRes.status);
     }
     return await staticRes.json();
   }
@@ -71,15 +105,34 @@ async function safeFetch<T>(apiEndpoint: string, fallbackFilename: string): Prom
       setDataLayerState('LOCAL');
       return await res.json();
     }
-  } catch (e) {
-    // Backend API unreachable -> gracefully switch to STATIC archive mode
+
+    // Server explicitly responded with HTTP error (404, 422, 500, 503, etc.)
+    // DO NOT swallow server error and DO NOT fall back to BTC static data!
+    let errorDetail = `HTTP ${res.status}: ${res.statusText}`;
+    try {
+      const errJson = await res.json();
+      if (errJson && errJson.detail) {
+        errorDetail = typeof errJson.detail === 'string' ? errJson.detail : JSON.stringify(errJson.detail);
+      }
+    } catch {
+      // ignore json parse error
+    }
+    throw new ApiError(errorDetail, res.status);
+  } catch (e: any) {
+    // If e is an ApiError from an explicit server response above, re-throw immediately!
+    if (e instanceof ApiError) {
+      throw e;
+    }
+
+    // Backend API unreachable / offline network error -> switch to STATIC archive mode
     setDataLayerState('STATIC');
+    validateStaticRequest(context?.symbol, context?.date);
   }
 
   const staticUrl = getStaticDataUrl(fallbackFilename);
   const staticRes = await fetch(staticUrl);
   if (!staticRes.ok) {
-    throw new Error(`Failed to load static fixture from ${staticUrl}`);
+    throw new ApiError(`Failed to load static fixture from ${staticUrl}`, staticRes.status);
   }
   return await staticRes.json();
 }
@@ -90,7 +143,7 @@ export async function fetchDatasets(): Promise<DatasetItem[]> {
 }
 
 export async function fetchAuditReport(symbol: string, date: string): Promise<QualityAuditReport> {
-  return safeFetch<QualityAuditReport>(`integrity/audit?symbol=${symbol}&date=${date}`, `audit_${date}.json`);
+  return safeFetch<QualityAuditReport>(`integrity/audit?symbol=${symbol}&date=${date}`, `audit_${date}.json`, { symbol, date });
 }
 
 export async function fetchFlowBuckets(symbol: string, date: string, interval: string = '1m'): Promise<FlowBucket[]> {
@@ -105,18 +158,19 @@ export async function fetchFlowBuckets(symbol: string, date: string, interval: s
     } catch (e) {
       // Offline fallback warning
     }
-    throw new Error(`High-frequency resolution '${interval}' requires local Python/DuckDB backend. Available static resolutions: 1m, 5m, 15m, 1h.`);
+    throw new ApiError(`High-frequency resolution '${interval}' requires local Python/DuckDB backend. Available static resolutions: 1m, 5m, 15m, 1h.`, 422);
   }
 
   const data = await safeFetch<{ buckets: FlowBucket[] }>(
     `flow/buckets?symbol=${symbol}&date=${date}&interval=${interval}`,
-    `buckets_${interval}_${date}.json`
+    `buckets_${interval}_${date}.json`,
+    { symbol, date }
   );
   return data.buckets;
 }
 
 export async function fetchAutocorrelation(symbol: string, date: string, maxLag: number = 50): Promise<AutocorrResult> {
-  return safeFetch<AutocorrResult>(`flow/autocorrelation?symbol=${symbol}&date=${date}&max_lag=${maxLag}`, `autocorr_${date}.json`);
+  return safeFetch<AutocorrResult>(`flow/autocorrelation?symbol=${symbol}&date=${date}&max_lag=${maxLag}`, `autocorr_${date}.json`, { symbol, date });
 }
 
 export async function fetchDistributions(symbol: string, date: string): Promise<{
@@ -126,11 +180,11 @@ export async function fetchDistributions(symbol: string, date: string): Promise<
   return safeFetch<{
     trade_size_distribution: TradeSizeDistribution;
     duration_distribution: DurationDistribution;
-  }>(`flow/distributions?symbol=${symbol}&date=${date}`, `distributions_${date}.json`);
+  }>(`flow/distributions?symbol=${symbol}&date=${date}`, `distributions_${date}.json`, { symbol, date });
 }
 
 export async function fetchPriceResponse(symbol: string, date: string): Promise<PriceResponseData> {
-  return safeFetch<PriceResponseData>(`impact/response?symbol=${symbol}&date=${date}`, `response_${date}.json`);
+  return safeFetch<PriceResponseData>(`impact/response?symbol=${symbol}&date=${date}`, `response_${date}.json`, { symbol, date });
 }
 
 export async function fetchImpactModels(symbol: string, date: string, horizon: number = 20): Promise<ImpactModelsData> {
@@ -142,7 +196,8 @@ export async function fetchImpactModels(symbol: string, date: string, horizon: n
 
   return safeFetch<ImpactModelsData>(
     `impact/models?symbol=${symbol}&date=${date}&horizon=${horizon}`,
-    `models_${date}_k${matchedHorizon}.json`
+    `models_${date}_k${matchedHorizon}.json`,
+    { symbol, date }
   );
 }
 
@@ -161,14 +216,16 @@ export async function fetchReplayWindow(
 
   return safeFetch<ReplayWindowResponse>(
     `replay/window?symbol=${symbol}&date=${date}&start_second=${startSecond}&duration_seconds=${durationSeconds}&limit=${limit}`,
-    `replay_window_${date}_${matchedOffset}.json`
+    `replay_window_${date}_${matchedOffset}.json`,
+    { symbol, date }
   );
 }
 
 export async function fetchHawkes(symbol: string, date: string, sampleSize: number = 4000, beta: number = 10.0): Promise<any> {
   return safeFetch<any>(
     `analytics/hawkes?symbol=${symbol}&date=${date}&sample_size=${sampleSize}&beta=${beta}`,
-    `hawkes_${date}.json`
+    `hawkes_${date}.json`,
+    { symbol, date }
   );
 }
 

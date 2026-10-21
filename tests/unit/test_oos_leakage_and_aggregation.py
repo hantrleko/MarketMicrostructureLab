@@ -182,8 +182,61 @@ def test_inestimable_fold_retains_status_without_fallback():
     wf = fit["walk_forward_validation"]
 
     # Must be handled gracefully with NOT_ESTIMABLE or failed folds
-    assert wf["folds_count"] >= 0
+    assert wf["folds_count"] == 3
     for f in wf["folds"]:
+        assert f["status"] in ("NOT_ESTIMABLE", "PARTIAL")
         if f["power_law_model"]["status"] != "ESTIMATED":
             assert f["power_law_model"]["gamma"] is None
             assert f["power_oos_r2"] is None
+        if f["log_model"]["status"] != "ESTIMATED":
+            assert f["log_model"]["beta"] is None
+            assert f["log_oos_r2"] is None
+
+
+def test_raw_unconstrained_negative_oos_r2_not_clamped():
+    """
+    Ensure out-of-sample R^2 is strictly unconstrained and never clamped to -1.0.
+    Under severe out-of-sample regime shifts, R^2 can be < -1.0.
+    """
+    n = 1000
+    k = 10
+    np.random.seed(42)
+
+    # In training split (first 500), large positive relationship between quantity and return
+    # In test split (last 500), opposite relationship with high leverage to produce R^2 < -1.0
+    q = np.random.exponential(scale=1.0, size=n) + 0.1
+    directions = np.ones(n)
+
+    # Train (first 500): positive return slope
+    # Test (last 500): negative return slope with high magnitude
+    r_innov = np.zeros(n)
+    r_innov[:500] = 5.0 * np.log(q[:500]) + np.random.normal(0, 0.1, 500)
+    r_innov[500:] = -15.0 * np.log(q[500:]) + np.random.normal(0, 0.1, 500)
+
+    # Convert innovations to prices
+    prices = 60000.0 + np.cumsum(r_innov)
+
+    df = pl.DataFrame({
+        "symbol": ["BTCUSDT"] * n,
+        "price": prices,
+        "direction": directions,
+        "base_quantity": q,
+        "event_timestamp_ns": [1720000000000000000 + i * 100000000 for i in range(n)],
+        "event_time_utc": [f"2026-07-01T00:{i//60:02d}:{i%60:02d}Z" for i in range(n)]
+    })
+
+    model = NonlinearImpactModel()
+    fit = model.fit_impact_models(df, horizon_lag=k)
+    oos = fit["out_of_sample_validation"]
+
+    # Verify that single hold-out log_model_oos_r2 is strictly less than -1.0 and not clamped
+    assert oos["log_model_oos_r2"] is not None
+    assert oos["log_model_oos_r2"] < -1.0, f"Expected R^2 < -1.0, got {oos['log_model_oos_r2']}"
+
+    # Also check walk-forward folds
+    wf = fit["walk_forward_validation"]
+    assert len(wf["folds"]) == 3
+    # At least one fold spanning the regime shift will have R^2 < -1.0
+    fold_r2s = [f["log_oos_r2"] for f in wf["folds"] if f["log_oos_r2"] is not None]
+    assert any(r2 < -1.0 for r2 in fold_r2s), f"Expected at least one fold with R^2 < -1.0, got {fold_r2s}"
+

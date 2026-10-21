@@ -10,9 +10,12 @@ interface DataIntegrityConsoleProps {
 export const DataIntegrityConsole: React.FC<DataIntegrityConsoleProps> = ({ currentDate }) => {
   const [datasets, setDatasets] = useState<DatasetItem[]>([]);
   const [audit, setAudit] = useState<QualityAuditReport | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
+    setAudit(null);
+    setError(null);
 
     Promise.all([
       fetchDatasets(),
@@ -26,6 +29,9 @@ export const DataIntegrityConsole: React.FC<DataIntegrityConsoleProps> = ({ curr
       })
       .catch((err) => {
         console.error(err);
+        if (isMounted) {
+          setError(err.message || 'Failed to load integrity audit');
+        }
       });
 
     return () => { isMounted = false; };
@@ -33,6 +39,17 @@ export const DataIntegrityConsole: React.FC<DataIntegrityConsoleProps> = ({ curr
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      {/* Error Banner */}
+      {error && (
+        <div className="mml-card" style={{ borderLeft: '4px solid var(--color-sell)', display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <AlertTriangle color="var(--color-sell)" size={24} />
+          <div>
+            <div style={{ fontWeight: 600, color: 'var(--color-sell)' }}>Integrity Audit Error</div>
+            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{error}</div>
+          </div>
+        </div>
+      )}
+
       {/* Top Banner */}
       <div className="mml-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderLeft: '4px solid var(--color-buy)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>

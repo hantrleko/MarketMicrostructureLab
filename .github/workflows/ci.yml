@@ -1,0 +1,137 @@
+name: Production CI & Release Quality Gates
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+jobs:
+  fixture-smoke-and-reproducibility:
+    name: Python Regression & Research Reproducibility
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: "pip"
+
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install . pytest pytest-asyncio pip-audit
+
+      - name: Run Python Dependency Security Audit
+        run: |
+          pip-audit -r requirements-lock.txt
+
+      - name: Run Pytest Suite (Regression & Leakage Prevention)
+        run: |
+          pytest tests/ -v
+
+      - name: Verify Multi-Day Empirical Consistency & Leak-Free Provenance
+        run: |
+          python scripts/verify_consistency.py
+
+  frontend-build-and-audit:
+    name: Frontend Typecheck, Security Audit & Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Dependency Security Audit
+        run: npm audit --audit-level=high
+
+      - name: Production TypeScript & Vite Build
+        run: npm run build
+
+  docker-container-smoke-test:
+    name: Docker Container Build & Runtime Smoke Test
+    needs: [fixture-smoke-and-reproducibility, frontend-build-and-audit]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Container Image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          load: true
+          tags: market-microstructure-lab:ci
+          build-args: |
+            BUILD_COMMIT=${{ github.sha }}
+            DATA_VERSION=V1.2.0 Institutional Rigor
+
+      - name: Start Container
+        run: |
+          docker run -d --name mml-ci-container -p 8000:8000 market-microstructure-lab:ci
+          sleep 5
+
+      - name: Container Smoke Test & Runtime Mode Inspection
+        run: |
+          echo "=== 1. Checking System Health & Runtime Mode ==="
+          HEALTH=$(curl -s http://localhost:8000/api/v1/health)
+          echo "$HEALTH" | jq .
+          
+          STATUS=$(echo "$HEALTH" | jq -r .status)
+          if [ "$STATUS" != "HEALTHY" ]; then
+            echo "ERROR: Container health status is $STATUS"
+            docker logs mml-ci-container
+            exit 1
+          fi
+
+          COMMIT=$(echo "$HEALTH" | jq -r .build_commit)
+          DATA_VER=$(echo "$HEALTH" | jq -r .data_version)
+          MODE=$(echo "$HEALTH" | jq -r .runtime_mode)
+          echo "----------------------------------------------------"
+          echo " Container Smoke Test Passed!"
+          echo " Build Commit: $COMMIT"
+          echo " Data Version: $DATA_VER"
+          echo " Runtime Mode: $MODE"
+          echo "----------------------------------------------------"
+
+          echo "=== 2. Testing Datasets Metadata Endpoint ==="
+          curl -f -s http://localhost:8000/api/v1/metadata/datasets | jq .
+
+          echo "=== 3. Testing Orderbook Admin Default-Deny Security ==="
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8000/api/v1/orderbook/control \
+            -H "Content-Type: application/json" \
+            -d '{"action":"start"}')
+          if [ "$HTTP_CODE" != "503" ]; then
+            echo "SECURITY FAILURE: Orderbook control endpoint did not default-deny without key! Expected 503, got $HTTP_CODE"
+            exit 1
+          fi
+          echo "Security Check Passed: Received HTTP 503 Default-Deny on unconfigured admin key."
+
+      - name: Stop Container
+        if: always()
+        run: |
+          docker logs mml-ci-container || true
+          docker stop mml-ci-container || true
+          docker rm mml-ci-container || true

@@ -8,9 +8,11 @@
     "total_observations": 249980,
     "sample_start_utc": "2026-07-01T05:49:54.563429Z",
     "sample_end_utc": "2026-07-01T07:48:27.491649Z",
+    "sample_duration_seconds": 7112.92822,
     "sampling_method": "CHRONOLOGICAL_TICK_RESPONSE",
-    "generation_timestamp_utc": "2026-10-20T09:31:41.497408+00:00",
-    "status": "EXPLORATORY_RESEARCH"
+    "generation_timestamp_utc": "2026-10-21T08:48:40.543469+00:00",
+    "status": "EXPLORATORY_RESEARCH",
+    "scope_limitation_disclosure": "Analyzed sample covers consecutive chronological window from 2026-07-01T05:49:54.563429Z to 2026-07-01T07:48:27.491649Z (7112.9s, 249,980 tick executions). Microstructure empirical parameters (scaling exponent, autocorrelation, point-mass proportions) reflect this specific intraday regime and cannot be extrapolated to full 24-hour trading without cross-regime validation."
   },
   "binned_empirical": [
     {
@@ -146,6 +148,7 @@
   ],
   "linear_model": {
     "name": "Linear (R = alpha + beta * Q)",
+    "status": "ESTIMATED",
     "alpha": 0.11181236965487884,
     "alpha_se": 0.0011119332711800832,
     "beta": -0.06782275520236695,
@@ -158,6 +161,7 @@
   },
   "logarithmic_model": {
     "name": "Logarithmic (R = alpha + beta * ln(Q))",
+    "status": "ESTIMATED",
     "alpha": 0.06218952331148987,
     "alpha_se": 0.0037471654617361855,
     "beta": -0.005801612880140896,
@@ -170,6 +174,9 @@
   },
   "power_law_model": {
     "name": "Power Law (R = alpha * Q^gamma)",
+    "status": "ESTIMATED",
+    "is_estimable": true,
+    "unestimable_reason": null,
     "alpha": 0.06056714987666575,
     "gamma": -0.030475110722505194,
     "gamma_se": 0.04518717018516709,
@@ -178,6 +185,7 @@
     "r_squared_binned": 0.05379659804968806,
     "wls_fit": {
       "name": "Weighted Least Squares (weighted by tier sample count)",
+      "status": "ESTIMATED",
       "estimator": "Classical WLS (weights = tier count)",
       "se_type": "Classical WLS SE (unadjusted for cross-tier residual autocorrelation)",
       "gamma_wls": -0.07385671841890035,
@@ -188,6 +196,7 @@
     },
     "trade_level_fit": {
       "name": "Trade-Level Log-Log HAC (Positive Response Sub-Sample: R > 0)",
+      "status": "ESTIMATED",
       "estimator": "OLS with Newey-West HAC covariance",
       "sample_type": "POSITIVE_RESPONSE_SUBSAMPLE",
       "conditioning": "Strictly conditional on positive signed price displacement (R_i > 0)",
@@ -202,23 +211,155 @@
       "positive_trades_pct": 71.7681414513161
     },
     "out_of_sample_validation": {
-      "description": "50% chronological split of analyzed window",
+      "description": "50% chronological split with purged transition buffer",
+      "model_specification": "Logarithmic Specification (Full-Sample) with Power-Law Comparison",
+      "evaluation_scope": "FULL_SAMPLE_WITH_ZERO_AND_NEGATIVE_RETURNS",
+      "purging_applied": true,
+      "purged_boundary_trades": 20,
+      "purging_rationale": "Purged 20 boundary trades to eliminate lookahead return leakage across horizon k=20",
       "train_start_utc": "2026-07-01T05:49:54.563429Z",
-      "train_end_utc": "2026-07-01T06:40:15.810324Z",
+      "train_end_utc": "2026-07-01T06:40:14.881053Z",
       "test_start_utc": "2026-07-01T06:40:15.810324Z",
       "test_end_utc": "2026-07-01T07:48:27.491649Z",
-      "train_observations": 124990,
+      "train_observations": 124970,
       "test_observations": 124990,
-      "train_window": "2026-07-01T05:49:54.563429Z - 2026-07-01T06:40:15.810324Z",
+      "train_window": "2026-07-01T05:49:54.563429Z - 2026-07-01T06:40:14.881053Z",
       "test_window": "2026-07-01T06:40:15.810324Z - 2026-07-01T07:48:27.491649Z",
-      "train_r2": 0.0034244718766999194,
-      "test_r2": 0.003096107806499604,
-      "log_model_oos_r2": 0.003096107806499604
+      "train_r2": 0.0034253998838060795,
+      "test_r2": 0.003082935029953493,
+      "log_model_oos_r2": 0.003082935029953493,
+      "power_law_oos_r2": -0.037634626829450735,
+      "is_power_law_oos": false,
+      "note": "Evaluates the logarithmic model on the full sample. Conditioning on positive returns for power-law models is reported separately."
+    },
+    "walk_forward_validation": {
+      "folds_count": 3,
+      "folds": [
+        {
+          "fold": 1,
+          "train_observations": 99972,
+          "test_observations": 74994,
+          "purged_observations": 20,
+          "log_oos_r2": -0.0012411584124483177,
+          "power_oos_r2": -0.06140510987422654
+        },
+        {
+          "fold": 2,
+          "train_observations": 149968,
+          "test_observations": 62495,
+          "purged_observations": 20,
+          "log_oos_r2": 0.0008346846887637982,
+          "power_oos_r2": -0.03500775922761523
+        },
+        {
+          "fold": 3,
+          "train_observations": 187465,
+          "test_observations": 62495,
+          "purged_observations": 20,
+          "log_oos_r2": 0.005678890737003228,
+          "power_oos_r2": -0.03904491279999878
+        }
+      ],
+      "mean_log_oos_r2": 0.001757472337772903,
+      "mean_power_oos_r2": -0.045152593967280184,
+      "purged_trades_per_boundary": 20
+    },
+    "moving_block_bootstrap": {
+      "status": "SUCCESS",
+      "methodology": "Moving Block Bootstrap with economic tier re-stratification",
+      "block_sizes_evaluated": [
+        100,
+        250,
+        500
+      ],
+      "primary_block_size": 250,
+      "primary_result": {
+        "block_size": 250,
+        "replications_completed": 100,
+        "replications_attempted": 100,
+        "fit_failure_rate_pct": 0.0,
+        "wls_gamma_bootstrap_mean": -0.0734733809832289,
+        "wls_gamma_bootstrap_se": 0.00758428702706134,
+        "wls_gamma_ci_95": [
+          -0.0877424362099934,
+          -0.059449280681731255
+        ],
+        "ols_gamma_bootstrap_mean": -0.031770064557285815,
+        "ols_gamma_bootstrap_se": 0.015489616549852396,
+        "ols_gamma_ci_95": [
+          -0.061944927667305104,
+          -0.007754895570117514
+        ],
+        "ci_contains_half": false,
+        "ci_contains_zero": false
+      },
+      "results_by_block_size": {
+        "block_100": {
+          "block_size": 100,
+          "replications_completed": 100,
+          "replications_attempted": 100,
+          "fit_failure_rate_pct": 0.0,
+          "wls_gamma_bootstrap_mean": -0.07525823985705922,
+          "wls_gamma_bootstrap_se": 0.006770972707636105,
+          "wls_gamma_ci_95": [
+            -0.08664168366015852,
+            -0.060914915277934654
+          ],
+          "ols_gamma_bootstrap_mean": -0.033974190228196546,
+          "ols_gamma_bootstrap_se": 0.015986924962536567,
+          "ols_gamma_ci_95": [
+            -0.07057861445384651,
+            -0.009127165507256035
+          ],
+          "ci_contains_half": false,
+          "ci_contains_zero": false
+        },
+        "block_250": {
+          "block_size": 250,
+          "replications_completed": 100,
+          "replications_attempted": 100,
+          "fit_failure_rate_pct": 0.0,
+          "wls_gamma_bootstrap_mean": -0.0734733809832289,
+          "wls_gamma_bootstrap_se": 0.00758428702706134,
+          "wls_gamma_ci_95": [
+            -0.0877424362099934,
+            -0.059449280681731255
+          ],
+          "ols_gamma_bootstrap_mean": -0.031770064557285815,
+          "ols_gamma_bootstrap_se": 0.015489616549852396,
+          "ols_gamma_ci_95": [
+            -0.061944927667305104,
+            -0.007754895570117514
+          ],
+          "ci_contains_half": false,
+          "ci_contains_zero": false
+        },
+        "block_500": {
+          "block_size": 500,
+          "replications_completed": 100,
+          "replications_attempted": 100,
+          "fit_failure_rate_pct": 0.0,
+          "wls_gamma_bootstrap_mean": -0.0754160170751011,
+          "wls_gamma_bootstrap_se": 0.009329905803667096,
+          "wls_gamma_ci_95": [
+            -0.09485220178086562,
+            -0.05831951146626997
+          ],
+          "ols_gamma_bootstrap_mean": -0.03472966136092896,
+          "ols_gamma_bootstrap_se": 0.0180121419676104,
+          "ols_gamma_ci_95": [
+            -0.07144158556114556,
+            -0.0016760665271098314
+          ],
+          "ci_contains_half": false,
+          "ci_contains_zero": false
+        }
+      }
     },
     "rejects_square_root_half": true,
     "ci_contains_zero": true,
     "hypothesis_test_sqrt_law": {
-      "status": "EXPLORATORY_RESEARCH",
+      "status": "ESTIMATED",
       "null_hypothesis": "H0: gamma = 0.5 (Square-Root Law for Child Trades)",
       "gamma_estimate": -0.030475110722505194,
       "gamma_estimate_wls": -0.07385671841890035,
@@ -244,6 +385,7 @@
       "p_value_wls": 0.0,
       "is_rejected_at_5pct": true,
       "ols_test": {
+        "status": "ESTIMATED",
         "estimator": "Tier-Binned OLS (Unweighted)",
         "gamma": -0.030475110722505194,
         "se": 0.04518717018516709,
@@ -257,6 +399,7 @@
         "is_rejected_at_5pct": true
       },
       "wls_test": {
+        "status": "ESTIMATED",
         "estimator": "Weighted Least Squares (Tier Sample Weights)",
         "gamma": -0.07385671841890035,
         "se": 0.041769152225122286,
@@ -269,11 +412,14 @@
         "p_value": 0.0,
         "is_rejected_at_5pct": true
       },
-      "interpretation": "Exploratory single child-order estimation: WLS power-law exponent gamma = -0.0739 (Classical WLS SE: 0.0418, 95% WLS CI: [-0.1557, 0.0080], t = -13.74, encompasses zero) and binned OLS exponent gamma = -0.0305 (Classical OLS SE: 0.0452, 95% OLS CI: [-0.1190, 0.0581], t = -11.74, encompasses zero) reject 0.5 (p < 0.001). Child-order models exhibit low in-sample and out-of-sample explanatory power (R\u00b2 < 0.02), with stratified power-law estimates varying across dates and weighting specifications. Note: WLS standard errors are classical weighted SEs unadjusted for cross-tier residual autocorrelation. This finding strictly characterizes individual child-order conditional price response R(v, k). It does NOT constitute an empirical refutation of the classical Square-Root Law of Meta-Orders (which governs cumulative parent-order execution over hours or days), nor does it directly prove specific unobserved microstructure mechanisms (such as book replenishment or adverse selection ratios)."
+      "interpretation": "Exploratory single child-order estimation: WLS power-law exponent gamma = -0.0739 (Classical WLS SE: 0.0418, 95% WLS CI: [-0.1557, 0.0080], encompasses zero) rejects the square-root null hypothesis H0: gamma = 0.5 (t = -13.74, p = 0.0000e+00); and binned OLS exponent gamma = -0.0305 (Classical OLS SE: 0.0452, 95% OLS CI: [-0.1190, 0.0581], encompasses zero) rejects H0: gamma = 0.5 (t = -11.74, p = 0.0000e+00). Child-order models exhibit low in-sample and out-of-sample explanatory power (R\u00b2 < 0.02), with stratified power-law estimates varying across dates and weighting specifications. Note: WLS standard errors are classical weighted SEs unadjusted for cross-tier residual autocorrelation. This finding strictly characterizes individual child-order conditional price response R(v, k). It does NOT constitute an empirical refutation of the classical Square-Root Law of Meta-Orders (which governs cumulative parent-order execution over hours or days), nor does it directly prove specific unobserved microstructure mechanisms (such as book replenishment or adverse selection ratios)."
     }
   },
   "power_law_fit": {
     "name": "Power Law (R = alpha * Q^gamma)",
+    "status": "ESTIMATED",
+    "is_estimable": true,
+    "unestimable_reason": null,
     "alpha": 0.06056714987666575,
     "gamma": -0.030475110722505194,
     "gamma_se": 0.04518717018516709,
@@ -282,6 +428,7 @@
     "r_squared_binned": 0.05379659804968806,
     "wls_fit": {
       "name": "Weighted Least Squares (weighted by tier sample count)",
+      "status": "ESTIMATED",
       "estimator": "Classical WLS (weights = tier count)",
       "se_type": "Classical WLS SE (unadjusted for cross-tier residual autocorrelation)",
       "gamma_wls": -0.07385671841890035,
@@ -292,6 +439,7 @@
     },
     "trade_level_fit": {
       "name": "Trade-Level Log-Log HAC (Positive Response Sub-Sample: R > 0)",
+      "status": "ESTIMATED",
       "estimator": "OLS with Newey-West HAC covariance",
       "sample_type": "POSITIVE_RESPONSE_SUBSAMPLE",
       "conditioning": "Strictly conditional on positive signed price displacement (R_i > 0)",
@@ -306,23 +454,155 @@
       "positive_trades_pct": 71.7681414513161
     },
     "out_of_sample_validation": {
-      "description": "50% chronological split of analyzed window",
+      "description": "50% chronological split with purged transition buffer",
+      "model_specification": "Logarithmic Specification (Full-Sample) with Power-Law Comparison",
+      "evaluation_scope": "FULL_SAMPLE_WITH_ZERO_AND_NEGATIVE_RETURNS",
+      "purging_applied": true,
+      "purged_boundary_trades": 20,
+      "purging_rationale": "Purged 20 boundary trades to eliminate lookahead return leakage across horizon k=20",
       "train_start_utc": "2026-07-01T05:49:54.563429Z",
-      "train_end_utc": "2026-07-01T06:40:15.810324Z",
+      "train_end_utc": "2026-07-01T06:40:14.881053Z",
       "test_start_utc": "2026-07-01T06:40:15.810324Z",
       "test_end_utc": "2026-07-01T07:48:27.491649Z",
-      "train_observations": 124990,
+      "train_observations": 124970,
       "test_observations": 124990,
-      "train_window": "2026-07-01T05:49:54.563429Z - 2026-07-01T06:40:15.810324Z",
+      "train_window": "2026-07-01T05:49:54.563429Z - 2026-07-01T06:40:14.881053Z",
       "test_window": "2026-07-01T06:40:15.810324Z - 2026-07-01T07:48:27.491649Z",
-      "train_r2": 0.0034244718766999194,
-      "test_r2": 0.003096107806499604,
-      "log_model_oos_r2": 0.003096107806499604
+      "train_r2": 0.0034253998838060795,
+      "test_r2": 0.003082935029953493,
+      "log_model_oos_r2": 0.003082935029953493,
+      "power_law_oos_r2": -0.037634626829450735,
+      "is_power_law_oos": false,
+      "note": "Evaluates the logarithmic model on the full sample. Conditioning on positive returns for power-law models is reported separately."
+    },
+    "walk_forward_validation": {
+      "folds_count": 3,
+      "folds": [
+        {
+          "fold": 1,
+          "train_observations": 99972,
+          "test_observations": 74994,
+          "purged_observations": 20,
+          "log_oos_r2": -0.0012411584124483177,
+          "power_oos_r2": -0.06140510987422654
+        },
+        {
+          "fold": 2,
+          "train_observations": 149968,
+          "test_observations": 62495,
+          "purged_observations": 20,
+          "log_oos_r2": 0.0008346846887637982,
+          "power_oos_r2": -0.03500775922761523
+        },
+        {
+          "fold": 3,
+          "train_observations": 187465,
+          "test_observations": 62495,
+          "purged_observations": 20,
+          "log_oos_r2": 0.005678890737003228,
+          "power_oos_r2": -0.03904491279999878
+        }
+      ],
+      "mean_log_oos_r2": 0.001757472337772903,
+      "mean_power_oos_r2": -0.045152593967280184,
+      "purged_trades_per_boundary": 20
+    },
+    "moving_block_bootstrap": {
+      "status": "SUCCESS",
+      "methodology": "Moving Block Bootstrap with economic tier re-stratification",
+      "block_sizes_evaluated": [
+        100,
+        250,
+        500
+      ],
+      "primary_block_size": 250,
+      "primary_result": {
+        "block_size": 250,
+        "replications_completed": 100,
+        "replications_attempted": 100,
+        "fit_failure_rate_pct": 0.0,
+        "wls_gamma_bootstrap_mean": -0.0734733809832289,
+        "wls_gamma_bootstrap_se": 0.00758428702706134,
+        "wls_gamma_ci_95": [
+          -0.0877424362099934,
+          -0.059449280681731255
+        ],
+        "ols_gamma_bootstrap_mean": -0.031770064557285815,
+        "ols_gamma_bootstrap_se": 0.015489616549852396,
+        "ols_gamma_ci_95": [
+          -0.061944927667305104,
+          -0.007754895570117514
+        ],
+        "ci_contains_half": false,
+        "ci_contains_zero": false
+      },
+      "results_by_block_size": {
+        "block_100": {
+          "block_size": 100,
+          "replications_completed": 100,
+          "replications_attempted": 100,
+          "fit_failure_rate_pct": 0.0,
+          "wls_gamma_bootstrap_mean": -0.07525823985705922,
+          "wls_gamma_bootstrap_se": 0.006770972707636105,
+          "wls_gamma_ci_95": [
+            -0.08664168366015852,
+            -0.060914915277934654
+          ],
+          "ols_gamma_bootstrap_mean": -0.033974190228196546,
+          "ols_gamma_bootstrap_se": 0.015986924962536567,
+          "ols_gamma_ci_95": [
+            -0.07057861445384651,
+            -0.009127165507256035
+          ],
+          "ci_contains_half": false,
+          "ci_contains_zero": false
+        },
+        "block_250": {
+          "block_size": 250,
+          "replications_completed": 100,
+          "replications_attempted": 100,
+          "fit_failure_rate_pct": 0.0,
+          "wls_gamma_bootstrap_mean": -0.0734733809832289,
+          "wls_gamma_bootstrap_se": 0.00758428702706134,
+          "wls_gamma_ci_95": [
+            -0.0877424362099934,
+            -0.059449280681731255
+          ],
+          "ols_gamma_bootstrap_mean": -0.031770064557285815,
+          "ols_gamma_bootstrap_se": 0.015489616549852396,
+          "ols_gamma_ci_95": [
+            -0.061944927667305104,
+            -0.007754895570117514
+          ],
+          "ci_contains_half": false,
+          "ci_contains_zero": false
+        },
+        "block_500": {
+          "block_size": 500,
+          "replications_completed": 100,
+          "replications_attempted": 100,
+          "fit_failure_rate_pct": 0.0,
+          "wls_gamma_bootstrap_mean": -0.0754160170751011,
+          "wls_gamma_bootstrap_se": 0.009329905803667096,
+          "wls_gamma_ci_95": [
+            -0.09485220178086562,
+            -0.05831951146626997
+          ],
+          "ols_gamma_bootstrap_mean": -0.03472966136092896,
+          "ols_gamma_bootstrap_se": 0.0180121419676104,
+          "ols_gamma_ci_95": [
+            -0.07144158556114556,
+            -0.0016760665271098314
+          ],
+          "ci_contains_half": false,
+          "ci_contains_zero": false
+        }
+      }
     },
     "rejects_square_root_half": true,
     "ci_contains_zero": true,
     "hypothesis_test_sqrt_law": {
-      "status": "EXPLORATORY_RESEARCH",
+      "status": "ESTIMATED",
       "null_hypothesis": "H0: gamma = 0.5 (Square-Root Law for Child Trades)",
       "gamma_estimate": -0.030475110722505194,
       "gamma_estimate_wls": -0.07385671841890035,
@@ -348,6 +628,7 @@
       "p_value_wls": 0.0,
       "is_rejected_at_5pct": true,
       "ols_test": {
+        "status": "ESTIMATED",
         "estimator": "Tier-Binned OLS (Unweighted)",
         "gamma": -0.030475110722505194,
         "se": 0.04518717018516709,
@@ -361,6 +642,7 @@
         "is_rejected_at_5pct": true
       },
       "wls_test": {
+        "status": "ESTIMATED",
         "estimator": "Weighted Least Squares (Tier Sample Weights)",
         "gamma": -0.07385671841890035,
         "se": 0.041769152225122286,
@@ -373,11 +655,12 @@
         "p_value": 0.0,
         "is_rejected_at_5pct": true
       },
-      "interpretation": "Exploratory single child-order estimation: WLS power-law exponent gamma = -0.0739 (Classical WLS SE: 0.0418, 95% WLS CI: [-0.1557, 0.0080], t = -13.74, encompasses zero) and binned OLS exponent gamma = -0.0305 (Classical OLS SE: 0.0452, 95% OLS CI: [-0.1190, 0.0581], t = -11.74, encompasses zero) reject 0.5 (p < 0.001). Child-order models exhibit low in-sample and out-of-sample explanatory power (R\u00b2 < 0.02), with stratified power-law estimates varying across dates and weighting specifications. Note: WLS standard errors are classical weighted SEs unadjusted for cross-tier residual autocorrelation. This finding strictly characterizes individual child-order conditional price response R(v, k). It does NOT constitute an empirical refutation of the classical Square-Root Law of Meta-Orders (which governs cumulative parent-order execution over hours or days), nor does it directly prove specific unobserved microstructure mechanisms (such as book replenishment or adverse selection ratios)."
+      "interpretation": "Exploratory single child-order estimation: WLS power-law exponent gamma = -0.0739 (Classical WLS SE: 0.0418, 95% WLS CI: [-0.1557, 0.0080], encompasses zero) rejects the square-root null hypothesis H0: gamma = 0.5 (t = -13.74, p = 0.0000e+00); and binned OLS exponent gamma = -0.0305 (Classical OLS SE: 0.0452, 95% OLS CI: [-0.1190, 0.0581], encompasses zero) rejects H0: gamma = 0.5 (t = -11.74, p = 0.0000e+00). Child-order models exhibit low in-sample and out-of-sample explanatory power (R\u00b2 < 0.02), with stratified power-law estimates varying across dates and weighting specifications. Note: WLS standard errors are classical weighted SEs unadjusted for cross-tier residual autocorrelation. This finding strictly characterizes individual child-order conditional price response R(v, k). It does NOT constitute an empirical refutation of the classical Square-Root Law of Meta-Orders (which governs cumulative parent-order execution over hours or days), nor does it directly prove specific unobserved microstructure mechanisms (such as book replenishment or adverse selection ratios)."
     }
   },
   "power_law_wls": {
     "name": "Weighted Least Squares (weighted by tier sample count)",
+    "status": "ESTIMATED",
     "estimator": "Classical WLS (weights = tier count)",
     "se_type": "Classical WLS SE (unadjusted for cross-tier residual autocorrelation)",
     "gamma_wls": -0.07385671841890035,
@@ -388,6 +671,7 @@
   },
   "trade_level_fit": {
     "name": "Trade-Level Log-Log HAC (Positive Response Sub-Sample: R > 0)",
+    "status": "ESTIMATED",
     "estimator": "OLS with Newey-West HAC covariance",
     "sample_type": "POSITIVE_RESPONSE_SUBSAMPLE",
     "conditioning": "Strictly conditional on positive signed price displacement (R_i > 0)",
@@ -402,18 +686,150 @@
     "positive_trades_pct": 71.7681414513161
   },
   "out_of_sample_validation": {
-    "description": "50% chronological split of analyzed window",
+    "description": "50% chronological split with purged transition buffer",
+    "model_specification": "Logarithmic Specification (Full-Sample) with Power-Law Comparison",
+    "evaluation_scope": "FULL_SAMPLE_WITH_ZERO_AND_NEGATIVE_RETURNS",
+    "purging_applied": true,
+    "purged_boundary_trades": 20,
+    "purging_rationale": "Purged 20 boundary trades to eliminate lookahead return leakage across horizon k=20",
     "train_start_utc": "2026-07-01T05:49:54.563429Z",
-    "train_end_utc": "2026-07-01T06:40:15.810324Z",
+    "train_end_utc": "2026-07-01T06:40:14.881053Z",
     "test_start_utc": "2026-07-01T06:40:15.810324Z",
     "test_end_utc": "2026-07-01T07:48:27.491649Z",
-    "train_observations": 124990,
+    "train_observations": 124970,
     "test_observations": 124990,
-    "train_window": "2026-07-01T05:49:54.563429Z - 2026-07-01T06:40:15.810324Z",
+    "train_window": "2026-07-01T05:49:54.563429Z - 2026-07-01T06:40:14.881053Z",
     "test_window": "2026-07-01T06:40:15.810324Z - 2026-07-01T07:48:27.491649Z",
-    "train_r2": 0.0034244718766999194,
-    "test_r2": 0.003096107806499604,
-    "log_model_oos_r2": 0.003096107806499604
+    "train_r2": 0.0034253998838060795,
+    "test_r2": 0.003082935029953493,
+    "log_model_oos_r2": 0.003082935029953493,
+    "power_law_oos_r2": -0.037634626829450735,
+    "is_power_law_oos": false,
+    "note": "Evaluates the logarithmic model on the full sample. Conditioning on positive returns for power-law models is reported separately."
+  },
+  "walk_forward_validation": {
+    "folds_count": 3,
+    "folds": [
+      {
+        "fold": 1,
+        "train_observations": 99972,
+        "test_observations": 74994,
+        "purged_observations": 20,
+        "log_oos_r2": -0.0012411584124483177,
+        "power_oos_r2": -0.06140510987422654
+      },
+      {
+        "fold": 2,
+        "train_observations": 149968,
+        "test_observations": 62495,
+        "purged_observations": 20,
+        "log_oos_r2": 0.0008346846887637982,
+        "power_oos_r2": -0.03500775922761523
+      },
+      {
+        "fold": 3,
+        "train_observations": 187465,
+        "test_observations": 62495,
+        "purged_observations": 20,
+        "log_oos_r2": 0.005678890737003228,
+        "power_oos_r2": -0.03904491279999878
+      }
+    ],
+    "mean_log_oos_r2": 0.001757472337772903,
+    "mean_power_oos_r2": -0.045152593967280184,
+    "purged_trades_per_boundary": 20
+  },
+  "moving_block_bootstrap": {
+    "status": "SUCCESS",
+    "methodology": "Moving Block Bootstrap with economic tier re-stratification",
+    "block_sizes_evaluated": [
+      100,
+      250,
+      500
+    ],
+    "primary_block_size": 250,
+    "primary_result": {
+      "block_size": 250,
+      "replications_completed": 100,
+      "replications_attempted": 100,
+      "fit_failure_rate_pct": 0.0,
+      "wls_gamma_bootstrap_mean": -0.0734733809832289,
+      "wls_gamma_bootstrap_se": 0.00758428702706134,
+      "wls_gamma_ci_95": [
+        -0.0877424362099934,
+        -0.059449280681731255
+      ],
+      "ols_gamma_bootstrap_mean": -0.031770064557285815,
+      "ols_gamma_bootstrap_se": 0.015489616549852396,
+      "ols_gamma_ci_95": [
+        -0.061944927667305104,
+        -0.007754895570117514
+      ],
+      "ci_contains_half": false,
+      "ci_contains_zero": false
+    },
+    "results_by_block_size": {
+      "block_100": {
+        "block_size": 100,
+        "replications_completed": 100,
+        "replications_attempted": 100,
+        "fit_failure_rate_pct": 0.0,
+        "wls_gamma_bootstrap_mean": -0.07525823985705922,
+        "wls_gamma_bootstrap_se": 0.006770972707636105,
+        "wls_gamma_ci_95": [
+          -0.08664168366015852,
+          -0.060914915277934654
+        ],
+        "ols_gamma_bootstrap_mean": -0.033974190228196546,
+        "ols_gamma_bootstrap_se": 0.015986924962536567,
+        "ols_gamma_ci_95": [
+          -0.07057861445384651,
+          -0.009127165507256035
+        ],
+        "ci_contains_half": false,
+        "ci_contains_zero": false
+      },
+      "block_250": {
+        "block_size": 250,
+        "replications_completed": 100,
+        "replications_attempted": 100,
+        "fit_failure_rate_pct": 0.0,
+        "wls_gamma_bootstrap_mean": -0.0734733809832289,
+        "wls_gamma_bootstrap_se": 0.00758428702706134,
+        "wls_gamma_ci_95": [
+          -0.0877424362099934,
+          -0.059449280681731255
+        ],
+        "ols_gamma_bootstrap_mean": -0.031770064557285815,
+        "ols_gamma_bootstrap_se": 0.015489616549852396,
+        "ols_gamma_ci_95": [
+          -0.061944927667305104,
+          -0.007754895570117514
+        ],
+        "ci_contains_half": false,
+        "ci_contains_zero": false
+      },
+      "block_500": {
+        "block_size": 500,
+        "replications_completed": 100,
+        "replications_attempted": 100,
+        "fit_failure_rate_pct": 0.0,
+        "wls_gamma_bootstrap_mean": -0.0754160170751011,
+        "wls_gamma_bootstrap_se": 0.009329905803667096,
+        "wls_gamma_ci_95": [
+          -0.09485220178086562,
+          -0.05831951146626997
+        ],
+        "ols_gamma_bootstrap_mean": -0.03472966136092896,
+        "ols_gamma_bootstrap_se": 0.0180121419676104,
+        "ols_gamma_ci_95": [
+          -0.07144158556114556,
+          -0.0016760665271098314
+        ],
+        "ci_contains_half": false,
+        "ci_contains_zero": false
+      }
+    }
   },
   "time_chunk_stability": [
     {
@@ -464,5 +880,21 @@
       "power_gamma": -0.10990830151070302,
       "power_gamma_se": 0.05105301487340112
     }
-  ]
+  ],
+  "artifact_metadata": {
+    "schema_version": "1.1.2",
+    "build_commit": "49b64ef",
+    "generation_timestamp_utc": "2026-10-21T08:48:40.565797+00:00",
+    "dataset_source": "NORMALIZED_PARQUET",
+    "dataset_file": "normalized/exchange=binance/market=spot/symbol=BTCUSDT/date=2026-07-01/trades.parquet",
+    "dataset_sha256": "3f5afa0760d52a6eb54b670e685c83e21414d7b4c43a2ad11346ba1b0db21ce1",
+    "dataset_row_count": 4166849,
+    "evaluation_protocol": "PURGED_WALK_FORWARD_EXPANDING_WINDOW",
+    "purged_boundary_trades": 20,
+    "models_compared": [
+      "Logarithmic (Full Sample)",
+      "Power-Law (WLS Stratified)",
+      "Power-Law (Trade-Level R>0)"
+    ]
+  }
 }

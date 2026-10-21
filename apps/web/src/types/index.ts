@@ -199,6 +199,11 @@ export interface ModelFitStats {
   };
   out_of_sample_validation?: {
     description?: string;
+    model_specification?: string;
+    evaluation_scope?: string;
+    purging_applied?: boolean;
+    purged_boundary_trades?: number;
+    purging_rationale?: string;
     train_start_utc?: string;
     train_end_utc?: string;
     test_start_utc?: string;
@@ -210,7 +215,11 @@ export interface ModelFitStats {
     train_window: string;
     test_window: string;
     log_model_oos_r2: number;
+    power_law_oos_r2?: number | null;
+    is_power_law_oos?: boolean;
+    note?: string;
   };
+  walk_forward_validation?: WalkForwardValidation;
   hypothesis_test_sqrt_law?: {
     status?: string;
     null_hypothesis: string;
@@ -310,6 +319,36 @@ export interface HawkesData {
   statistical_interpretation: string;
 }
 
+export interface WalkForwardFold {
+  fold: number;
+  train_observations: number;
+  test_observations: number;
+  purged_observations: number;
+  log_oos_r2: number;
+  power_oos_r2?: number | null;
+}
+
+export interface WalkForwardValidation {
+  folds_count: number;
+  folds: WalkForwardFold[];
+  mean_log_oos_r2: number;
+  mean_power_oos_r2?: number | null;
+  purged_trades_per_boundary: number;
+}
+
+export interface ArtifactMetadata {
+  schema_version: string;
+  build_commit: string;
+  generation_timestamp_utc: string;
+  dataset_source: string;
+  dataset_file: string;
+  dataset_sha256: string;
+  dataset_row_count: number;
+  evaluation_protocol: string;
+  purged_boundary_trades: number;
+  models_compared: string[];
+}
+
 export interface ImpactModelsData {
   horizon_events: number;
   observations: number;
@@ -329,6 +368,9 @@ export interface ImpactModelsData {
   linear_model: ModelFitStats;
   logarithmic_model: ModelFitStats;
   power_law_model: ModelFitStats;
+  out_of_sample_validation?: ModelFitStats['out_of_sample_validation'];
+  walk_forward_validation?: WalkForwardValidation;
+  artifact_metadata?: ArtifactMetadata;
   time_chunk_stability?: Array<{
     chunk_index: number;
     label?: string;

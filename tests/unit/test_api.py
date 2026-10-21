@@ -139,18 +139,18 @@ def test_unsupported_symbol_returns_422_no_crosstalk():
     assert "request_id" in data["error"]
 
 
-def test_missing_date_returns_404_dataset_not_found():
-    """Requesting an unavailable date (e.g. 2026-07-99) must return HTTP 404 with DATASET_NOT_FOUND."""
+def test_missing_date_returns_404_resource_not_found():
+    """Requesting an unavailable date (e.g. 2026-07-99) must return HTTP 404 with RESOURCE_NOT_FOUND."""
     resp = client.get("/api/v1/flow/buckets?symbol=BTCUSDT&date=2026-07-99")
     assert resp.status_code == 404
     data = resp.json()
     assert "error" in data
-    assert data["error"]["code"] == "DATASET_NOT_FOUND"
+    assert data["error"]["code"] == "RESOURCE_NOT_FOUND"
     assert "request_id" in data["error"]
 
 
 def test_production_fail_close_blocks_fixtures(monkeypatch, tmp_path):
-    """When MML_ENV=production, missing normalized datasets must fail-close (404) and never fallback to fixtures."""
+    """When MML_ENV=production, missing normalized datasets must fail-close with 503 DATASET_NOT_CONFIGURED and never fallback to fixtures."""
     import apps.api.main as api_main
     empty_dir = tmp_path / "empty_normalized"
     empty_dir.mkdir()
@@ -158,11 +158,28 @@ def test_production_fail_close_blocks_fixtures(monkeypatch, tmp_path):
     monkeypatch.setenv("MML_ENV", "production")
 
     resp = client.get("/api/v1/flow/buckets?symbol=BTCUSDT&date=2026-07-01")
-    assert resp.status_code == 404
+    assert resp.status_code == 503
     data = resp.json()
     assert "error" in data
-    assert data["error"]["code"] == "DATASET_NOT_FOUND"
+    assert data["error"]["code"] == "DATASET_NOT_CONFIGURED"
     assert data["error"]["details"].get("mode") == "PRODUCTION_FAIL_CLOSE"
+
+
+def test_fixture_load_failed_when_fixture_missing_on_disk(monkeypatch, tmp_path):
+    """When a fixture is registered in manifest but missing on disk, it raises 500 FIXTURE_LOAD_FAILED, not disguised as 404."""
+    import apps.api.main as api_main
+    empty_dir = tmp_path / "empty_normalized"
+    empty_dir.mkdir()
+    empty_fixtures = tmp_path / "empty_fixtures"
+    empty_fixtures.mkdir()
+    monkeypatch.setattr(api_main, "NORMALIZED_DIR", empty_dir)
+    monkeypatch.setattr(api_main.manifest_mgr, "fixtures_dir", empty_fixtures)
+
+    resp = client.get("/api/v1/flow/buckets?symbol=BTCUSDT&date=2026-07-01")
+    assert resp.status_code == 500
+    data = resp.json()
+    assert "error" in data
+    assert data["error"]["code"] == "FIXTURE_LOAD_FAILED"
 
 
 def test_content_identity_mismatch_raises_500():

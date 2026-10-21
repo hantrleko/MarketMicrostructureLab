@@ -74,13 +74,14 @@ class DataManifestManager:
         self.load_or_rebuild()
 
     def get_entry_path(self, entry: ManifestEntry) -> Path:
-        """Resolves the physical Path of a manifest entry, respecting configured dirs."""
-        rel_parts = Path(entry.file_path).parts
-        if rel_parts and rel_parts[0] == "normalized":
-            return self.normalized_dir / Path(*rel_parts[1:])
-        elif rel_parts and rel_parts[0] == "fixtures":
-            return self.fixtures_dir / Path(*rel_parts[1:])
-        return self.data_dir / entry.file_path
+        """Resolves the physical Path of a manifest entry, respecting configured dirs and cross-platform slashes."""
+        norm_path = entry.file_path.replace("\\", "/").strip("/")
+        parts = norm_path.split("/")
+        if parts and parts[0] == "normalized":
+            return self.normalized_dir / Path(*parts[1:])
+        elif parts and parts[0] == "fixtures":
+            return self.fixtures_dir / Path(*parts[1:])
+        return self.data_dir / Path(*parts)
 
     @staticmethod
     def compute_sha256(file_path: Path) -> str:
@@ -131,7 +132,7 @@ class DataManifestManager:
                                 symbol=symbol,
                                 date=date_str,
                                 source_type="NORMALIZED_PARQUET",
-                                file_path=str(parquet_file.relative_to(self.data_dir)),
+                                file_path=parquet_file.relative_to(self.data_dir).as_posix(),
                                 row_count=n_rows,
                                 sha256=sha,
                                 min_event_time_utc=min_utc,
@@ -164,7 +165,7 @@ class DataManifestManager:
                             symbol=content_symbol,
                             date=date_str,
                             source_type="RESEARCH_FIXTURE",
-                            file_path=str(fix_file.relative_to(self.data_dir)),
+                            file_path=fix_file.relative_to(self.data_dir).as_posix(),
                             row_count=n_rows,
                             sha256=sha,
                             min_event_time_utc=min_utc,
@@ -202,10 +203,11 @@ class DataManifestManager:
     ) -> ManifestEntry:
         """
         Resolves the exact dataset manifest entry for (symbol, date).
-        Enforces:
-        - 422 if symbol is not supported.
-        - 404 if date is not available.
-        - Fail-close if in production and production normalized partition is absent.
+        Enforces strict fail-closed and differentiated error typing:
+        - 422 UNSUPPORTED_SYMBOL if symbol is not supported.
+        - 503 DATASET_NOT_CONFIGURED if production partition is registered but not mounted on disk.
+        - 404 RESOURCE_NOT_FOUND if requested date does not exist in dataset catalog.
+        - 500 FIXTURE_LOAD_FAILED if a test/research fixture is registered in manifest but missing on disk.
         """
         sym = symbol.strip().upper()
         if sym not in self.SUPPORTED_SYMBOLS:
@@ -222,13 +224,20 @@ class DataManifestManager:
             full_path = self.get_entry_path(entry)
             if full_path.exists():
                 return entry
+            elif is_production or not allow_fixtures:
+                raise APIError(
+                    status_code=503,
+                    code="DATASET_NOT_CONFIGURED",
+                    message=f"Production dataset for {sym} on date {date_str} is registered in manifest but not provisioned on disk at '{entry.file_path}'. Production fail-close active.",
+                    details={"requested_symbol": sym, "requested_date": date_str, "file_path": entry.file_path, "mode": "PRODUCTION_FAIL_CLOSE"}
+                )
 
         # If production mode: strictly fail-close (no fallback to fixtures)
         if is_production or not allow_fixtures:
             raise APIError(
                 status_code=404,
-                code="DATASET_NOT_FOUND",
-                message=f"Production dataset for {sym} on date {date_str} not found in normalized layer. Production fail-close active.",
+                code="RESOURCE_NOT_FOUND",
+                message=f"Production dataset for {sym} on date {date_str} not found in catalog. Production fail-close active.",
                 details={"requested_symbol": sym, "requested_date": date_str, "mode": "PRODUCTION_FAIL_CLOSE"}
             )
 
@@ -239,11 +248,19 @@ class DataManifestManager:
             full_path = self.get_entry_path(entry)
             if full_path.exists():
                 return entry
+            else:
+                # Test fixture is declared in manifest but physically missing on disk!
+                raise APIError(
+                    status_code=500,
+                    code="FIXTURE_LOAD_FAILED",
+                    message=f"Test fixture for {sym} on date {date_str} registered in manifest at '{entry.file_path}' failed to load from disk.",
+                    details={"requested_symbol": sym, "requested_date": date_str, "file_path": entry.file_path, "resolved_path": str(full_path)}
+                )
 
         raise APIError(
             status_code=404,
-            code="DATASET_NOT_FOUND",
-            message=f"Dataset for {sym} on date {date_str} not found in normalized or fixture layer. Cross-symbol and cross-date fallback is strictly prohibited.",
+            code="RESOURCE_NOT_FOUND",
+            message=f"Dataset for {sym} on date {date_str} not found in normalized catalog or test fixtures. Cross-symbol and cross-date fallback is strictly prohibited.",
             details={"requested_symbol": sym, "requested_date": date_str}
         )
 
@@ -266,13 +283,37 @@ class DataManifestManager:
         )
         file_path = self.get_entry_path(entry)
         if not file_path.exists():
-            raise APIError(
-                status_code=404,
-                code="DATASET_NOT_FOUND",
-                message=f"File registered in manifest at '{file_path}' does not exist on disk.",
-                details={"symbol": symbol, "date": date_str, "file_path": str(file_path)}
-            )
-        df = pl.read_parquet(file_path)
+            if entry.is_fixture:
+                raise APIError(
+                    status_code=500,
+                    code="FIXTURE_LOAD_FAILED",
+                    message=f"Test fixture for {symbol} on date {date_str} at '{file_path}' does not exist on disk.",
+                    details={"symbol": symbol, "date": date_str, "file_path": str(file_path)}
+                )
+            else:
+                raise APIError(
+                    status_code=503,
+                    code="DATASET_NOT_CONFIGURED",
+                    message=f"Production dataset for {symbol} on date {date_str} at '{file_path}' does not exist on disk.",
+                    details={"symbol": symbol, "date": date_str, "file_path": str(file_path)}
+                )
+        try:
+            df = pl.read_parquet(file_path)
+        except Exception as e:
+            if entry.is_fixture:
+                raise APIError(
+                    status_code=500,
+                    code="FIXTURE_LOAD_FAILED",
+                    message=f"Corrupted or unreadable fixture parquet at '{file_path}': {e}",
+                    details={"symbol": symbol, "date": date_str, "error": str(e)}
+                )
+            else:
+                raise APIError(
+                    status_code=500,
+                    code="DATASET_CORRUPTED",
+                    message=f"Corrupted or unreadable production parquet at '{file_path}': {e}",
+                    details={"symbol": symbol, "date": date_str, "error": str(e)}
+                )
         self.validate_content_identity(df, symbol, date_str, entry)
         return df, entry
 

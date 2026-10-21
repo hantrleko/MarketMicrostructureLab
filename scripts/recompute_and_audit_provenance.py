@@ -1,17 +1,30 @@
 """
 End-to-End Data Provenance and Recomputation Verification Pipeline (Requirement M6).
 Audits the complete pipeline chain:
-  Raw Binance Vision Zip Archives -> Normalized Parquet Partitions -> 18 Static Model JSONs & Manifest
+  Stage 1: Raw Binance Vision Zip Archives Checksums
+  Stage 2: Normalized Parquet Partitions Schema & Hash Verification
+  Stage 3: 18 Static Model JSONs & Manifest Contract Verification
+  Stage 4: Live End-to-End Recomputation Benchmark & Parameter Parity Verification (< 1e-6)
 """
 
 import sys
 import json
 import hashlib
+import argparse
 from pathlib import Path
 import pyarrow.parquet as pq
+import polars as pl
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
+
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
+from packages.impact_models.nonlinear_impact import NonlinearImpactModel
 
 RAW_DIR = ROOT / "data" / "raw"
 NORMALIZED_DIR = ROOT / "data" / "normalized" / "exchange=binance" / "market=spot" / "symbol=BTCUSDT"
@@ -30,7 +43,7 @@ def compute_sha256(filepath: Path) -> str:
     return hasher.hexdigest()
 
 
-def audit_raw_archives():
+def audit_raw_archives() -> bool:
     print("\n" + "=" * 80)
     print("STAGE 1: AUDITING RAW ARCHIVE INTEGRITY & OFFICIAL CHECKSUMS")
     print("=" * 80)
@@ -62,7 +75,7 @@ def audit_raw_archives():
     return stage1_passed
 
 
-def audit_normalized_parquets():
+def audit_normalized_parquets() -> bool:
     print("\n" + "=" * 80)
     print("STAGE 2: AUDITING NORMALIZED PARQUET DATASETS & MANIFEST")
     print("=" * 80)
@@ -122,7 +135,7 @@ def audit_normalized_parquets():
     return stage2_passed
 
 
-def audit_model_json_artifacts():
+def audit_model_json_artifacts() -> bool:
     print("\n" + "=" * 80)
     print("STAGE 3: AUDITING 18 STATIC MODEL JSON FIXTURES & PROVENANCE MANIFEST")
     print("=" * 80)
@@ -198,27 +211,158 @@ def audit_model_json_artifacts():
     return stage3_passed
 
 
-def main():
+def audit_live_recomputation(date_str: str = "2026-07-01", horizon: int = 20) -> bool:
+    print("\n" + "=" * 80)
+    print(f"STAGE 4: LIVE END-TO-END RECOMPUTATION BENCHMARK (date={date_str}, k={horizon})")
     print("=" * 80)
-    print("MARKET MICROSTRUCTURE LAB: END-TO-END DATA PROVENANCE AUDIT")
+    parquet_path = NORMALIZED_DIR / f"date={date_str}" / "trades.parquet"
+    if not parquet_path.exists():
+        print(f"[FAIL] Normalized Parquet missing for recomputation: {parquet_path}")
+        return False
+
+    static_path = WEB_DATA_DIR / f"models_{date_str}_k{horizon}.json"
+    if not static_path.exists():
+        print(f"[FAIL] Static model JSON fixture missing: {static_path}")
+        return False
+
+    print(f"[*] Loading normalized Parquet from: {parquet_path}...")
+    df = pl.read_parquet(parquet_path)
+    print(f"[*] Loaded {len(df):,} trades. Fitting nonlinear impact models live...")
+
+    model = NonlinearImpactModel()
+    live_res = model.fit_impact_models(df, horizon_lag=horizon, sample_size=250_000)
+
+    static_res = json.loads(static_path.read_text(encoding="utf-8"))
+
+    # Compare key estimated parameters with tolerance 1e-6
+    checks = []
+
+    # 1. Linear Beta & R^2
+    checks.append(("Linear Beta", live_res.get("linear_model", {}).get("beta"), static_res.get("linear_model", {}).get("beta")))
+    checks.append(("Linear R^2", live_res.get("linear_model", {}).get("r_squared"), static_res.get("linear_model", {}).get("r_squared")))
+
+    # 2. Logarithmic Beta & R^2
+    checks.append(("Logarithmic Beta", live_res.get("logarithmic_model", {}).get("beta"), static_res.get("logarithmic_model", {}).get("beta")))
+    checks.append(("Logarithmic R^2", live_res.get("logarithmic_model", {}).get("r_squared"), static_res.get("logarithmic_model", {}).get("r_squared")))
+
+    # 3. Power Law OLS Gamma
+    checks.append(("Power-Law OLS Gamma", live_res.get("power_law_model", {}).get("gamma"), static_res.get("power_law_model", {}).get("gamma")))
+
+    # 4. Power Law WLS Gamma & R^2
+    live_wls = live_res.get("power_law_model", {}).get("wls_fit", {})
+    stat_wls = static_res.get("power_law_model", {}).get("wls_fit", {})
+    checks.append(("Power-Law WLS Gamma", live_wls.get("gamma_wls"), stat_wls.get("gamma_wls")))
+    checks.append(("Power-Law WLS R^2", live_wls.get("r_squared_wls"), stat_wls.get("r_squared_wls")))
+
+    # 5. Trade-Level Fit Parameters & HAC Test Statistics
+    live_tr = live_res.get("power_law_model", {}).get("trade_level_fit", {})
+    stat_tr = static_res.get("power_law_model", {}).get("trade_level_fit", {})
+    checks.append(("Trade-Level Gamma", live_tr.get("gamma_trade"), stat_tr.get("gamma_trade")))
+    checks.append(("Trade-Level HAC SE", live_tr.get("gamma_trade_se"), stat_tr.get("gamma_trade_se")))
+    checks.append(("Trade-Level t-stat", live_tr.get("t_statistic_trade"), stat_tr.get("t_statistic_trade")))
+    checks.append(("Trade-Level p-value", live_tr.get("p_value_trade"), stat_tr.get("p_value_trade")))
+
+    all_matched = True
+    print(f"\n{'Parameter Metric':<24} | {'Live Recomputed':<16} | {'Static Fixture':<16} | {'Delta':<12} | Status")
+    print("-" * 80)
+    for name, live_val, stat_val in checks:
+        if live_val is None and stat_val is None:
+            print(f"{name:<24} | {'None':<16} | {'None':<16} | {'0.0':<12} | [MATCH]")
+            continue
+        if live_val is None or stat_val is None:
+            print(f"{name:<24} | {str(live_val):<16} | {str(stat_val):<16} | {'N/A':<12} | [MISMATCH]")
+            all_matched = False
+            continue
+
+        delta = abs(float(live_val) - float(stat_val))
+        status = "[MATCH]" if delta < 1e-6 else "[MISMATCH]"
+        if delta >= 1e-6:
+            all_matched = False
+        print(f"{name:<24} | {live_val:<16.8f} | {stat_val:<16.8f} | {delta:<12.2e} | {status}")
+
+    if all_matched:
+        print("\n[PASS] Live recomputation perfectly matches published static artifact within numerical tolerance (< 1e-6)!")
+    else:
+        print("\n[FAIL] Discrepancy observed between live recomputed values and published static artifacts.")
+
+    return all_matched
+
+
+def main():
+    parser = argparse.ArgumentParser(description="End-to-End Data Provenance and Recomputation Verification Pipeline")
+    parser.add_argument(
+        "--mode",
+        choices=["full", "manifest"],
+        default="full",
+        help="Audit mode: 'full' runs all 4 stages (including live recomputation benchmark); 'manifest' audits static fixtures & contract without heavy recomputation or external datasets."
+    )
+    parser.add_argument("--date", default="2026-07-01", help="Date for live recomputation benchmark (default: 2026-07-01)")
+    parser.add_argument("--horizon", type=int, default=20, help="Horizon k for live recomputation benchmark (default: 20)")
+    args = parser.parse_args()
+
+    print("=" * 80)
+    print(f"MARKET MICROSTRUCTURE LAB: DATA PROVENANCE AUDIT (MODE: {args.mode.upper()})")
     print("=" * 80)
 
-    p1 = audit_raw_archives()
-    p2 = audit_normalized_parquets()
+    p1 = False
+    p2 = False
+    p3 = False
+    p4 = False
+
+    if args.mode == "manifest":
+        print("[*] Running in Manifest Integrity Mode. Auditing static JSON fixtures and manifest...")
+        p3 = audit_model_json_artifacts()
+        print("\n" + "=" * 80)
+        print("PIPELINE AUDIT SUMMARY (MANIFEST MODE)")
+        print("=" * 80)
+        print(f"Stage 3 (18 Model JSONs & Contract 1.3.0):     {'PASSED' if p3 else 'FAILED'}")
+        if p3:
+            print("\n[SUCCESS] Manifest and artifact integrity certified!")
+            sys.exit(0)
+        else:
+            print("\n[ERROR] Manifest or artifact verification failed.")
+            sys.exit(1)
+
+    # Full Mode
+    has_raw = all((RAW_DIR / f"BTCUSDT-trades-{d}.zip").exists() for d in DATES)
+    has_norm = all((NORMALIZED_DIR / f"date={d}" / "trades.parquet").exists() for d in DATES)
+
+    if has_raw:
+        p1 = audit_raw_archives()
+    else:
+        print("\n[INFO] Stage 1 skipped: Raw Binance zip archives not in checkout.")
+        p1 = None
+
+    if has_norm:
+        p2 = audit_normalized_parquets()
+    else:
+        print("\n[INFO] Stage 2 skipped: Normalized Parquet datasets not in checkout.")
+        p2 = None
+
     p3 = audit_model_json_artifacts()
 
-    print("\n" + "=" * 80)
-    print("PIPELINE AUDIT SUMMARY")
-    print("=" * 80)
-    print(f"Stage 1 (Raw Archive Integrity & Checksums):   {'PASSED' if p1 else 'FAILED'}")
-    print(f"Stage 2 (Normalized Parquet Schema & Hashes):  {'PASSED' if p2 else 'FAILED'}")
-    print(f"Stage 3 (18 Model JSONs & Contract 1.3.0):     {'PASSED' if p3 else 'FAILED'}")
+    target_parquet = NORMALIZED_DIR / f"date={args.date}" / "trades.parquet"
+    if target_parquet.exists():
+        p4 = audit_live_recomputation(date_str=args.date, horizon=args.horizon)
+    else:
+        print(f"\n[INFO] Stage 4 skipped: Normalized Parquet for {args.date} not in checkout.")
+        p4 = None
 
-    if p1 and p2 and p3:
-        print("\n[SUCCESS] End-to-end data provenance certified across all stages!")
+    print("\n" + "=" * 80)
+    print("PIPELINE AUDIT SUMMARY (FULL MODE)")
+    print("=" * 80)
+    print(f"Stage 1 (Raw Archive Integrity & Checksums):   {('PASSED' if p1 else 'FAILED') if p1 is not None else 'SKIPPED (Clean checkout)'}")
+    print(f"Stage 2 (Normalized Parquet Schema & Hashes):  {('PASSED' if p2 else 'FAILED') if p2 is not None else 'SKIPPED (Clean checkout)'}")
+    print(f"Stage 3 (18 Model JSONs & Contract 1.3.0):     {'PASSED' if p3 else 'FAILED'}")
+    print(f"Stage 4 (Live Recomputation Benchmark <1e-6):  {('PASSED' if p4 else 'FAILED') if p4 is not None else 'SKIPPED (Clean checkout)'}")
+
+    # Determine exit code
+    critical_stages = [s for s in [p1, p2, p3, p4] if s is not None]
+    if all(critical_stages) and p3:
+        print("\n[SUCCESS] All available pipeline verification stages passed successfully!")
         sys.exit(0)
     else:
-        print("\n[ERROR] One or more audit stages failed.")
+        print("\n[ERROR] One or more active audit stages failed.")
         sys.exit(1)
 
 

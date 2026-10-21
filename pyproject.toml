@@ -34,4 +34,7 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 pythonpath = ["."]
 asyncio_mode = "auto"
+markers = [
+    "production_data: Tests that require local production datasets (raw ZIPs or full normalized Parquets)"
+]
 

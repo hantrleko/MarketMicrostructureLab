@@ -217,6 +217,11 @@ export interface ModelFitStats {
     gamma_trade: number;
     gamma_trade_se: number;
     r_squared_trade: number;
+    t_statistic_trade?: number | null;
+    p_value_trade?: number | null;
+    df_resid?: number | null;
+    confidence_interval_95?: [number, number] | null;
+    is_significant_5pct?: boolean;
     positive_trades_count?: number;
     zero_trades_count?: number;
     negative_trades_count?: number;

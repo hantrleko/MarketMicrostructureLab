@@ -8,6 +8,20 @@ interface MarketImpactResearchProps {
   date: string;
 }
 
+function normalCdf(x: number): number {
+  const t = 1.0 / (1.0 + 0.2316419 * Math.abs(x));
+  const d = 0.3989422804014327 * Math.exp(-x * x / 2.0);
+  const p = d * t * (0.319381530 + t * (-0.356563782 + t * (1.781477937 + t * (-1.821255978 + t * 1.330274429))));
+  return x >= 0 ? 1.0 - p : p;
+}
+
+function formatPValLabel(p: number | undefined | null): string {
+  if (p === undefined || p === null || !isFinite(p)) return '---';
+  if (p < 0.001) return 'p < 0.001 (Reject)';
+  if (p < 0.05) return `p = ${p.toFixed(4)} (Reject)`;
+  return `p = ${p.toFixed(3)} (Retain H0)`;
+}
+
 export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date }) => {
   const [horizon, setHorizon] = useState<number>(20);
   const [priceResp, setPriceResp] = useState<PriceResponseData | null>(null);
@@ -391,6 +405,8 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
               const wlsCiLower = wlsFit?.ci_95_lower !== undefined ? wlsFit.ci_95_lower : sqrtTest?.confidence_interval_95?.[0];
               const wlsCiUpper = wlsFit?.ci_95_upper !== undefined ? wlsFit.ci_95_upper : sqrtTest?.confidence_interval_95?.[1];
               const wlsT = sqrtTest?.t_statistic_wls !== undefined ? sqrtTest.t_statistic_wls : sqrtTest?.t_statistic;
+              const wlsP = sqrtTest?.p_value_wls !== undefined && sqrtTest?.p_value_wls !== null ? sqrtTest.p_value_wls : (wlsT !== undefined ? 2.0 * (1.0 - normalCdf(Math.abs(wlsT))) : undefined);
+              const olsP = sqrtTest?.p_value_ols !== undefined && sqrtTest?.p_value_ols !== null ? sqrtTest.p_value_ols : (olsT !== undefined ? 2.0 * (1.0 - normalCdf(Math.abs(olsT))) : undefined);
 
               const mbb = modelsData?.power_law_model?.moving_block_bootstrap?.primary_result;
 
@@ -446,7 +462,9 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
                           <div className="mono" style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--color-sell)' }}>
                             {wlsT !== undefined && wlsT !== null ? wlsT.toFixed(2) : '---'}
                           </div>
-                          <div style={{ fontSize: '0.62rem', color: 'var(--color-sell)' }}>{wlsT !== undefined ? 'p < 0.001 (Reject)' : '---'}</div>
+                          <div style={{ fontSize: '0.62rem', color: wlsP !== undefined && wlsP < 0.05 ? 'var(--color-sell)' : 'var(--color-buy)' }}>
+                            {wlsT !== undefined ? formatPValLabel(wlsP) : '---'}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -485,7 +503,9 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
                           <div className="mono" style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--color-sell)' }}>
                             {olsT !== undefined && olsT !== null ? olsT.toFixed(2) : '---'}
                           </div>
-                          <div style={{ fontSize: '0.62rem', color: 'var(--color-sell)' }}>{olsT !== undefined ? 'p < 0.001 (Reject)' : '---'}</div>
+                          <div style={{ fontSize: '0.62rem', color: olsP !== undefined && olsP < 0.05 ? 'var(--color-sell)' : 'var(--color-buy)' }}>
+                            {olsT !== undefined ? formatPValLabel(olsP) : '---'}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -531,11 +551,22 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
                   </div>
 
                   <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: '1.45' }}>
-                    <strong>Econometric Conclusion:</strong> {wlsT !== undefined && olsT !== undefined ? (
-                      <>Both tier-weighted WLS (t = {wlsT.toFixed(2)}) and unweighted tier OLS (t = {olsT.toFixed(2)}) reject H0: gamma = 0.5 (p &lt; 0.001) for horizon k={horizon}. </>
-                    ) : (
-                      <>Hypothesis testing computed for horizon k={horizon}. </>
-                    )}Child-order scaling parameters depend on the estimation date, specification, and temporal dependence structure ({ciSummary}). In-sample and out-of-sample explanatory power is low across specifications (R² &lt; 0.02). <em>Confidence interval containment of zero indicates that the current sample and specification do not detect a statistically distinguishable difference from zero; it does not prove the absence of an effect. Furthermore, single child-order conditional price response R(v, k) reflects transient liquidity hole depletion and does NOT refute the classical Square-Root Law of Meta-Orders (I(Q) ~ Y*sigma*sqrt(Q/V)), which is an empirical scaling relationship governing cumulative parent meta-orders algorithmically executed over hours or days.</em>
+                    <strong>Econometric Conclusion:</strong> {(() => {
+                      if (wlsT === undefined || olsT === undefined) return `Hypothesis testing computed for horizon k=${horizon}. `;
+                      const wlsRej = wlsP !== undefined ? wlsP < 0.05 : Math.abs(wlsT) > 1.96;
+                      const olsRej = olsP !== undefined ? olsP < 0.05 : Math.abs(olsT) > 1.96;
+                      const wlsPStr = wlsP !== undefined ? (wlsP < 0.001 ? 'p < 0.001' : `p = ${wlsP.toFixed(3)}`) : 'p=N/A';
+                      const olsPStr = olsP !== undefined ? (olsP < 0.001 ? 'p < 0.001' : `p = ${olsP.toFixed(3)}`) : 'p=N/A';
+                      if (wlsRej && olsRej) {
+                        return `Both tier-weighted WLS (t = ${wlsT.toFixed(2)}, ${wlsPStr}) and unweighted tier OLS (t = ${olsT.toFixed(2)}, ${olsPStr}) reject H0: gamma = 0.5 (p < 0.05) for horizon k=${horizon}. `;
+                      } else if (!wlsRej && !olsRej) {
+                        return `Neither tier-weighted WLS (t = ${wlsT.toFixed(2)}, ${wlsPStr}) nor unweighted tier OLS (t = ${olsT.toFixed(2)}, ${olsPStr}) rejects H0: gamma = 0.5 for horizon k=${horizon}. `;
+                      } else if (wlsRej && !olsRej) {
+                        return `Tier-weighted WLS rejects H0: gamma = 0.5 (t = ${wlsT.toFixed(2)}, ${wlsPStr}), whereas unweighted tier OLS fails to reject (t = ${olsT.toFixed(2)}, ${olsPStr}) for horizon k=${horizon}. `;
+                      } else {
+                        return `Unweighted tier OLS rejects H0: gamma = 0.5 (t = ${olsT.toFixed(2)}, ${olsPStr}), whereas tier-weighted WLS fails to reject (t = ${wlsT.toFixed(2)}, ${wlsPStr}) for horizon k=${horizon}. `;
+                      }
+                    })()}Child-order scaling parameters depend on the estimation date, specification, and temporal dependence structure ({ciSummary}). In-sample and out-of-sample explanatory power is low across specifications (R² &lt; 0.02). <em>Confidence interval containment of zero indicates that the current sample and specification do not detect a statistically distinguishable difference from zero; it does not prove the absence of an effect. Furthermore, single child-order conditional price response R(v, k) reflects transient liquidity hole depletion and does NOT refute the classical Square-Root Law of Meta-Orders (I(Q) ~ Y*sigma*sqrt(Q/V)), which is an empirical scaling relationship governing cumulative parent meta-orders algorithmically executed over hours or days.</em>
                   </div>
                 </>
               );
@@ -628,7 +659,8 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
                         const m = modelsData?.power_law_model;
                         if (m?.status === 'ESTIMATED' && m.gamma !== null && m.gamma !== undefined && m.gamma_se) {
                           const t = (m.gamma - 0.5) / m.gamma_se;
-                          return `t = ${t.toFixed(2)} vs 0.5 (p < 0.001)`;
+                          const p = sqrtTest?.p_value_ols !== undefined && sqrtTest?.p_value_ols !== null ? sqrtTest.p_value_ols : 2.0 * (1.0 - normalCdf(Math.abs(t)));
+                          return `t = ${t.toFixed(2)} vs 0.5 (${formatPValLabel(p)})`;
                         }
                         return '---';
                       })()}
@@ -653,9 +685,15 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
                           : '---'}
                       </td>
                       <td style={{ color: 'var(--color-gold)' }}>
-                        {modelsData.power_law_model.wls_fit.gamma_wls !== null && modelsData.power_law_model.wls_fit.gamma_wls_se
-                          ? `t = ${((modelsData.power_law_model.wls_fit.gamma_wls - 0.5) / modelsData.power_law_model.wls_fit.gamma_wls_se).toFixed(2)} vs 0.5 (p < 0.001)`
-                          : '---'}
+                        {(() => {
+                          const w = modelsData.power_law_model.wls_fit;
+                          if (w?.gamma_wls !== null && w?.gamma_wls !== undefined && w?.gamma_wls_se) {
+                            const t = (w.gamma_wls - 0.5) / w.gamma_wls_se;
+                            const p = sqrtTest?.p_value_wls !== undefined && sqrtTest?.p_value_wls !== null ? sqrtTest.p_value_wls : 2.0 * (1.0 - normalCdf(Math.abs(t)));
+                            return `t = ${t.toFixed(2)} vs 0.5 (${formatPValLabel(p)})`;
+                          }
+                          return '---';
+                        })()}
                       </td>
                       <td>
                         {modelsData.power_law_model.wls_fit.r_squared_wls !== null && modelsData.power_law_model.wls_fit.r_squared_wls !== undefined
@@ -674,7 +712,19 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
                         {modelsData.power_law_model.trade_level_fit.gamma_trade_se.toFixed(4)} (Newey-West HAC SE)
                       </td>
                       <td style={{ color: '#38bdf8' }}>
-                        t = {(modelsData.power_law_model.trade_level_fit.gamma_trade / modelsData.power_law_model.trade_level_fit.gamma_trade_se).toFixed(2)} vs 0 (p &lt; 0.001)
+                        {(() => {
+                          const tr = modelsData.power_law_model.trade_level_fit;
+                          if (tr?.gamma_trade !== null && tr?.gamma_trade !== undefined && tr?.gamma_trade_se) {
+                            const t = tr.t_statistic_trade !== undefined && tr.t_statistic_trade !== null
+                              ? tr.t_statistic_trade
+                              : tr.gamma_trade / tr.gamma_trade_se;
+                            const p = tr.p_value_trade !== undefined && tr.p_value_trade !== null
+                              ? tr.p_value_trade
+                              : 2.0 * (1.0 - normalCdf(Math.abs(t)));
+                            return `t = ${t.toFixed(2)} vs 0 (${formatPValLabel(p)})`;
+                          }
+                          return '---';
+                        })()}
                       </td>
                       <td>Sub-sample R² = {modelsData.power_law_model.trade_level_fit.r_squared_trade.toFixed(4)}</td>
                     </tr>

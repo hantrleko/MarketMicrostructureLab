@@ -47,7 +47,7 @@ MarketMicrostructureLab/
 ├── research/
 │   └── reports/               # Academic research report (MML_BTCUSDT_MICROSTRUCTURE_REPORT.md)
 └── tests/
-    └── unit/                  # Automated pytest suite (57 unit & regression tests)
+    └── unit/                  # Automated pytest suite (57 clean checkout / 60 production tests)
 ```
 
 ---
@@ -103,10 +103,34 @@ uv pip install -e .
 
 ### 3. Run Automated Tests & Provenance Audit
 ```powershell
+# Standard Clean Clone Suite (57 unit & regression tests, zero external data required):
+.\.venv\Scripts\pytest -v -m "not production_data"
+
+# Full Suite (60 tests, auto-detects local raw ZIPs and Parquets):
 .\.venv\Scripts\pytest -v
-.\.venv\Scripts\python scripts/recompute_and_audit_provenance.py
+
+# Provenance Audit - Manifest Integrity Mode (verifies 18 static JSONs & Contract 1.3.0 in clean clone):
+.\.venv\Scripts\python scripts/recompute_and_audit_provenance.py --mode manifest
+
+# Provenance Audit - Full Recomputation Mode (Stages 1-3 + Stage 4 live Parquet recomputation < 1e-6):
+.\.venv\Scripts\python scripts/recompute_and_audit_provenance.py --mode full
 ```
-*(All 57 unit and regression tests and 3-stage provenance checks pass 100%).*
+*(Clean clones pass 57/57 unit tests with 0 failures; environments with mounted Parquet data pass 60/60 tests and 4-stage end-to-end recomputation audit).*
+
+### 4. CI Workflow & Release Gate Activation
+The reference GitHub Actions pipeline is version-controlled at `ci/workflows/ci.yml`.
+To activate it under `.github/workflows/ci.yml`, ensure your GitHub CLI or personal access token has the `workflow` scope:
+```powershell
+# Refresh token with workflow scope:
+gh auth refresh -h github.com -s workflow
+
+# Copy workflow into .github directory:
+New-Item -ItemType Directory -Force -Path .github/workflows
+Copy-Item ci/workflows/ci.yml .github/workflows/ci.yml
+git add .github/workflows/ci.yml
+git commit -m "ci: enable automated GitHub Actions release gates"
+git push
+```
 
 ### 4. Start the Application
 You can launch both services using the provided PowerShell script or run them in separate terminals:

@@ -748,6 +748,10 @@ class NonlinearImpactModel:
                 g_tr = float(res_tr.params[1]) if len(res_tr.params) > 1 else None
                 se_tr = float(res_tr.bse[1]) if len(res_tr.bse) > 1 else None
                 r2_tr = float(res_tr.rsquared) if hasattr(res_tr, "rsquared") and np.isfinite(res_tr.rsquared) else None
+                t_tr = float(res_tr.tvalues[1]) if hasattr(res_tr, "tvalues") and len(res_tr.tvalues) > 1 else (float(g_tr / se_tr) if g_tr is not None and se_tr else None)
+                p_tr = float(res_tr.pvalues[1]) if hasattr(res_tr, "pvalues") and len(res_tr.pvalues) > 1 else (float(2.0 * (1.0 - norm.cdf(abs(t_tr)))) if t_tr is not None else None)
+                df_tr = int(res_tr.df_resid) if hasattr(res_tr, "df_resid") else None
+                ci_tr = [float(res_tr.conf_int()[1][0]), float(res_tr.conf_int()[1][1])] if len(res_tr.params) > 1 else None
 
                 if g_tr is not None and np.isfinite(g_tr):
                     trade_level_status = "ESTIMATED"
@@ -757,7 +761,12 @@ class NonlinearImpactModel:
                     trade_level_fit_params = {
                         "gamma_trade": g_tr,
                         "gamma_trade_se": se_tr,
-                        "r_squared_trade": r2_tr
+                        "r_squared_trade": r2_tr,
+                        "t_statistic_trade": t_tr,
+                        "p_value_trade": p_tr,
+                        "df_resid": df_tr,
+                        "confidence_interval_95": ci_tr,
+                        "is_significant_5pct": bool(p_tr is not None and p_tr < 0.05)
                     }
                 else:
                     trade_level_status = "FIT_FAILED"
@@ -791,6 +800,11 @@ class NonlinearImpactModel:
             gamma_trade=trade_level_gamma,
             gamma_trade_se=trade_level_gamma_se,
             r_squared_trade=trade_level_r2,
+            t_statistic_trade=trade_level_fit_params.get("t_statistic_trade") if trade_level_fit_params else None,
+            p_value_trade=trade_level_fit_params.get("p_value_trade") if trade_level_fit_params else None,
+            df_resid=trade_level_fit_params.get("df_resid") if trade_level_fit_params else None,
+            confidence_interval_95=trade_level_fit_params.get("confidence_interval_95") if trade_level_fit_params else None,
+            is_significant_5pct=trade_level_fit_params.get("is_significant_5pct") if trade_level_fit_params else False,
             positive_trades_count=trade_pos_count,
             zero_trades_count=trade_zero_count,
             negative_trades_count=trade_neg_count,
@@ -1171,6 +1185,11 @@ class NonlinearImpactModel:
                 "gamma_trade": trade_level_gamma,
                 "gamma_trade_se": trade_level_gamma_se,
                 "r_squared_trade": trade_level_r2,
+                "t_statistic_trade": trade_level_dict.get("t_statistic_trade"),
+                "p_value_trade": trade_level_dict.get("p_value_trade"),
+                "df_resid": trade_level_dict.get("df_resid"),
+                "confidence_interval_95": trade_level_dict.get("confidence_interval_95"),
+                "is_significant_5pct": trade_level_dict.get("is_significant_5pct"),
                 "positive_trades_count": trade_pos_count,
                 "zero_trades_count": trade_zero_count,
                 "negative_trades_count": trade_neg_count,
@@ -1297,6 +1316,7 @@ class NonlinearImpactModel:
             "moving_block_bootstrap": mbb_results,
             "inference_sensitivity_table": mbb_results.get("sensitivity_table", []),
             "sensitivity_verdict": mbb_results.get("sensitivity_verdict", "UNAVAILABLE"),
+            "sensitivity_summary": mbb_results.get("sensitivity_summary", "UNAVAILABLE"),
             "time_chunk_stability": time_chunks
         }
 
@@ -1497,20 +1517,42 @@ class NonlinearImpactModel:
         )
         primary_res = results.get(primary_key, {})
 
-        # Evaluate if conclusions flip across block sizes (M3)
-        wls_zeros = [r["ci_contains_zero_wls"] for r in results.values() if "ci_contains_zero_wls" in r]
-        has_wls_flip = len(set(wls_zeros)) > 1 if wls_zeros else False
+        # Evaluate if conclusions flip across block sizes across both H0: gamma = 0 and H0: gamma = 0.5 for WLS and OLS (M3 upgrade)
+        valid_res = [r for r in results.values() if r.get("status") != "UNAVAILABLE"]
+        wls_zeros = [r["ci_contains_zero_wls"] for r in valid_res if "ci_contains_zero_wls" in r]
+        wls_halves = [r["ci_contains_half_wls"] for r in valid_res if "ci_contains_half_wls" in r]
+        ols_zeros = [r["ci_contains_zero_ols"] for r in valid_res if "ci_contains_zero_ols" in r]
+        ols_halves = [r["ci_contains_half_ols"] for r in valid_res if "ci_contains_half_ols" in r]
 
-        if has_wls_flip:
+        has_wls_zero_flip = len(set(wls_zeros)) > 1 if wls_zeros else False
+        has_wls_half_flip = len(set(wls_halves)) > 1 if wls_halves else False
+        has_ols_zero_flip = len(set(ols_zeros)) > 1 if ols_zeros else False
+        has_ols_half_flip = len(set(ols_halves)) > 1 if ols_halves else False
+
+        has_any_flip = bool(has_wls_zero_flip or has_wls_half_flip or has_ols_zero_flip or has_ols_half_flip)
+
+        if has_any_flip:
             sensitivity_verdict = "SENSITIVE_TO_TEMPORAL_DEPENDENCE_SPECIFICATION"
+            flip_items = []
+            if has_wls_zero_flip:
+                flip_items.append("WLS H0: gamma = 0 (zero containment)")
+            if has_wls_half_flip:
+                flip_items.append("WLS H0: gamma = 0.5 (square-root containment)")
+            if has_ols_zero_flip:
+                flip_items.append("OLS H0: gamma = 0 (zero containment)")
+            if has_ols_half_flip:
+                flip_items.append("OLS H0: gamma = 0.5 (square-root containment)")
+
             sensitivity_summary = (
-                "Child-order scaling confidence intervals flip between containing zero and excluding zero across temporal block sizes. "
-                "Inference conclusions are sensitive to dependence assumptions and cannot be asserted as unconditionally robust."
+                f"Statistical inference conclusions flip across temporal block lengths ({', '.join(flip_items)}). "
+                "Empirical conclusions depend substantially on the temporal block dependence specification "
+                "and cannot be asserted as unconditionally invariant."
             )
         else:
             sensitivity_verdict = "STABLE_ACROSS_BLOCK_SIZES"
             sensitivity_summary = (
-                "Confidence interval zero-containment behavior is uniform across evaluated block lengths."
+                "Confidence interval containment behavior for both H0: gamma = 0 and H0: gamma = 0.5 "
+                "is uniform across evaluated block lengths."
             )
 
         has_any_success = any(v.get("wls_gamma_ci_95") is not None for v in results.values())
@@ -1526,5 +1568,12 @@ class NonlinearImpactModel:
             "results_by_block_size": results,
             "sensitivity_table": sensitivity_table,
             "sensitivity_verdict": sensitivity_verdict,
-            "sensitivity_summary": sensitivity_summary
+            "sensitivity_summary": sensitivity_summary,
+            "hypothesis_sensitivity": {
+                "wls_zero_flip": has_wls_zero_flip,
+                "wls_half_flip": has_wls_half_flip,
+                "ols_zero_flip": has_ols_zero_flip,
+                "ols_half_flip": has_ols_half_flip,
+                "is_sensitive": has_any_flip
+            }
         }

@@ -10,7 +10,7 @@
     "sample_end_utc": "2026-07-02T08:48:34.272037Z",
     "sample_duration_seconds": 7376.571121,
     "sampling_method": "CHRONOLOGICAL_TICK_RESPONSE",
-    "generation_timestamp_utc": "2026-10-21T12:07:34.705440+00:00",
+    "generation_timestamp_utc": "2026-10-21T13:04:43.477239+00:00",
     "status": "EXPLORATORY_RESEARCH",
     "scope_limitation_disclosure": "Analyzed sample covers consecutive chronological window from 2026-07-02T06:45:37.700916Z to 2026-07-02T08:48:34.272037Z (7376.6s, 249,950 tick executions). Microstructure empirical parameters (scaling exponent, autocorrelation, point-mass proportions) reflect this specific intraday regime and cannot be extrapolated to full 24-hour trading without cross-regime validation."
   },
@@ -317,6 +317,14 @@
       "gamma_trade": -0.018950701499077217,
       "gamma_trade_se": 0.007451222788602481,
       "r_squared_trade": 0.0003827999434506957,
+      "t_statistic_trade": -2.5433008831871917,
+      "p_value_trade": 0.010981062425672384,
+      "df_resid": 53719,
+      "confidence_interval_95": [
+        -0.033554829805522185,
+        -0.004346573192632246
+      ],
+      "is_significant_5pct": true,
       "positive_trades_count": 214882,
       "zero_trades_count": 19006,
       "negative_trades_count": 16062,
@@ -764,8 +772,15 @@
           "verdict": "Contains 0 (cannot rule out 0), rejects 0.5"
         }
       ],
-      "sensitivity_verdict": "STABLE_ACROSS_BLOCK_SIZES",
-      "sensitivity_summary": "Confidence interval zero-containment behavior is uniform across evaluated block lengths."
+      "sensitivity_verdict": "SENSITIVE_TO_TEMPORAL_DEPENDENCE_SPECIFICATION",
+      "sensitivity_summary": "Statistical inference conclusions flip across temporal block lengths (OLS H0: gamma = 0 (zero containment)). Empirical conclusions depend substantially on the temporal block dependence specification and cannot be asserted as unconditionally invariant.",
+      "hypothesis_sensitivity": {
+        "wls_zero_flip": false,
+        "wls_half_flip": false,
+        "ols_zero_flip": true,
+        "ols_half_flip": false,
+        "is_sensitive": true
+      }
     },
     "rejects_square_root_half": true,
     "ci_contains_zero": true,
@@ -899,6 +914,14 @@
       "gamma_trade": -0.018950701499077217,
       "gamma_trade_se": 0.007451222788602481,
       "r_squared_trade": 0.0003827999434506957,
+      "t_statistic_trade": -2.5433008831871917,
+      "p_value_trade": 0.010981062425672384,
+      "df_resid": 53719,
+      "confidence_interval_95": [
+        -0.033554829805522185,
+        -0.004346573192632246
+      ],
+      "is_significant_5pct": true,
       "positive_trades_count": 214882,
       "zero_trades_count": 19006,
       "negative_trades_count": 16062,
@@ -1346,8 +1369,15 @@
           "verdict": "Contains 0 (cannot rule out 0), rejects 0.5"
         }
       ],
-      "sensitivity_verdict": "STABLE_ACROSS_BLOCK_SIZES",
-      "sensitivity_summary": "Confidence interval zero-containment behavior is uniform across evaluated block lengths."
+      "sensitivity_verdict": "SENSITIVE_TO_TEMPORAL_DEPENDENCE_SPECIFICATION",
+      "sensitivity_summary": "Statistical inference conclusions flip across temporal block lengths (OLS H0: gamma = 0 (zero containment)). Empirical conclusions depend substantially on the temporal block dependence specification and cannot be asserted as unconditionally invariant.",
+      "hypothesis_sensitivity": {
+        "wls_zero_flip": false,
+        "wls_half_flip": false,
+        "ols_zero_flip": true,
+        "ols_half_flip": false,
+        "is_sensitive": true
+      }
     },
     "rejects_square_root_half": true,
     "ci_contains_zero": true,
@@ -1470,6 +1500,14 @@
     "gamma_trade": -0.018950701499077217,
     "gamma_trade_se": 0.007451222788602481,
     "r_squared_trade": 0.0003827999434506957,
+    "t_statistic_trade": -2.5433008831871917,
+    "p_value_trade": 0.010981062425672384,
+    "df_resid": 53719,
+    "confidence_interval_95": [
+      -0.033554829805522185,
+      -0.004346573192632246
+    ],
+    "is_significant_5pct": true,
     "positive_trades_count": 214882,
     "zero_trades_count": 19006,
     "negative_trades_count": 16062,
@@ -1917,8 +1955,15 @@
         "verdict": "Contains 0 (cannot rule out 0), rejects 0.5"
       }
     ],
-    "sensitivity_verdict": "STABLE_ACROSS_BLOCK_SIZES",
-    "sensitivity_summary": "Confidence interval zero-containment behavior is uniform across evaluated block lengths."
+    "sensitivity_verdict": "SENSITIVE_TO_TEMPORAL_DEPENDENCE_SPECIFICATION",
+    "sensitivity_summary": "Statistical inference conclusions flip across temporal block lengths (OLS H0: gamma = 0 (zero containment)). Empirical conclusions depend substantially on the temporal block dependence specification and cannot be asserted as unconditionally invariant.",
+    "hypothesis_sensitivity": {
+      "wls_zero_flip": false,
+      "wls_half_flip": false,
+      "ols_zero_flip": true,
+      "ols_half_flip": false,
+      "is_sensitive": true
+    }
   },
   "inference_sensitivity_table": [
     {
@@ -2058,7 +2103,8 @@
       "verdict": "Contains 0 (cannot rule out 0), rejects 0.5"
     }
   ],
-  "sensitivity_verdict": "STABLE_ACROSS_BLOCK_SIZES",
+  "sensitivity_verdict": "SENSITIVE_TO_TEMPORAL_DEPENDENCE_SPECIFICATION",
+  "sensitivity_summary": "Statistical inference conclusions flip across temporal block lengths (OLS H0: gamma = 0 (zero containment)). Empirical conclusions depend substantially on the temporal block dependence specification and cannot be asserted as unconditionally invariant.",
   "time_chunk_stability": [
     {
       "chunk_index": 1,
@@ -2111,8 +2157,8 @@
   ],
   "artifact_metadata": {
     "schema_version": "1.3.0",
-    "build_commit": "5792d5a",
-    "generation_timestamp_utc": "2026-10-21T12:07:34.714147+00:00",
+    "build_commit": "44dd142",
+    "generation_timestamp_utc": "2026-10-21T13:04:43.512608+00:00",
     "dataset_source": "NORMALIZED_PARQUET",
     "dataset_file": "normalized/exchange=binance/market=spot/symbol=BTCUSDT/date=2026-07-02/trades.parquet",
     "dataset_sha256": "79b97982029522afa2c87c844f42e3d446d4b314e6ea7948fbfa97d7eb38cfd8",

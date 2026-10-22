@@ -13,6 +13,10 @@ import subprocess
 from pathlib import Path
 from datetime import datetime, timezone
 
+# Force unbuffered stdout
+sys.stdout.reconfigure(line_buffering=True)
+sys.stderr.reconfigure(line_buffering=True)
+
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 

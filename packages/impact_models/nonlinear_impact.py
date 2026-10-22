@@ -73,8 +73,38 @@ def make_fit_result(
 
 
 class NonlinearImpactModel:
+    DEFAULT_TIER_DEFINITIONS = [
+        ("Sub-Lot (<0.00009)", lambda q: q < 0.00009, False),
+        ("Minimum Lot (0.00009)", lambda q: q == 0.00009, True),
+        ("Micro (0.00009 - 0.0002]", lambda q: (q > 0.00009) & (q <= 0.0002), False),
+        ("Small-1 (0.0002 - 0.0005]", lambda q: (q > 0.0002) & (q <= 0.0005), False),
+        ("Small-2 (0.0005 - 0.001]", lambda q: (q > 0.0005) & (q <= 0.001), False),
+        ("Medium-1 (0.001 - 0.005]", lambda q: (q > 0.001) & (q <= 0.005), False),
+        ("Medium-2 (0.005 - 0.01]", lambda q: (q > 0.005) & (q <= 0.01), False),
+        ("Upper (0.01 - 0.05]", lambda q: (q > 0.01) & (q <= 0.05), False),
+        ("Large (0.05 - 0.2]", lambda q: (q > 0.05) & (q <= 0.2), False),
+        ("Block (>0.2)", lambda q: q > 0.2, False),
+    ]
+
     def __init__(self):
         pass
+
+    def fit_power_law_stratified(self, df: pl.DataFrame, horizon_lag: int = 20) -> Dict[str, Any]:
+        """Convenience method to compute WLS power-law fit on DataFrame without bootstrap overhead."""
+        prices = df["price"].to_numpy().astype(np.float64)
+        directions = df["direction"].to_numpy().astype(np.float64)
+        col_q = "base_quantity" if "base_quantity" in df.columns else "quantity"
+        quantities = df[col_q].to_numpy().astype(np.float64)
+        log_prices = np.log(prices)
+
+        k = horizon_lag
+        ret_k = log_prices[k:] - log_prices[:-k]
+        eps = directions[:-k]
+        Q = quantities[:-k]
+        R = (eps * ret_k) * 10_000.0
+
+        valid = (Q > 0) & np.isfinite(R) & np.isfinite(Q)
+        return self.fit_power_law_from_sample(Q[valid], R[valid], self.DEFAULT_TIER_DEFINITIONS)
 
     @staticmethod
     def fit_power_law_from_sample(
@@ -302,18 +332,7 @@ class NonlinearImpactModel:
         is_invariant_data = (ret_var < 1e-12 or q_var < 1e-12 or n_obs < 20)
 
         # 1. Economic Stratification (Non-overlapping support, isolating point masses)
-        tier_definitions = [
-            ("Sub-Lot (<0.00009)", lambda q: q < 0.00009, False),
-            ("Minimum Lot (0.00009)", lambda q: q == 0.00009, True),
-            ("Micro (0.00009 - 0.0002]", lambda q: (q > 0.00009) & (q <= 0.0002), False),
-            ("Small-1 (0.0002 - 0.0005]", lambda q: (q > 0.0002) & (q <= 0.0005), False),
-            ("Small-2 (0.0005 - 0.001]", lambda q: (q > 0.0005) & (q <= 0.001), False),
-            ("Medium-1 (0.001 - 0.005]", lambda q: (q > 0.001) & (q <= 0.005), False),
-            ("Medium-2 (0.005 - 0.01]", lambda q: (q > 0.005) & (q <= 0.01), False),
-            ("Upper (0.01 - 0.05]", lambda q: (q > 0.01) & (q <= 0.05), False),
-            ("Large (0.05 - 0.2]", lambda q: (q > 0.05) & (q <= 0.2), False),
-            ("Block (>0.2)", lambda q: q > 0.2, False),
-        ]
+        tier_definitions = self.DEFAULT_TIER_DEFINITIONS
 
         binned_empirical = []
         for idx, (label, cond, is_pm) in enumerate(tier_definitions):

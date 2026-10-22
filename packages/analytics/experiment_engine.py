@@ -148,9 +148,9 @@ class ExperimentEngine:
         all_oos_y_pred_power = []
 
         for fdef in folds_def:
-            # Concatenate training days
+            # Concatenate training days (diagonal_relaxed handles varying schema widths across fixtures)
             train_parts = [day_dfs[d] for d in fdef["train_dates"]]
-            train_df = pl.concat(train_parts) if len(train_parts) > 1 else train_parts[0]
+            train_df = pl.concat(train_parts, how="diagonal_relaxed") if len(train_parts) > 1 else train_parts[0]
             test_df = day_dfs[fdef["test_date"]]
 
             R_tr, Q_tr, _ = self.extract_features(train_df, horizon_lag)
@@ -171,16 +171,14 @@ class ExperimentEngine:
 
             # 2. Fit Power-Law WLS on Train
             impact_model = NonlinearImpactModel()
-            train_full_fit = impact_model.fit_impact_models(train_df, horizon_lag=horizon_lag, sample_size=len(train_df))
-            test_full_fit = impact_model.fit_impact_models(test_df, horizon_lag=horizon_lag, sample_size=len(test_df))
+            train_wls_res = impact_model.fit_power_law_stratified(train_df, horizon_lag=horizon_lag)
+            test_wls_res = impact_model.fit_power_law_stratified(test_df, horizon_lag=horizon_lag)
 
-            tr_wls = train_full_fit.get("power_law_model", {}).get("wls_fit", {})
-            alpha_tr_pow = tr_wls.get("alpha_wls")
-            gamma_tr_pow = tr_wls.get("gamma_wls")
-            r2_tr_pow = tr_wls.get("r_squared_wls")
+            alpha_tr_pow = train_wls_res.get("alpha_wls")
+            gamma_tr_pow = train_wls_res.get("gamma_wls")
+            r2_tr_pow = train_wls_res.get("r_squared_wls")
 
-            te_wls = test_full_fit.get("power_law_model", {}).get("wls_fit", {})
-            gamma_te_pow = te_wls.get("gamma_wls")
+            gamma_te_pow = test_wls_res.get("gamma_wls")
 
             # Out-of-day Power-law prediction (on positive response test subset)
             pos_te = (R_te > 0)

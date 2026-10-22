@@ -19,6 +19,12 @@ import numpy as np
 import polars as pl
 from scipy.stats import norm
 import statsmodels.api as sm
+from packages.governance.sample_selector import (
+    SampleSelector,
+    SampleSelectionSpec,
+    SampleProvenanceSummary,
+    SampleAccountingLedger
+)
 
 
 def make_fit_result(
@@ -228,7 +234,8 @@ class NonlinearImpactModel:
         self,
         df: pl.DataFrame,
         horizon_lag: int = 20,
-        sample_size: Optional[int] = 300_000
+        sample_size: Optional[int] = 250_000,
+        sample_spec: Optional[SampleSelectionSpec] = None
     ) -> Dict[str, Any]:
         """
         Fits competing price response specifications on trade size Q at event horizon k:
@@ -237,12 +244,24 @@ class NonlinearImpactModel:
         3. Power-Law:  R = alpha * Q^gamma
         Includes HAC standard errors, 95% CI for gamma, square-root hypothesis testing (H0: gamma = 0.5),
         and sub-period time-chunk parameter stability analysis.
+        Uses authoritative SampleSelector to ensure exact identity binding between audit and fitting.
         """
-        if sample_size and len(df) > sample_size:
-            start_idx = len(df) // 4
-            sub_df = df.slice(start_idx, sample_size)
+        sym_val = str(df["symbol"][0]) if "symbol" in df.columns and len(df) > 0 else "BTCUSDT"
+        date_val = str(df["event_time_utc"][0]).split("T")[0].split(" ")[0] if ("event_time_utc" in df.columns and len(df) > 0) else "2026-07-01"
+
+        if sample_spec is None:
+            target_sz = sample_size if sample_size is not None else 250_000
+            spec = SampleSelectionSpec(
+                symbol=sym_val,
+                date=date_val,
+                target_sample_size=target_sz,
+                offset_ratio=0.25 if len(df) > target_sz else 0.0,
+                selection_method="SESSION_ACTIVE_WINDOW" if len(df) > target_sz else "HEAD"
+            )
         else:
-            sub_df = df
+            spec = sample_spec
+
+        sub_df, prov_summary = SampleSelector.select_sample(df, spec)
 
         prices = sub_df["price"].to_numpy().astype(np.float64)
         directions = sub_df["direction"].to_numpy().astype(np.float64)
@@ -1288,10 +1307,43 @@ class NonlinearImpactModel:
         if clean_ns is not None and len(clean_ns) > 1:
             sample_duration_s = float((clean_ns[-1] - clean_ns[0]) / 1e9)
 
+        trade_pos_count = int(np.sum(valid & (R > 0))) if n_obs > 0 else 0
+        trade_level_dict = power_law_dict.get("trade_level_fit", {})
+        reg_obs_val = trade_level_dict.get("regression_observations", 0) or 0
+        reg_stride_val = trade_level_dict.get("sampling_stride", 1) or 1
+
+        accounting_ledger = SampleAccountingLedger(
+            date=prov_summary.date,
+            symbol=prov_summary.symbol,
+            raw_input_total_rows=prov_summary.total_input_rows,
+            normalized_catalog_rows=prov_summary.total_valid_rows,
+            session_selection_method=prov_summary.selection_method,
+            session_offset_ratio=spec.offset_ratio,
+            session_start_index=prov_summary.window_start_index,
+            response_curve_window_trades=300_000,
+            response_curve_start_time_utc=prov_summary.start_time_utc,
+            response_curve_end_time_utc=sample_end_utc,
+            impact_model_window_trades=prov_summary.selected_row_count,
+            impact_model_start_time_utc=prov_summary.start_time_utc,
+            impact_model_end_time_utc=sample_end_utc,
+            impact_model_start_trade_id=prov_summary.start_trade_id,
+            impact_model_end_trade_id=prov_summary.end_trade_id,
+            horizon_lag=k,
+            effective_horizon_observations=n_obs,
+            positive_displacement_trades=trade_pos_count,
+            positive_displacement_pct=float((trade_pos_count / n_obs) * 100.0) if n_obs > 0 else 0.0,
+            regression_subsample_trades=reg_obs_val,
+            regression_sampling_stride=reg_stride_val,
+            sample_content_sha256=prov_summary.content_sha256,
+            sample_trade_ids_sha256=prov_summary.trade_ids_sha256
+        )
+
         return {
             "symbol": sub_df["symbol"][0] if "symbol" in sub_df.columns else "BTCUSDT",
             "sample_size": n_obs,
             "horizon_lag": k,
+            "sample_provenance": prov_summary.to_dict(),
+            "sample_accounting": accounting_ledger.to_dict(),
             "sample_metadata": {
                 "symbol": sub_df["symbol"][0] if "symbol" in sub_df.columns else "BTCUSDT",
                 "horizon_lag": k,

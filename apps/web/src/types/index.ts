@@ -424,10 +424,151 @@ export interface ArtifactMetadata {
   models_compared: string[];
 }
 
+export interface SampleProvenance {
+  spec_version: string;
+  symbol: string;
+  date: string;
+  selection_method: string;
+  total_input_rows: number;
+  duplicates_dropped: number;
+  invalid_rows_dropped: number;
+  total_valid_rows: number;
+  window_start_index: number;
+  selected_row_count: number;
+  start_trade_id: number;
+  end_trade_id: number;
+  start_time_utc: string;
+  end_time_utc: string;
+  trade_ids_sha256: string;
+  content_sha256: string;
+}
+
+export interface SampleAccounting {
+  date: string;
+  symbol: string;
+  raw_input_total_rows: number;
+  normalized_catalog_rows: number;
+  session_selection_method: string;
+  session_offset_ratio: number;
+  session_start_index: number;
+  response_curve_window_trades: number;
+  response_curve_start_time_utc: string;
+  response_curve_end_time_utc: string;
+  response_curve_purpose: string;
+  impact_model_window_trades: number;
+  impact_model_start_time_utc: string;
+  impact_model_end_time_utc: string;
+  impact_model_start_trade_id: number;
+  impact_model_end_trade_id: number;
+  impact_model_purpose: string;
+  window_difference_explanation: string;
+  horizon_lag: number;
+  effective_horizon_observations: number;
+  horizon_loss_explanation: string;
+  positive_displacement_trades: number;
+  positive_displacement_pct: number;
+  regression_subsample_trades: number;
+  regression_sampling_stride: number;
+  regression_stride_explanation: string;
+  sample_content_sha256: string;
+  sample_trade_ids_sha256: string;
+}
+
+export interface ProvenanceChain {
+  raw_archive: {
+    filename: string;
+    sha256: string | null;
+    available_on_disk: boolean;
+    official_source: string;
+  };
+  normalization: {
+    version: string;
+    file_path: string;
+    dataset_sha256: string;
+    total_rows: number;
+  };
+  sample_selection: SampleProvenance;
+  sample_accounting: SampleAccounting;
+  execution_environment: {
+    build_commit: string;
+    generation_timestamp_utc: string;
+    environment_type: string;
+    production_recomputed: boolean;
+  };
+}
+
+export interface CrossDayWalkForwardFold {
+  fold: number;
+  train_dates: string[];
+  test_date: string;
+  train_observations: number;
+  test_observations: number;
+  log_model: {
+    train_alpha: number;
+    train_beta: number;
+    train_r2: number;
+    oos_r2: number;
+  };
+  power_law_model: {
+    train_alpha_wls: number;
+    train_gamma_wls: number;
+    train_r2_wls: number;
+    test_independent_gamma: number;
+    gamma_drift: number | null;
+    oos_r2: number | null;
+  };
+}
+
+export interface ExperimentComparisonSuite {
+  schema_version: string;
+  generated_timestamp_utc: string;
+  target_asset: string;
+  data_disclosure: string;
+  evaluation_engine: string;
+  cross_day_walk_forward_k20: {
+    protocol: string;
+    symbol: string;
+    horizon_lag: number;
+    sample_size_per_day: number;
+    dates_evaluated: string[];
+    folds: CrossDayWalkForwardFold[];
+    summary_metrics: {
+      mean_cross_day_oos_r2_log: number | null;
+      mean_cross_day_oos_r2_power_law: number | null;
+      regime_stability_verdict: string;
+      empirical_implication: string;
+    };
+  };
+  cross_day_walk_forward_k100: {
+    protocol: string;
+    symbol: string;
+    horizon_lag: number;
+    sample_size_per_day: number;
+    dates_evaluated: string[];
+    folds: CrossDayWalkForwardFold[];
+    summary_metrics: {
+      mean_cross_day_oos_r2_log: number | null;
+      mean_cross_day_oos_r2_power_law: number | null;
+      regime_stability_verdict: string;
+      empirical_implication: string;
+    };
+  };
+  regime_characterization: Record<string, {
+    regime_name: string;
+    realized_volatility_bps: number;
+    trade_count: number;
+    session_sampled_window: string;
+    scaling_exponent_gamma_wls: number;
+  }>;
+}
+
 export interface ImpactModelsData {
   horizon_events: number;
   observations: number;
   specification_note?: string;
+  sample_provenance?: SampleProvenance;
+  sample_accounting?: SampleAccounting;
+  provenance_chain?: ProvenanceChain;
   sample_metadata?: {
     symbol?: string;
     horizon_lag?: number;

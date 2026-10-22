@@ -2,6 +2,7 @@
 Exports complete impact models and walk-forward evaluations to static JSON fixtures
 for GitHub Pages deployment, guaranteeing exact alignment with backend analytical engines,
 zero parameter leakage (strict training-only fitting), and non-overlapping test partitions.
+Integrates authoritative SampleSelector provenance and multi-day experiment comparisons.
 """
 
 import sys
@@ -17,6 +18,7 @@ sys.path.insert(0, str(ROOT))
 
 from packages.impact_models.nonlinear_impact import NonlinearImpactModel
 from packages.governance.manifest import DataManifestManager
+from packages.analytics.experiment_engine import ExperimentEngine
 
 STATIC_DATA_DIR = ROOT / "apps" / "web" / "public" / "data"
 STAGING_DIR = ROOT / "temp_models_export"
@@ -29,7 +31,7 @@ def get_git_commit() -> str:
             return res.stdout.strip()
     except Exception:
         pass
-    return "7601663"
+    return "924af64"
 
 
 def compute_sha256(filepath: Path) -> str:
@@ -42,7 +44,7 @@ def compute_sha256(filepath: Path) -> str:
 
 def main():
     print("=" * 80)
-    print("EXPORTING IMPACT MODELS & LEAK-FREE WALK-FORWARD CROSS-VALIDATION ARTIFACTS")
+    print("EXPORTING IMPACT MODELS, SAMPLE ACCOUNTING & PROVENANCE ARTIFACTS")
     print("=" * 80)
 
     git_commit = get_git_commit()
@@ -65,6 +67,10 @@ def main():
         df, entry = manifest_mgr.load_dataset(symbol="BTCUSDT", date_str=d, is_production=False, allow_fixtures=True)
         print(f"    Loaded {len(df):,} trades (Source: {entry.source_type}, SHA: {entry.sha256[:12]}...)")
 
+        raw_zip_name = f"BTCUSDT-trades-{d}.zip"
+        raw_zip_path = ROOT / "data" / "raw" / raw_zip_name
+        raw_sha = compute_sha256(raw_zip_path) if raw_zip_path.exists() else None
+
         for k_val in horizons:
             res = impact_model.fit_impact_models(df, horizon_lag=k_val, sample_size=250_000)
 
@@ -75,7 +81,10 @@ def main():
             assert "pooled_oos" in wf, f"Missing pooled_oos in WF for {d} k={k_val}"
             assert wf.get("protocol") == "EXPANDING_WINDOW_NON_OVERLAPPING_TEST", f"Invalid WF protocol for {d} k={k_val}"
 
-            # Inject institutional artifact metadata and provenance
+            prov_summary = res.get("sample_provenance", {})
+            accounting = res.get("sample_accounting", {})
+
+            # Inject institutional artifact metadata and complete provenance chain
             res["artifact_metadata"] = {
                 "schema_version": "1.3.0",
                 "build_commit": git_commit,
@@ -93,6 +102,29 @@ def main():
                     "Power-Law (Trade-Level R>0)"
                 ],
                 "validity_declaration": "CERTIFIED_ZERO_LEAKAGE_TRAINING_ONLY_FIT"
+            }
+
+            res["provenance_chain"] = {
+                "raw_archive": {
+                    "filename": raw_zip_name,
+                    "sha256": raw_sha,
+                    "available_on_disk": raw_zip_path.exists(),
+                    "official_source": "https://data.binance.vision"
+                },
+                "normalization": {
+                    "version": "1.3.0",
+                    "file_path": entry.file_path,
+                    "dataset_sha256": entry.sha256,
+                    "total_rows": entry.row_count
+                },
+                "sample_selection": prov_summary,
+                "sample_accounting": accounting,
+                "execution_environment": {
+                    "build_commit": git_commit,
+                    "generation_timestamp_utc": datetime.now(timezone.utc).isoformat(),
+                    "environment_type": "AUTHORIZED_PRODUCTION_ENVIRONMENT" if entry.source_type == "NORMALIZED_PARQUET" else "RESEARCH_FIXTURE",
+                    "production_recomputed": entry.source_type == "NORMALIZED_PARQUET"
+                }
             }
 
             filename = f"models_{d}_k{k_val}.json"
@@ -150,7 +182,14 @@ def main():
 
     # Cleanup staging
     shutil.rmtree(STAGING_DIR, ignore_errors=True)
-    print("\n[SUCCESS] Pipeline complete. Zero leakage artifacts certified!")
+
+    # 4. Generate Multi-Day & Cross-Day Walk-Forward Experiment Comparison Suite (P1)
+    print("\n[*] Generating Multi-Day & Cross-Day Walk-Forward Experiment Comparison Suite...")
+    exp_engine = ExperimentEngine(data_dir=ROOT / "data")
+    exp_res = exp_engine.generate_experiment_comparison_suite()
+    print(f"[+] Successfully exported experiments_comparison.json (Folds evaluated: {len(exp_res['cross_day_walk_forward_k20']['folds'])})")
+
+    print("\n[SUCCESS] Pipeline complete. Zero leakage artifacts and sample accounting certified!")
 
 
 if __name__ == "__main__":

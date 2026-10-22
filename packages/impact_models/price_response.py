@@ -10,6 +10,7 @@ from pathlib import Path
 import numpy as np
 import polars as pl
 from scipy.stats import rankdata
+from packages.governance.sample_selector import SampleSelector, SampleSelectionSpec
 
 
 class PriceResponseEngine:
@@ -20,22 +21,34 @@ class PriceResponseEngine:
         self,
         df: pl.DataFrame,
         lags: Optional[List[int]] = None,
-        sample_size: Optional[int] = 500_000
+        sample_size: Optional[int] = 300_000,
+        sample_spec: Optional[SampleSelectionSpec] = None
     ) -> Dict[str, Any]:
         """
         Calculates R(k) = E[eps_i * (ln P_{i+k} - ln P_i)] for specified event lags k.
         Uses rank-based quantile partitioning to prevent empty buckets caused by discrete trade sizes.
         Includes HAC standard error estimation across multiple Bartlett bandwidths.
+        Uses authoritative SampleSelector for deterministic sampling and provenance binding.
         """
         if lags is None:
             lags = [1, 2, 3, 5, 10, 15, 20, 30, 50, 75, 100, 150, 200, 300, 500]
 
-        # Extract numpy arrays
-        if sample_size and len(df) > sample_size:
-            start_idx = len(df) // 4
-            sub_df = df.slice(start_idx, sample_size)
+        sym_val = str(df["symbol"][0]) if "symbol" in df.columns and len(df) > 0 else "BTCUSDT"
+        date_val = str(df["event_time_utc"][0]).split("T")[0].split(" ")[0] if ("event_time_utc" in df.columns and len(df) > 0) else "2026-07-01"
+
+        if sample_spec is None:
+            target_sz = sample_size if sample_size is not None else 300_000
+            spec = SampleSelectionSpec(
+                symbol=sym_val,
+                date=date_val,
+                target_sample_size=target_sz,
+                offset_ratio=0.25 if len(df) > target_sz else 0.0,
+                selection_method="SESSION_ACTIVE_WINDOW" if len(df) > target_sz else "HEAD"
+            )
         else:
-            sub_df = df
+            spec = sample_spec
+
+        sub_df, prov_summary = SampleSelector.select_sample(df, spec)
 
         prices = sub_df["price"].to_numpy().astype(np.float64)
         directions = sub_df["direction"].to_numpy().astype(np.float64)
@@ -149,6 +162,18 @@ class PriceResponseEngine:
         return {
             "symbol": sub_df["symbol"][0] if "symbol" in sub_df.columns else "BTCUSDT",
             "sample_size": n,
+            "sample_provenance": prov_summary.to_dict(),
+            "sample_accounting": {
+                "window_type": "PRICE_RESPONSE_CURVE",
+                "sample_size_trades": n,
+                "start_time_utc": prov_summary.start_time_utc,
+                "end_time_utc": prov_summary.end_time_utc,
+                "start_trade_id": prov_summary.start_trade_id,
+                "end_trade_id": prov_summary.end_trade_id,
+                "content_sha256": prov_summary.content_sha256,
+                "trade_ids_sha256": prov_summary.trade_ids_sha256,
+                "purpose": "Multi-lag empirical price response R(l) across lags l in [1, 100]"
+            },
             "quintile_bounds": quintile_bounds,
             "curves": results_by_lag
         }

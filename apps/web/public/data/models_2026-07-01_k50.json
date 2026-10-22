@@ -62,7 +62,7 @@
     "sample_end_utc": "2026-07-01T07:48:27.140366Z",
     "sample_duration_seconds": 7112.576937,
     "sampling_method": "CHRONOLOGICAL_TICK_RESPONSE",
-    "generation_timestamp_utc": "2026-10-22T15:31:27.651466+00:00",
+    "generation_timestamp_utc": "2026-10-22T15:59:46.324753+00:00",
     "status": "EXPLORATORY_RESEARCH",
     "scope_limitation_disclosure": "Analyzed sample covers consecutive chronological window from 2026-07-01T05:49:54.563429Z to 2026-07-01T07:48:27.140366Z (7112.6s, 249,950 tick executions). Microstructure empirical parameters (scaling exponent, autocorrelation, point-mass proportions) reflect this specific intraday regime and cannot be extrapolated to full 24-hour trading without cross-regime validation."
   },
@@ -2215,8 +2215,8 @@
   ],
   "artifact_metadata": {
     "schema_version": "1.0.0",
-    "build_commit": "4ef0ea2",
-    "generation_timestamp_utc": "2026-10-22T15:31:27.664168+00:00",
+    "build_commit": "478aaff",
+    "generation_timestamp_utc": "2026-10-22T15:59:46.334697+00:00",
     "dataset_source": "NORMALIZED_PARQUET",
     "dataset_file": "normalized/exchange=binance/market=spot/symbol=BTCUSDT/date=2026-07-01/trades.parquet",
     "dataset_sha256": "3f5afa0760d52a6eb54b670e685c83e21414d7b4c43a2ad11346ba1b0db21ce1",
@@ -2297,8 +2297,8 @@
       "sample_trade_ids_sha256": "335ac15eac80922b831b294068bc3e0d713f639621e6ca9ec486c2ec1ea43fda"
     },
     "execution_environment": {
-      "build_commit": "4ef0ea2",
-      "generation_timestamp_utc": "2026-10-22T15:31:27.664282+00:00",
+      "build_commit": "478aaff",
+      "generation_timestamp_utc": "2026-10-22T15:59:46.334799+00:00",
       "environment_type": "AUTHORIZED_PRODUCTION_ENVIRONMENT",
       "production_recomputed": true
     }

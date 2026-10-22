@@ -372,7 +372,8 @@ def test_sample_accounting_ledger_distinct_300k_and_250k_boundaries():
     assert ledger["response_curve_window_trades"] == 300_000
     assert ledger["impact_model_window_trades"] == 250_000
     assert ledger["response_curve_start_trade_id"] == ledger["impact_model_start_trade_id"]
-    # 300k end trade ID must be greater than 250k end trade ID by exactly 50,000
+    # 300k end trade ID must be strictly greater than 250k end trade ID
+    assert ledger["response_curve_end_trade_id"] > ledger["impact_model_end_trade_id"]
     assert ledger["response_curve_end_trade_id"] == ledger["impact_model_end_trade_id"] + 50_000
     # End times must be different
     assert ledger["response_curve_end_time_utc"] != ledger["impact_model_end_time_utc"]

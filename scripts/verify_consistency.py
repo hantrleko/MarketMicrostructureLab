@@ -70,7 +70,7 @@ def main():
     manifest_path = root / "apps/web/public/data/models_provenance_manifest.json"
     assert manifest_path.exists(), "Missing models_provenance_manifest.json"
     prov = json.loads(manifest_path.read_text(encoding="utf-8"))
-    assert prov["total_files"] == 18, f"Expected 18 artifacts in manifest, found {prov['total_files']}"
+    assert prov["total_files"] == 22, f"Expected 22 artifacts in manifest, found {prov['total_files']}"
     assert prov["leakage_status"] == "STRICT_TRAINING_ONLY_FIT_ZERO_TEST_LEAKAGE", "Invalid leakage status"
 
     print(f"[*] Verified walk-forward zero-leakage protocol: {wf['protocol']}")

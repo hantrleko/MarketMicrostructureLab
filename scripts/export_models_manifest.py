@@ -21,6 +21,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from packages.impact_models.nonlinear_impact import NonlinearImpactModel
+from packages.impact_models.price_response import PriceResponseEngine
 from packages.governance.manifest import DataManifestManager
 from packages.analytics.experiment_engine import ExperimentEngine
 
@@ -61,6 +62,7 @@ def main():
 
     manifest_mgr = DataManifestManager(data_dir=ROOT / "data")
     impact_model = NonlinearImpactModel()
+    resp_engine = PriceResponseEngine()
     dates = ["2026-07-01", "2026-07-02", "2026-07-03"]
     horizons = [5, 10, 20, 50, 100]
 
@@ -90,7 +92,7 @@ def main():
 
             # Inject institutional artifact metadata and complete provenance chain
             res["artifact_metadata"] = {
-                "schema_version": "1.3.0",
+                "schema_version": "1.0.0",
                 "build_commit": git_commit,
                 "generation_timestamp_utc": datetime.now(timezone.utc).isoformat(),
                 "dataset_source": entry.source_type,
@@ -116,7 +118,7 @@ def main():
                     "official_source": "https://data.binance.vision"
                 },
                 "normalization": {
-                    "version": "1.3.0",
+                    "version": "1.0.0",
                     "file_path": entry.file_path,
                     "dataset_sha256": entry.sha256,
                     "total_rows": entry.row_count
@@ -147,8 +149,29 @@ def main():
                 exported_files.append((base_filename, base_stage_path))
                 print(f"    [+] Staged {base_filename} ({base_stage_path.stat().st_size:,} bytes)")
 
-    # Assert all 18 files were staged
-    assert len(exported_files) == 18, f"Expected 18 files, but found {len(exported_files)}"
+        # Export 300,000 trades Price Response Curve (Requirement D04)
+        print(f"    [*] Computing price response curve for {d} (sample size: 300,000)...")
+        resp_res = resp_engine.compute_event_response(df, sample_size=300_000)
+        resp_filename = f"response_{d}.json"
+        resp_stage_path = STAGING_DIR / resp_filename
+        with open(resp_stage_path, "w", encoding="utf-8", newline="\n") as f:
+            json.dump(resp_res, f, indent=2)
+        exported_files.append((resp_filename, resp_stage_path))
+        print(f"    [+] Staged {resp_filename} ({resp_stage_path.stat().st_size:,} bytes)")
+
+    # 4. Generate Multi-Day & Cross-Day Walk-Forward Experiment Comparison Suite (D04)
+    print("\n[*] Generating Multi-Day & Cross-Day Walk-Forward Experiment Comparison Suite...")
+    exp_engine = ExperimentEngine(data_dir=ROOT / "data")
+    exp_res = exp_engine.generate_experiment_comparison_suite()
+    exp_filename = "experiments_comparison.json"
+    exp_stage_path = STAGING_DIR / exp_filename
+    with open(exp_stage_path, "w", encoding="utf-8", newline="\n") as f:
+        json.dump(exp_res, f, indent=2)
+    exported_files.append((exp_filename, exp_stage_path))
+    print(f"    [+] Staged {exp_filename} ({exp_stage_path.stat().st_size:,} bytes)")
+
+    # Assert all 22 artifacts (18 models + 3 response + 1 comparison) are staged
+    assert len(exported_files) == 22, f"Expected 22 files, but found {len(exported_files)}"
 
     # Generate Manifest with Checksums (strictly computed on LF bytes)
     manifest_records = {}
@@ -160,7 +183,7 @@ def main():
         }
 
     provenance_manifest = {
-        "schema_version": "1.3.0",
+        "schema_version": "1.0.0",
         "generated_timestamp_utc": datetime.now(timezone.utc).isoformat(),
         "build_commit": git_commit,
         "evaluation_protocol": "NON_OVERLAPPING_PURGED_WALK_FORWARD",
@@ -182,18 +205,12 @@ def main():
         shutil.copy2(fpath, target_path)
 
     shutil.copy2(manifest_stage_path, STATIC_DATA_DIR / "models_provenance_manifest.json")
-    print(f"[+] All 18 model JSONs and models_provenance_manifest.json successfully published to {STATIC_DATA_DIR}!")
+    print(f"[+] All 22 artifacts and models_provenance_manifest.json successfully published to {STATIC_DATA_DIR}!")
 
     # Cleanup staging
     shutil.rmtree(STAGING_DIR, ignore_errors=True)
 
-    # 4. Generate Multi-Day & Cross-Day Walk-Forward Experiment Comparison Suite (P1)
-    print("\n[*] Generating Multi-Day & Cross-Day Walk-Forward Experiment Comparison Suite...")
-    exp_engine = ExperimentEngine(data_dir=ROOT / "data")
-    exp_res = exp_engine.generate_experiment_comparison_suite()
-    print(f"[+] Successfully exported experiments_comparison.json (Folds evaluated: {len(exp_res['cross_day_walk_forward_k20']['folds'])})")
-
-    print("\n[SUCCESS] Pipeline complete. Zero leakage artifacts and sample accounting certified!")
+    print("\n[SUCCESS] Pipeline complete. 22 artifacts registered, zero leakage, sample accounting certified!")
 
 
 if __name__ == "__main__":

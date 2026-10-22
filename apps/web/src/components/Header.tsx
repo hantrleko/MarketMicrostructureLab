@@ -47,7 +47,7 @@ export const Header: React.FC<HeaderProps> = ({
           }} />
           <div>
             <div style={{ fontWeight: 800, letterSpacing: '0.08em', fontSize: '1.05rem', color: '#fff' }}>
-              MML <span style={{ color: 'var(--color-buy)', fontWeight: 500 }}>// MICROSTRUCTURE LAB</span>
+              MML <span style={{ color: 'var(--color-buy)', fontWeight: 500 }}>// MICROSTRUCTURE LAB V1.0</span>
             </div>
             <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', letterSpacing: '0.04em' }}>
               BINANCE SPOT BTC/USDT RESEARCH PLATFORM
@@ -133,6 +133,17 @@ export const Header: React.FC<HeaderProps> = ({
           }} />
           <span className="mono">VERIFIED DATASET</span>
         </div>
+        <span className="mono" style={{
+          background: 'rgba(255, 215, 0, 0.12)',
+          border: '1px solid rgba(255, 215, 0, 0.3)',
+          color: 'var(--color-gold)',
+          padding: '2px 8px',
+          borderRadius: '4px',
+          fontSize: '0.72rem',
+          fontWeight: 700
+        }}>
+          V1.0
+        </span>
       </div>
     </header>
   );

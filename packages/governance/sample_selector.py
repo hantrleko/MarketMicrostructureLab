@@ -26,7 +26,7 @@ class SampleSelectionSpec:
     """
     Authoritative configuration for deterministic trade sample extraction.
     """
-    version: str = "1.3.0"
+    version: str = "1.0.0"
     symbol: str = "BTCUSDT"
     date: str = "2026-07-01"
     sort_keys: List[str] = field(default_factory=lambda: ["event_timestamp_ns", "trade_id"])
@@ -91,6 +91,12 @@ class SampleAccountingLedger:
     impact_model_end_time_utc: str
     impact_model_start_trade_id: int
     impact_model_end_trade_id: int
+
+    # Optional 300k identification fields
+    response_curve_start_trade_id: Optional[int] = None
+    response_curve_end_trade_id: Optional[int] = None
+    response_curve_content_sha256: Optional[str] = None
+    response_curve_trade_ids_sha256: Optional[str] = None
 
     # Text descriptions and defaults
     response_curve_purpose: str = "Multi-lag empirical price response function R(l) across lags l in [1, 100]"

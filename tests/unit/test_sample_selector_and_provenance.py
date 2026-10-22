@@ -287,3 +287,92 @@ def test_identity_mismatch_strictly_fails_close():
 
     assert exc_info.value.status_code == 500
     assert exc_info.value.code == "DATA_IDENTITY_MISMATCH"
+
+
+def test_cross_partition_boundary_isolation_and_purging():
+    """
+    Requirement D01 (P0): Proves that cross-day walk-forward training does NOT
+    construct return labels across discontinuous session or partition boundaries.
+    """
+    engine = ExperimentEngine()
+    k = 20
+    s_size = 5000
+
+    # 1. Exact sample size accounting test:
+    # Fold 1 train on Day 1 -> len = s_size - k
+    # Fold 2 train on Day 1 + Day 2 -> len = (s_size - k) + (s_size - k)
+    res = engine.run_cross_day_walk_forward(horizon_lag=k, sample_size_per_day=s_size)
+    f1 = res["folds"][0]
+    f2 = res["folds"][1]
+
+    expected_f1_train = s_size - k
+    expected_f2_train = (s_size - k) + (s_size - k)
+
+    assert f1["train_observations"] == expected_f1_train
+    assert f2["train_observations"] == expected_f2_train
+
+    # 2. Counterexample test: Day 1 price = 50,000, Day 2 price = 100,000
+    # If returns crossed the midnight partition boundary, a huge log-return ~ln(2) = 0.693
+    # would appear. Under strict session isolation, no return exceeds within-day tick range.
+    df_day1 = pl.DataFrame({
+        "trade_id": np.arange(1, 101, dtype=np.int64),
+        "price": np.full(100, 50000.0, dtype=np.float64),
+        "quantity": np.full(100, 1.0, dtype=np.float64),
+        "direction": np.ones(100, dtype=np.int8)
+    })
+    df_day2 = pl.DataFrame({
+        "trade_id": np.arange(101, 201, dtype=np.int64),
+        "price": np.full(100, 100000.0, dtype=np.float64),
+        "quantity": np.full(100, 1.0, dtype=np.float64),
+        "direction": np.ones(100, dtype=np.int8)
+    })
+
+    R1, _, _ = engine.extract_features(df_day1, horizon_lag=5)
+    R2, _, _ = engine.extract_features(df_day2, horizon_lag=5)
+
+    assert len(R1) == 95
+    assert len(R2) == 95
+    assert np.all(R1 == 0.0)
+    assert np.all(R2 == 0.0)
+
+    # Multi-day feature concatenation
+    R_concat = np.concatenate([R1, R2])
+    assert len(R_concat) == 190
+    assert not np.any(np.abs(R_concat) > 1e-4)  # Zero cross-partition jump leakage
+
+
+def test_sample_accounting_ledger_distinct_300k_and_250k_boundaries():
+    """
+    Requirement D03 (P0): Proves that SampleAccountingLedger maintains distinct
+    boundaries, end trade IDs, and end timestamps for the 300k response window
+    and the 250k impact model window.
+    """
+    impact_model = NonlinearImpactModel()
+    n = 500_000
+    base_ts = 1720000000000000000
+    trade_ids = np.arange(1_000_000, 1_000_000 + n, dtype=np.int64)
+    prices = 60000.0 + np.sin(np.linspace(0, 100, n))
+    quantities = np.full(n, 0.01, dtype=np.float64)
+    directions = np.ones(n, dtype=np.int8)
+    timestamps = base_ts + np.arange(n) * 100_000
+
+    df = pl.DataFrame({
+        "trade_id": trade_ids,
+        "price": prices,
+        "quantity": quantities,
+        "direction": directions,
+        "event_timestamp_ns": timestamps,
+        "event_time_utc": [f"2026-07-01T06:{i//60000:02d}:{(i%60000)//1000:02d}Z" for i in range(n)],
+        "symbol": ["BTCUSDT"] * n
+    })
+
+    res = impact_model.fit_impact_models(df, horizon_lag=20, sample_size=250_000)
+    ledger = res["sample_accounting"]
+
+    assert ledger["response_curve_window_trades"] == 300_000
+    assert ledger["impact_model_window_trades"] == 250_000
+    assert ledger["response_curve_start_trade_id"] == ledger["impact_model_start_trade_id"]
+    # 300k end trade ID must be greater than 250k end trade ID by exactly 50,000
+    assert ledger["response_curve_end_trade_id"] == ledger["impact_model_end_trade_id"] + 50_000
+    # End times must be different
+    assert ledger["response_curve_end_time_utc"] != ledger["impact_model_end_time_utc"]

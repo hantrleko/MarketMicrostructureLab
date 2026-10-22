@@ -1,14 +1,16 @@
 {
-  "schema_version": "1.3.0",
-  "generated_timestamp_utc": "2026-10-22T14:44:17.295749+00:00",
+  "schema_version": "1.0.0",
+  "generated_timestamp_utc": "2026-10-22T15:34:39.725614+00:00",
   "target_asset": "BTCUSDT (Binance Spot)",
   "data_disclosure": "\u5386\u53f2 BTC \u6837\u672c (\u975e\u5b9e\u65f6\u4ea4\u6613)",
-  "evaluation_engine": "MarketMicrostructureLab ExperimentEngine V1.3.0",
+  "evaluation_engine": "MarketMicrostructureLab ExperimentEngine V1.0",
   "cross_day_walk_forward_k20": {
     "protocol": "EXPANDING_CROSS_DAY_WALK_FORWARD",
+    "schema_version": "1.0.0",
     "symbol": "BTCUSDT",
     "horizon_lag": 20,
     "sample_size_per_day": 250000,
+    "boundary_purging_rule": "STRICT_WITHIN_SESSION_ISOLATION_ZERO_CROSS_PARTITION_LABELS",
     "dates_evaluated": [
       "2026-07-01",
       "2026-07-02",
@@ -21,6 +23,20 @@
           "2026-07-01"
         ],
         "test_date": "2026-07-02",
+        "train_sessions_accounting": [
+          {
+            "date": "2026-07-01",
+            "raw_trades": 250000,
+            "effective_labels": 249980,
+            "boundary_purged": 20
+          }
+        ],
+        "test_session_accounting": {
+          "date": "2026-07-02",
+          "raw_trades": 250000,
+          "effective_labels": 249980,
+          "boundary_purged": 20
+        },
         "train_observations": 249980,
         "test_observations": 249980,
         "log_model": {
@@ -45,33 +61,53 @@
           "2026-07-02"
         ],
         "test_date": "2026-07-03",
-        "train_observations": 499980,
+        "train_sessions_accounting": [
+          {
+            "date": "2026-07-01",
+            "raw_trades": 250000,
+            "effective_labels": 249980,
+            "boundary_purged": 20
+          },
+          {
+            "date": "2026-07-02",
+            "raw_trades": 250000,
+            "effective_labels": 249980,
+            "boundary_purged": 20
+          }
+        ],
+        "test_session_accounting": {
+          "date": "2026-07-03",
+          "raw_trades": 250000,
+          "effective_labels": 249980,
+          "boundary_purged": 20
+        },
+        "train_observations": 499960,
         "test_observations": 249980,
         "log_model": {
-          "train_alpha": 0.07115990170067386,
-          "train_beta": -0.005278512740685248,
-          "train_r2": 2.4627085965067685e-05,
-          "oos_r2": 0.013620109076620479
+          "train_alpha": 0.055740360198693086,
+          "train_beta": -0.005690709384823615,
+          "train_r2": 0.004977031593343284,
+          "oos_r2": 0.013180900534732198
         },
         "power_law_model": {
-          "train_alpha_wls": 0.06430569113760223,
-          "train_gamma_wls": -0.0677149359368167,
-          "train_r2_wls": 0.362550020690518,
+          "train_alpha_wls": 0.05463376294299827,
+          "train_gamma_wls": -0.07346866959066001,
+          "train_r2_wls": 0.3212958135591989,
           "test_independent_gamma": -0.11562227839926255,
-          "gamma_drift": 0.04790734246244585,
-          "oos_r2": -0.02363013531148206
+          "gamma_drift": 0.04215360880860254,
+          "oos_r2": -0.03996223358051676
         }
       }
     ],
     "summary_metrics": {
-      "mean_cross_day_oos_r2_log": 0.009614095554557944,
-      "mean_cross_day_oos_r2_power_law": -0.04178502750181157,
-      "regime_stability_verdict": "CONFIRMED_SUB_LINEAR_PERSISTENCE",
-      "empirical_implication": "Power-law sub-linear scaling exponent gamma remains tightly bounded near 0.5 (square-root benchmark) across distinct market regimes (consolidation, trend, weekend), proving cross-day structural invariance rather than single-day overfitted artifact."
+      "mean_cross_day_oos_r2_log": 0.009394491283613804,
+      "mean_cross_day_oos_r2_power_law": -0.04995107663632892,
+      "evaluation_verdict": "EMPIRICAL_CROSS_DAY_EVALUATION_COMPLETE",
+      "empirical_conclusion": "\u5f53\u524d\u4e09\u5929\u6837\u672c\u7684\u8de8\u65e5\u9884\u6d4b\u8868\u73b0\u6709\u9650\uff0c\u53c2\u6570\u968f\u4f30\u8ba1\u53e3\u5f84\u4e0e\u65e5\u671f\u53d8\u5316\uff1b\u7ed3\u679c\u4ec5\u63cf\u8ff0\u8be5\u5386\u53f2\u6837\u672c\uff0c\u4e0d\u6784\u6210\u7ed3\u6784\u4e0d\u53d8\u6216\u666e\u904d\u89c4\u5f8b\u7684\u8bc1\u660e\u3002"
     },
     "day_provenance": {
       "2026-07-01": {
-        "spec_version": "1.3.0",
+        "spec_version": "1.0.0",
         "symbol": "BTCUSDT",
         "date": "2026-07-01",
         "selection_method": "SESSION_ACTIVE_WINDOW",
@@ -89,7 +125,7 @@
         "content_sha256": "0b32921af7de8137833595efee553321f3165e151ba7ac3dc194188dbd61c4b4"
       },
       "2026-07-02": {
-        "spec_version": "1.3.0",
+        "spec_version": "1.0.0",
         "symbol": "BTCUSDT",
         "date": "2026-07-02",
         "selection_method": "SESSION_ACTIVE_WINDOW",
@@ -107,7 +143,7 @@
         "content_sha256": "6452cc11fe749d95bf80b7904186d1797f3539804773a405acce73ec89669d85"
       },
       "2026-07-03": {
-        "spec_version": "1.3.0",
+        "spec_version": "1.0.0",
         "symbol": "BTCUSDT",
         "date": "2026-07-03",
         "selection_method": "SESSION_ACTIVE_WINDOW",
@@ -128,9 +164,11 @@
   },
   "cross_day_walk_forward_k100": {
     "protocol": "EXPANDING_CROSS_DAY_WALK_FORWARD",
+    "schema_version": "1.0.0",
     "symbol": "BTCUSDT",
     "horizon_lag": 100,
     "sample_size_per_day": 250000,
+    "boundary_purging_rule": "STRICT_WITHIN_SESSION_ISOLATION_ZERO_CROSS_PARTITION_LABELS",
     "dates_evaluated": [
       "2026-07-01",
       "2026-07-02",
@@ -143,6 +181,20 @@
           "2026-07-01"
         ],
         "test_date": "2026-07-02",
+        "train_sessions_accounting": [
+          {
+            "date": "2026-07-01",
+            "raw_trades": 250000,
+            "effective_labels": 249900,
+            "boundary_purged": 100
+          }
+        ],
+        "test_session_accounting": {
+          "date": "2026-07-02",
+          "raw_trades": 250000,
+          "effective_labels": 249900,
+          "boundary_purged": 100
+        },
         "train_observations": 249900,
         "test_observations": 249900,
         "log_model": {
@@ -167,33 +219,53 @@
           "2026-07-02"
         ],
         "test_date": "2026-07-03",
-        "train_observations": 499900,
+        "train_sessions_accounting": [
+          {
+            "date": "2026-07-01",
+            "raw_trades": 250000,
+            "effective_labels": 249900,
+            "boundary_purged": 100
+          },
+          {
+            "date": "2026-07-02",
+            "raw_trades": 250000,
+            "effective_labels": 249900,
+            "boundary_purged": 100
+          }
+        ],
+        "test_session_accounting": {
+          "date": "2026-07-03",
+          "raw_trades": 250000,
+          "effective_labels": 249900,
+          "boundary_purged": 100
+        },
+        "train_observations": 499800,
         "test_observations": 249900,
         "log_model": {
-          "train_alpha": 0.31516696833124935,
-          "train_beta": -0.023068072856376187,
-          "train_r2": 9.392996158752442e-05,
-          "oos_r2": 0.022665724372258667
+          "train_alpha": 0.29196184496959116,
+          "train_beta": -0.018905105531565814,
+          "train_r2": 0.0065568303598989575,
+          "oos_r2": 0.019344059460778107
         },
         "power_law_model": {
-          "train_alpha_wls": 0.32140394224998614,
-          "train_gamma_wls": -0.05407854175044555,
-          "train_r2_wls": 0.7229084504668143,
+          "train_alpha_wls": 0.2940229592120417,
+          "train_gamma_wls": -0.0496690271909643,
+          "train_r2_wls": 0.33214978068015377,
           "test_independent_gamma": -0.08188077248030681,
-          "gamma_drift": 0.027802230729861266,
-          "oos_r2": -0.0836848696306105
+          "gamma_drift": 0.032211745289342515,
+          "oos_r2": -0.021246103735549138
         }
       }
     ],
     "summary_metrics": {
-      "mean_cross_day_oos_r2_log": 0.015571874505749483,
-      "mean_cross_day_oos_r2_power_law": -0.05104072849982766,
-      "regime_stability_verdict": "CONFIRMED_SUB_LINEAR_PERSISTENCE",
-      "empirical_implication": "Power-law sub-linear scaling exponent gamma remains tightly bounded near 0.5 (square-root benchmark) across distinct market regimes (consolidation, trend, weekend), proving cross-day structural invariance rather than single-day overfitted artifact."
+      "mean_cross_day_oos_r2_log": 0.013911042050009204,
+      "mean_cross_day_oos_r2_power_law": -0.019821345552296976,
+      "evaluation_verdict": "EMPIRICAL_CROSS_DAY_EVALUATION_COMPLETE",
+      "empirical_conclusion": "\u5f53\u524d\u4e09\u5929\u6837\u672c\u7684\u8de8\u65e5\u9884\u6d4b\u8868\u73b0\u6709\u9650\uff0c\u53c2\u6570\u968f\u4f30\u8ba1\u53e3\u5f84\u4e0e\u65e5\u671f\u53d8\u5316\uff1b\u7ed3\u679c\u4ec5\u63cf\u8ff0\u8be5\u5386\u53f2\u6837\u672c\uff0c\u4e0d\u6784\u6210\u7ed3\u6784\u4e0d\u53d8\u6216\u666e\u904d\u89c4\u5f8b\u7684\u8bc1\u660e\u3002"
     },
     "day_provenance": {
       "2026-07-01": {
-        "spec_version": "1.3.0",
+        "spec_version": "1.0.0",
         "symbol": "BTCUSDT",
         "date": "2026-07-01",
         "selection_method": "SESSION_ACTIVE_WINDOW",
@@ -211,7 +283,7 @@
         "content_sha256": "0b32921af7de8137833595efee553321f3165e151ba7ac3dc194188dbd61c4b4"
       },
       "2026-07-02": {
-        "spec_version": "1.3.0",
+        "spec_version": "1.0.0",
         "symbol": "BTCUSDT",
         "date": "2026-07-02",
         "selection_method": "SESSION_ACTIVE_WINDOW",
@@ -229,7 +301,7 @@
         "content_sha256": "6452cc11fe749d95bf80b7904186d1797f3539804773a405acce73ec89669d85"
       },
       "2026-07-03": {
-        "spec_version": "1.3.0",
+        "spec_version": "1.0.0",
         "symbol": "BTCUSDT",
         "date": "2026-07-03",
         "selection_method": "SESSION_ACTIVE_WINDOW",
@@ -250,25 +322,32 @@
   },
   "regime_characterization": {
     "2026-07-01": {
-      "regime_name": "Intraday Rangebound Consolidation",
-      "realized_volatility_bps": 42.8,
+      "regime_name": "\u7814\u7a76\u8005\u6807\u6ce8: \u65e5\u5185\u9707\u8361\u76d8\u6574 (Consolidation)",
+      "realized_volatility_bps": 14.1,
       "trade_count": 4166849,
-      "session_sampled_window": "06:14:12 - 07:52:18 UTC",
-      "scaling_exponent_gamma_wls": 0.548
+      "session_sampled_window": "05:49:54 - 07:48:27 UTC",
+      "scaling_exponent_gamma_wls": -0.0739,
+      "sample_content_sha256": "0b32921af7de8137833595efee553321f3165e151ba7ac3dc194188dbd61c4b4",
+      "sample_trade_ids_sha256": "335ac15eac80922b831b294068bc3e0d713f639621e6ca9ec486c2ec1ea43fda"
     },
     "2026-07-02": {
-      "regime_name": "Directional Trend / Momentum",
-      "realized_volatility_bps": 68.3,
+      "regime_name": "\u7814\u7a76\u8005\u6807\u6ce8: \u52a8\u91cf\u8d8b\u52bf\u65e5 (Directional Trend)",
+      "realized_volatility_bps": 13.4,
       "trade_count": 3883096,
-      "session_sampled_window": "06:15:02 - 07:58:33 UTC",
-      "scaling_exponent_gamma_wls": 0.512
+      "session_sampled_window": "06:45:37 - 08:48:38 UTC",
+      "scaling_exponent_gamma_wls": -0.0719,
+      "sample_content_sha256": "6452cc11fe749d95bf80b7904186d1797f3539804773a405acce73ec89669d85",
+      "sample_trade_ids_sha256": "b62a6efaae681b5c8be6a72629fc6001d2750711d71323cfd968c9a65193fc7f"
     },
     "2026-07-03": {
-      "regime_name": "Low Liquidity / Weekend Drift",
-      "realized_volatility_bps": 34.1,
+      "regime_name": "\u7814\u7a76\u8005\u6807\u6ce8: \u5468\u672b\u4f4e\u6d41\u52a8\u6027\u6f02\u79fb (Weekend Drift)",
+      "realized_volatility_bps": 14.0,
       "trade_count": 2571531,
-      "session_sampled_window": "06:12:44 - 08:04:19 UTC",
-      "scaling_exponent_gamma_wls": 0.529
+      "session_sampled_window": "05:37:15 - 08:30:15 UTC",
+      "scaling_exponent_gamma_wls": -0.1156,
+      "sample_content_sha256": "39c8665010d3525ccbfc2aeeb3b796b13f7147c70c1b54b3094e5bdb4b8317e1",
+      "sample_trade_ids_sha256": "94eda50802a5ae014e3250d2d1c0267b6589d9557ef0e465956d939e9d079412"
     }
-  }
+  },
+  "methodological_caveat": "Single-trade price responses R(v, k) at the tick level reflect transient orderbook liquidity hole depletion, not cumulative meta-order market impact. Rejecting gamma=0.5 or observing negative/unstable tick exponents does not invalidate the empirical square-root law of cumulative meta-orders (Bouchaud et al., 2009)."
 }

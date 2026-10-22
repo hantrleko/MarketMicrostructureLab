@@ -43,7 +43,7 @@ def make_fit_result(
     is_estimated = (status == "ESTIMATED")
     res = {
         "name": model_name,
-        "schema_version": "1.3.0",
+        "schema_version": "1.0.0",
         "status": status,
         "is_estimable": is_estimated,
         "fit": fit_params if is_estimated else None,
@@ -292,6 +292,21 @@ class NonlinearImpactModel:
             spec = sample_spec
 
         sub_df, prov_summary = SampleSelector.select_sample(df, spec)
+
+        # Independently compute Price Response Curve window (300,000 trades) boundaries (Requirement D03)
+        resp_target_sz = 300_000
+        if len(df) >= resp_target_sz:
+            resp_spec = SampleSelectionSpec(
+                version="1.0.0",
+                symbol=sym_val,
+                date=date_val,
+                target_sample_size=resp_target_sz,
+                offset_ratio=spec.offset_ratio,
+                selection_method=spec.selection_method
+            )
+            _, resp_summary = SampleSelector.select_sample(df, resp_spec)
+        else:
+            resp_summary = prov_summary
 
         prices = sub_df["price"].to_numpy().astype(np.float64)
         directions = sub_df["direction"].to_numpy().astype(np.float64)
@@ -1339,12 +1354,16 @@ class NonlinearImpactModel:
             session_selection_method=prov_summary.selection_method,
             session_offset_ratio=spec.offset_ratio,
             session_start_index=prov_summary.window_start_index,
-            response_curve_window_trades=300_000,
-            response_curve_start_time_utc=prov_summary.start_time_utc,
-            response_curve_end_time_utc=sample_end_utc,
+            response_curve_window_trades=resp_summary.selected_row_count,
+            response_curve_start_time_utc=resp_summary.start_time_utc,
+            response_curve_end_time_utc=resp_summary.end_time_utc,
+            response_curve_start_trade_id=resp_summary.start_trade_id,
+            response_curve_end_trade_id=resp_summary.end_trade_id,
+            response_curve_content_sha256=resp_summary.content_sha256,
+            response_curve_trade_ids_sha256=resp_summary.trade_ids_sha256,
             impact_model_window_trades=prov_summary.selected_row_count,
             impact_model_start_time_utc=prov_summary.start_time_utc,
-            impact_model_end_time_utc=sample_end_utc,
+            impact_model_end_time_utc=prov_summary.end_time_utc,
             impact_model_start_trade_id=prov_summary.start_trade_id,
             impact_model_end_trade_id=prov_summary.end_trade_id,
             horizon_lag=k,

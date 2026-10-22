@@ -3,7 +3,7 @@
   "sample_size": 249995,
   "horizon_lag": 5,
   "sample_provenance": {
-    "spec_version": "1.3.0",
+    "spec_version": "1.0.0",
     "symbol": "BTCUSDT",
     "date": "2026-07-03",
     "selection_method": "SESSION_ACTIVE_WINDOW",
@@ -30,12 +30,16 @@
     "session_start_index": 642882,
     "response_curve_window_trades": 300000,
     "response_curve_start_time_utc": "2026-07-03T05:37:15.255456Z",
-    "response_curve_end_time_utc": "2026-07-03T08:30:15.594872Z",
+    "response_curve_end_time_utc": "2026-07-03T08:53:04.791810Z",
     "impact_model_window_trades": 250000,
     "impact_model_start_time_utc": "2026-07-03T05:37:15.255456Z",
     "impact_model_end_time_utc": "2026-07-03T08:30:15.594872Z",
     "impact_model_start_trade_id": 6474640881,
     "impact_model_end_trade_id": 6474890880,
+    "response_curve_start_trade_id": 6474640881,
+    "response_curve_end_trade_id": 6474940880,
+    "response_curve_content_sha256": "74aca94402ce05a7ea1c98b4a2e89d13566c9ba3c5928ffb7e9b08907ecb3ccf",
+    "response_curve_trade_ids_sha256": "71c54b500e8329a471c54d271a77fcb014ccec832abffb508ad46a957b1576e9",
     "response_curve_purpose": "Multi-lag empirical price response function R(l) across lags l in [1, 100]",
     "impact_model_purpose": "Econometric estimation of structural impact models, HAC inference, Block Bootstrap & Walk-Forward CV",
     "window_difference_explanation": "The 250,000 impact model trades are a strict temporal sub-window of the 300,000 response window (both starting at index 1,041,712, ~06:14 UTC). The 250,000 size is chosen to keep Newey-West HAC covariance matrix calculation and Moving Block Bootstrap (1,000 iterations x 4 block lengths) computationally tractable while ensuring statistical power.",
@@ -58,7 +62,7 @@
     "sample_end_utc": "2026-07-03T08:30:15.594872Z",
     "sample_duration_seconds": 10380.339416,
     "sampling_method": "CHRONOLOGICAL_TICK_RESPONSE",
-    "generation_timestamp_utc": "2026-10-22T14:43:26.671295+00:00",
+    "generation_timestamp_utc": "2026-10-22T15:32:58.531934+00:00",
     "status": "EXPLORATORY_RESEARCH",
     "scope_limitation_disclosure": "Analyzed sample covers consecutive chronological window from 2026-07-03T05:37:15.255456Z to 2026-07-03T08:30:15.594872Z (10380.3s, 249,995 tick executions). Microstructure empirical parameters (scaling exponent, autocorrelation, point-mass proportions) reflect this specific intraday regime and cannot be extrapolated to full 24-hour trading without cross-regime validation."
   },
@@ -196,7 +200,7 @@
   ],
   "linear_model": {
     "name": "Linear (R = alpha + beta * Q)",
-    "schema_version": "1.3.0",
+    "schema_version": "1.0.0",
     "status": "ESTIMATED",
     "is_estimable": true,
     "fit": {
@@ -229,7 +233,7 @@
   },
   "linear_fit": {
     "name": "Linear (R = alpha + beta * Q)",
-    "schema_version": "1.3.0",
+    "schema_version": "1.0.0",
     "status": "ESTIMATED",
     "is_estimable": true,
     "fit": {
@@ -262,7 +266,7 @@
   },
   "logarithmic_model": {
     "name": "Logarithmic (R = alpha + beta * ln(Q))",
-    "schema_version": "1.3.0",
+    "schema_version": "1.0.0",
     "status": "ESTIMATED",
     "is_estimable": true,
     "fit": {
@@ -295,7 +299,7 @@
   },
   "logarithmic_fit": {
     "name": "Logarithmic (R = alpha + beta * ln(Q))",
-    "schema_version": "1.3.0",
+    "schema_version": "1.0.0",
     "status": "ESTIMATED",
     "is_estimable": true,
     "fit": {
@@ -862,7 +866,7 @@
       "is_rejected_at_5pct": true,
       "ols_test": {
         "name": "Tier-Binned OLS (Unweighted)",
-        "schema_version": "1.3.0",
+        "schema_version": "1.0.0",
         "status": "ESTIMATED",
         "is_estimable": true,
         "fit": {
@@ -893,7 +897,7 @@
       },
       "wls_test": {
         "name": "Weighted Least Squares (Tier Sample Weights)",
-        "schema_version": "1.3.0",
+        "schema_version": "1.0.0",
         "status": "ESTIMATED",
         "is_estimable": true,
         "fit": {
@@ -1461,7 +1465,7 @@
       "is_rejected_at_5pct": true,
       "ols_test": {
         "name": "Tier-Binned OLS (Unweighted)",
-        "schema_version": "1.3.0",
+        "schema_version": "1.0.0",
         "status": "ESTIMATED",
         "is_estimable": true,
         "fit": {
@@ -1492,7 +1496,7 @@
       },
       "wls_test": {
         "name": "Weighted Least Squares (Tier Sample Weights)",
-        "schema_version": "1.3.0",
+        "schema_version": "1.0.0",
         "status": "ESTIMATED",
         "is_estimable": true,
         "fit": {
@@ -2210,9 +2214,9 @@
     }
   ],
   "artifact_metadata": {
-    "schema_version": "1.3.0",
-    "build_commit": "fb10651",
-    "generation_timestamp_utc": "2026-10-22T14:43:26.686722+00:00",
+    "schema_version": "1.0.0",
+    "build_commit": "4ef0ea2",
+    "generation_timestamp_utc": "2026-10-22T15:32:58.551451+00:00",
     "dataset_source": "NORMALIZED_PARQUET",
     "dataset_file": "normalized/exchange=binance/market=spot/symbol=BTCUSDT/date=2026-07-03/trades.parquet",
     "dataset_sha256": "89071f3f8b1a3e9518fdf2179e82c216e0084ed66a3e3dd38adc98c63861e0a4",
@@ -2235,13 +2239,13 @@
       "official_source": "https://data.binance.vision"
     },
     "normalization": {
-      "version": "1.3.0",
+      "version": "1.0.0",
       "file_path": "normalized/exchange=binance/market=spot/symbol=BTCUSDT/date=2026-07-03/trades.parquet",
       "dataset_sha256": "89071f3f8b1a3e9518fdf2179e82c216e0084ed66a3e3dd38adc98c63861e0a4",
       "total_rows": 2571531
     },
     "sample_selection": {
-      "spec_version": "1.3.0",
+      "spec_version": "1.0.0",
       "symbol": "BTCUSDT",
       "date": "2026-07-03",
       "selection_method": "SESSION_ACTIVE_WINDOW",
@@ -2268,12 +2272,16 @@
       "session_start_index": 642882,
       "response_curve_window_trades": 300000,
       "response_curve_start_time_utc": "2026-07-03T05:37:15.255456Z",
-      "response_curve_end_time_utc": "2026-07-03T08:30:15.594872Z",
+      "response_curve_end_time_utc": "2026-07-03T08:53:04.791810Z",
       "impact_model_window_trades": 250000,
       "impact_model_start_time_utc": "2026-07-03T05:37:15.255456Z",
       "impact_model_end_time_utc": "2026-07-03T08:30:15.594872Z",
       "impact_model_start_trade_id": 6474640881,
       "impact_model_end_trade_id": 6474890880,
+      "response_curve_start_trade_id": 6474640881,
+      "response_curve_end_trade_id": 6474940880,
+      "response_curve_content_sha256": "74aca94402ce05a7ea1c98b4a2e89d13566c9ba3c5928ffb7e9b08907ecb3ccf",
+      "response_curve_trade_ids_sha256": "71c54b500e8329a471c54d271a77fcb014ccec832abffb508ad46a957b1576e9",
       "response_curve_purpose": "Multi-lag empirical price response function R(l) across lags l in [1, 100]",
       "impact_model_purpose": "Econometric estimation of structural impact models, HAC inference, Block Bootstrap & Walk-Forward CV",
       "window_difference_explanation": "The 250,000 impact model trades are a strict temporal sub-window of the 300,000 response window (both starting at index 1,041,712, ~06:14 UTC). The 250,000 size is chosen to keep Newey-West HAC covariance matrix calculation and Moving Block Bootstrap (1,000 iterations x 4 block lengths) computationally tractable while ensuring statistical power.",
@@ -2289,8 +2297,8 @@
       "sample_trade_ids_sha256": "94eda50802a5ae014e3250d2d1c0267b6589d9557ef0e465956d939e9d079412"
     },
     "execution_environment": {
-      "build_commit": "fb10651",
-      "generation_timestamp_utc": "2026-10-22T14:43:26.686810+00:00",
+      "build_commit": "4ef0ea2",
+      "generation_timestamp_utc": "2026-10-22T15:32:58.551591+00:00",
       "environment_type": "AUTHORIZED_PRODUCTION_ENVIRONMENT",
       "production_recomputed": true
     }

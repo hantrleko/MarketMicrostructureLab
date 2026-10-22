@@ -454,6 +454,10 @@ export interface SampleAccounting {
   response_curve_window_trades: number;
   response_curve_start_time_utc: string;
   response_curve_end_time_utc: string;
+  response_curve_start_trade_id?: number;
+  response_curve_end_trade_id?: number;
+  response_curve_content_sha256?: string;
+  response_curve_trade_ids_sha256?: string;
   response_curve_purpose: string;
   impact_model_window_trades: number;
   impact_model_start_time_utc: string;
@@ -535,9 +539,12 @@ export interface ExperimentComparisonSuite {
     summary_metrics: {
       mean_cross_day_oos_r2_log: number | null;
       mean_cross_day_oos_r2_power_law: number | null;
-      regime_stability_verdict: string;
-      empirical_implication: string;
+      regime_stability_verdict?: string;
+      empirical_implication?: string;
+      evaluation_verdict?: string;
+      empirical_conclusion?: string;
     };
+    empirical_conclusion?: string;
   };
   cross_day_walk_forward_k100: {
     protocol: string;
@@ -549,9 +556,12 @@ export interface ExperimentComparisonSuite {
     summary_metrics: {
       mean_cross_day_oos_r2_log: number | null;
       mean_cross_day_oos_r2_power_law: number | null;
-      regime_stability_verdict: string;
-      empirical_implication: string;
+      regime_stability_verdict?: string;
+      empirical_implication?: string;
+      evaluation_verdict?: string;
+      empirical_conclusion?: string;
     };
+    empirical_conclusion?: string;
   };
   regime_characterization: Record<string, {
     regime_name: string;
@@ -560,6 +570,7 @@ export interface ExperimentComparisonSuite {
     session_sampled_window: string;
     scaling_exponent_gamma_wls: number;
   }>;
+  methodological_caveat?: string;
 }
 
 export interface ImpactModelsData {

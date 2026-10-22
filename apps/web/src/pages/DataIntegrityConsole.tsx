@@ -244,7 +244,7 @@ export const DataIntegrityConsole: React.FC<DataIntegrityConsoleProps> = ({ curr
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ color: 'var(--text-dim)' }}>CALCULATION ENGINE:</span>
-              <span className="mono">MML Core v1.1.0 (Polars + DuckDB)</span>
+              <span className="mono">MML Core V1.0 (Polars + DuckDB)</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ color: 'var(--text-dim)' }}>AUDIT TIMESTAMP (UTC):</span>

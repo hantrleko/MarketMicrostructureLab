@@ -274,20 +274,20 @@ export const OrderBookLab: React.FC = () => {
                 }`
               }}
             >
-              {dataStatus}
+              {dataStatus === 'UNAVAILABLE' ? '未连接 / STANDBY' : dataStatus}
             </span>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>ENGINE STATUS:</span>
             <span className={obStatus?.status === 'SYNCHRONIZED' ? 'badge-buy' : 'badge-gold'}>
-              {obStatus?.status || 'STANDBY'}
+              {obStatus?.status || '未连接 / STANDBY'}
             </span>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>SEQ ERRORS:</span>
-            <span className="mono badge-buy">{obStatus?.sync_errors ?? 0}</span>
+            <span className="mono badge-buy">{isLiveActive || isSimulatedActive ? (obStatus?.sync_errors ?? 0) : '---'}</span>
           </div>
         </div>
       </div>
@@ -300,7 +300,7 @@ export const OrderBookLab: React.FC = () => {
             {metrics?.is_valid || isSimulatedActive ? `$${metrics?.spread.toFixed(2)} (${metrics?.spread_bps.toFixed(3)} bps)` : '---'}
           </div>
           <div style={{ fontSize: '0.72rem', color: 'var(--color-buy)', marginTop: '4px' }}>
-            Best: ${metrics?.best_bid?.toFixed(2) || '0'} / ${metrics?.best_ask?.toFixed(2) || '0'}
+            {metrics?.is_valid || isSimulatedActive ? `Best: $${metrics?.best_bid?.toFixed(2)} / $${metrics?.best_ask?.toFixed(2)}` : 'Best: --- / ---'}
           </div>
         </div>
 
@@ -310,7 +310,7 @@ export const OrderBookLab: React.FC = () => {
             {metrics?.is_valid || isSimulatedActive ? `$${metrics?.microprice.toFixed(2)}` : '---'}
           </div>
           <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-            Mid: ${metrics?.mid_price?.toFixed(2) || '0'}
+            {metrics?.is_valid || isSimulatedActive ? `Mid: $${metrics?.mid_price?.toFixed(2)}` : 'Mid: ---'}
           </div>
         </div>
 
@@ -327,7 +327,7 @@ export const OrderBookLab: React.FC = () => {
         <div className="mml-card">
           <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>CUMULATIVE OFI</div>
           <div className="mono" style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--color-gold)', marginTop: '4px' }}>
-            {history.length > 0 ? `${history[history.length - 1].cumulative_ofi.toFixed(2)} BTC` : '0.00 BTC'}
+            {(metrics?.is_valid || isSimulatedActive) && history.length > 0 ? `${history[history.length - 1].cumulative_ofi.toFixed(2)} BTC` : '---'}
           </div>
           <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '4px' }}>
             Quote-based Flow Imbalance

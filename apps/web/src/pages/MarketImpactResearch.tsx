@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import ReactECharts from 'echarts-for-react';
 import { fetchPriceResponse, fetchImpactModels } from '../api/client';
 import { PriceResponseData, ImpactModelsData, WalkForwardFold, WalkForwardValidation, ExperimentComparisonSuite } from '../types';
-import { CheckCircle, Scale, Layers, AlertTriangle, ShieldCheck, Database, Hash, GitBranch } from 'lucide-react';
+import { CheckCircle, Scale, Layers, AlertTriangle, ShieldCheck, Database, Hash, GitBranch, Download } from 'lucide-react';
 
 interface MarketImpactResearchProps {
   date: string;
@@ -24,12 +24,42 @@ function formatPValLabel(p: number | undefined | null): string {
 
 export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date }) => {
   const [horizon, setHorizon] = useState<number>(20);
+  const [compHorizon, setCompHorizon] = useState<number>(20);
   const [priceResp, setPriceResp] = useState<PriceResponseData | null>(null);
   const [modelsData, setModelsData] = useState<ImpactModelsData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [expComparison, setExpComparison] = useState<ExperimentComparisonSuite | null>(null);
   const activeQueryIdRef = useRef<number>(0);
+
+  const exportEvidencePackage = () => {
+    if (!modelsData) return;
+    const pkg = {
+      spec_version: "1.0.0",
+      project: "MarketMicrostructureLab V1.0",
+      exported_timestamp_utc: new Date().toISOString(),
+      target_date: date,
+      target_horizon: horizon,
+      sample_provenance: modelsData.sample_provenance,
+      sample_accounting: modelsData.sample_accounting,
+      artifact_metadata: modelsData.artifact_metadata,
+      provenance_chain: modelsData.provenance_chain,
+      models: {
+        linear: modelsData.linear_model,
+        logarithmic: modelsData.logarithmic_model,
+        power_law: modelsData.power_law_model
+      },
+      walk_forward_validation: modelsData.walk_forward_validation,
+      reproducibility_audit_command: "python scripts/recompute_and_audit_provenance.py --mode manifest"
+    };
+    const blob = new Blob([JSON.stringify(pkg, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `mml_evidence_package_${date}_k${horizon}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   useEffect(() => {
     fetch(`${import.meta.env.BASE_URL}data/experiments_comparison.json`)
@@ -344,9 +374,30 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
           <span style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#38bdf8' }}>
             <Database size={16} /> SAMPLE ACCOUNTING &amp; CRYPTOGRAPHIC PROVENANCE LEDGER
           </span>
-          <span className="mono" style={{ fontSize: '0.72rem', color: 'var(--color-buy)', background: 'rgba(34, 197, 94, 0.1)', padding: '2px 8px', borderRadius: '3px', border: '1px solid rgba(34, 197, 94, 0.3)' }}>
-            EVIDENCE CHAIN: RAW ZIP &rarr; PARQUET &rarr; FITTING &rarr; JSON
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <span className="mono" style={{ fontSize: '0.72rem', color: 'var(--color-buy)', background: 'rgba(34, 197, 94, 0.1)', padding: '2px 8px', borderRadius: '3px', border: '1px solid rgba(34, 197, 94, 0.3)' }}>
+              EVIDENCE CHAIN: RAW ZIP &rarr; PARQUET &rarr; FITTING &rarr; JSON
+            </span>
+            <button
+              onClick={exportEvidencePackage}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                background: 'rgba(56, 189, 248, 0.15)',
+                border: '1px solid rgba(56, 189, 248, 0.4)',
+                color: '#38bdf8',
+                padding: '3px 10px',
+                borderRadius: '4px',
+                fontSize: '0.74rem',
+                cursor: 'pointer',
+                fontWeight: 600
+              }}
+              title="下载完整复现证据包 (JSON 格式)"
+            >
+              <Download size={13} /> 导出复现证据包
+            </button>
+          </div>
         </div>
 
         <div style={{ fontSize: '0.76rem', color: 'var(--text-dim)', marginBottom: '14px', lineHeight: '1.5' }}>
@@ -382,7 +433,7 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
                   {modelsData?.sample_accounting?.response_curve_window_trades?.toLocaleString() || '300,000'}
                 </td>
                 <td>{modelsData?.sample_accounting?.response_curve_start_time_utc ? modelsData.sample_accounting.response_curve_start_time_utc.split('T')[1]?.slice(0, 8) : '06:14:12'} &rarr; {modelsData?.sample_accounting?.response_curve_end_time_utc ? modelsData.sample_accounting.response_curve_end_time_utc.split('T')[1]?.slice(0, 8) : '08:12:45'}</td>
-                <td>6,466,989,766 &rarr; 6,467,289,765</td>
+                <td>{modelsData?.sample_accounting?.response_curve_start_trade_id ? modelsData.sample_accounting.response_curve_start_trade_id.toLocaleString() : '---'} &rarr; {modelsData?.sample_accounting?.response_curve_end_trade_id ? modelsData.sample_accounting.response_curve_end_trade_id.toLocaleString() : '---'}</td>
                 <td>Active session slice (offset 25%)</td>
                 <td>Multi-lag empirical response function R(k), k &isin; [1, 100]</td>
               </tr>
@@ -1063,93 +1114,6 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
         </div>
       )}
 
-      {/* Multi-Day & Cross-Day Walk-Forward Experiment Comparison (P1) */}
-      <div className="mml-card" style={{ borderLeft: '4px solid var(--color-gold)' }}>
-        <div className="mml-card-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-gold)' }}>
-            <GitBranch size={16} /> MULTI-DAY &amp; CROSS-DAY WALK-FORWARD EXPERIMENT COMPARISON
-          </span>
-          <span className="mono" style={{ fontSize: '0.72rem', color: 'var(--color-gold)', background: 'rgba(234, 179, 8, 0.1)', padding: '2px 8px', borderRadius: '3px', border: '1px solid rgba(234, 179, 8, 0.3)' }}>
-            OUT-OF-DAY GENERALIZATION &bull; REGIME COMPARISON
-          </span>
-        </div>
-
-        <div style={{ fontSize: '0.76rem', color: 'var(--text-dim)', marginBottom: '14px', lineHeight: '1.5' }}>
-          <strong>Expanding Cross-Day Walk-Forward Protocol:</strong> Rather than evaluating single-history intraday folds, the experiment engine tests whether the child-order scaling exponent &gamma; and logarithmic sensitivity generalise to unseen future trading days across distinct market regimes (Consolidation &rarr; Trend &rarr; Weekend Drift).
-        </div>
-
-        {/* Folds Table */}
-        <div className="table-responsive" style={{ marginBottom: '14px' }}>
-          <table className="mml-table mono" style={{ fontSize: '0.76rem' }}>
-            <thead>
-              <tr>
-                <th>FOLD</th>
-                <th>TRAINING DAYS</th>
-                <th>OUT-OF-DAY TEST</th>
-                <th>TRAIN OBS</th>
-                <th>TEST OBS</th>
-                <th>LOG TRAIN R²</th>
-                <th>LOG OOS R²</th>
-                <th>POWER LAW &gamma; (TRAIN)</th>
-                <th>POWER LAW &gamma; (TEST INDEP)</th>
-                <th>&gamma; PARAMETER DRIFT</th>
-              </tr>
-            </thead>
-            <tbody>
-              {expComparison?.cross_day_walk_forward_k20?.folds.map((f) => (
-                <tr key={f.fold}>
-                  <td style={{ color: 'var(--color-gold)', fontWeight: 700 }}>Fold {f.fold}</td>
-                  <td>{f.train_dates.join(', ')}</td>
-                  <td style={{ color: '#38bdf8', fontWeight: 600 }}>{f.test_date}</td>
-                  <td>{f.train_observations.toLocaleString()}</td>
-                  <td>{f.test_observations.toLocaleString()}</td>
-                  <td>{f.log_model.train_r2.toFixed(4)}</td>
-                  <td style={{ color: f.log_model.oos_r2 > 0 ? 'var(--color-buy)' : 'var(--color-sell)' }}>
-                    {f.log_model.oos_r2.toFixed(4)}
-                  </td>
-                  <td style={{ color: 'var(--color-gold)' }}>{f.power_law_model.train_gamma_wls.toFixed(4)}</td>
-                  <td style={{ color: '#38bdf8' }}>{f.power_law_model.test_independent_gamma.toFixed(4)}</td>
-                  <td style={{ color: 'var(--text-main)', fontWeight: 600 }}>
-                    {f.power_law_model.gamma_drift !== null ? f.power_law_model.gamma_drift.toFixed(4) : '---'}
-                  </td>
-                </tr>
-              )) || (
-                <tr>
-                  <td colSpan={10} style={{ textAlign: 'center', color: 'var(--text-dim)' }}>
-                    Loading Cross-Day Walk-Forward experiments...
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Market Regime Summary Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
-          {expComparison?.regime_characterization && Object.entries(expComparison.regime_characterization).map(([dt, reg]) => (
-            <div key={dt} style={{ background: 'var(--bg-dark)', padding: '10px 14px', borderRadius: '4px', border: `1px solid ${dt === date ? 'var(--color-gold)' : 'var(--border-color)'}` }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-                <span className="mono" style={{ fontWeight: 700, color: dt === date ? 'var(--color-gold)' : 'var(--text-main)' }}>{dt}</span>
-                <span style={{ fontSize: '0.68rem', color: dt === date ? 'var(--color-gold)' : 'var(--text-dim)' }}>
-                  {dt === date ? 'CURRENT SELECTED DAY' : 'COMPARATIVE REGIME'}
-                </span>
-              </div>
-              <div style={{ fontSize: '0.78rem', color: '#fff', fontWeight: 600, marginBottom: '6px' }}>{reg.regime_name}</div>
-              <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                <div>Realized Volatility: <span className="mono" style={{ color: '#f59e0b' }}>{reg.realized_volatility_bps} bps</span></div>
-                <div>24h Trade Volume: <span className="mono" style={{ color: 'var(--text-main)' }}>{reg.trade_count.toLocaleString()} ticks</span></div>
-                <div>Session Sample: <span className="mono" style={{ color: '#94a3b8' }}>{reg.session_sampled_window}</span></div>
-                <div>Stratified &gamma; (WLS): <span className="mono" style={{ color: 'var(--color-buy)', fontWeight: 600 }}>{reg.scaling_exponent_gamma_wls.toFixed(3)}</span></div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div style={{ marginTop: '12px', padding: '10px 14px', background: 'rgba(234, 179, 8, 0.08)', borderRadius: '4px', border: '1px solid rgba(234, 179, 8, 0.25)', fontSize: '0.74rem', color: '#fef08a', lineHeight: '1.5' }}>
-          <strong>Cross-Regime Empirical Conclusion:</strong> Sub-linear scaling exponent &gamma; exhibits tight cross-day persistence (&Delta;&gamma; &lt; 0.03 between trend, rangebound, and weekend sessions), confirming that child-order concave price response reflects invariant structural micro-orderbook mechanics rather than an overfitted single-day statistical artifact.
-        </div>
-      </div>
-
       {/* Purged Walk-Forward Cross-Validation & Generalization Matrix */}
       {(() => {
         const wf: WalkForwardValidation | undefined = modelsData?.walk_forward_validation || modelsData?.power_law_model?.walk_forward_validation;
@@ -1325,92 +1289,127 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
         </div>
       )}
 
-      {/* Multi-Day & Cross-Day Walk-Forward Experiment Comparison (P1) */}
-      <div className="mml-card" style={{ borderLeft: '4px solid var(--color-gold)' }}>
-        <div className="mml-card-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-gold)' }}>
-            <GitBranch size={16} /> MULTI-DAY &amp; CROSS-DAY WALK-FORWARD EXPERIMENT COMPARISON
-          </span>
-          <span className="mono" style={{ fontSize: '0.72rem', color: 'var(--color-gold)', background: 'rgba(234, 179, 8, 0.1)', padding: '2px 8px', borderRadius: '3px', border: '1px solid rgba(234, 179, 8, 0.3)' }}>
-            OUT-OF-DAY GENERALIZATION &bull; REGIME COMPARISON
-          </span>
-        </div>
-
-        <div style={{ fontSize: '0.76rem', color: 'var(--text-dim)', marginBottom: '14px', lineHeight: '1.5' }}>
-          <strong>Expanding Cross-Day Walk-Forward Protocol:</strong> Rather than evaluating single-history intraday folds, the experiment engine tests whether the child-order scaling exponent &gamma; and logarithmic sensitivity generalise to unseen future trading days across distinct market regimes (Consolidation &rarr; Trend &rarr; Weekend Drift).
-        </div>
-
-        {/* Folds Table */}
-        <div className="table-responsive" style={{ marginBottom: '14px' }}>
-          <table className="mml-table mono" style={{ fontSize: '0.76rem' }}>
-            <thead>
-              <tr>
-                <th>FOLD</th>
-                <th>TRAINING DAYS</th>
-                <th>OUT-OF-DAY TEST</th>
-                <th>TRAIN OBS</th>
-                <th>TEST OBS</th>
-                <th>LOG TRAIN R²</th>
-                <th>LOG OOS R²</th>
-                <th>POWER LAW &gamma; (TRAIN)</th>
-                <th>POWER LAW &gamma; (TEST INDEP)</th>
-                <th>&gamma; PARAMETER DRIFT</th>
-              </tr>
-            </thead>
-            <tbody>
-              {expComparison?.cross_day_walk_forward_k20?.folds.map((f) => (
-                <tr key={f.fold}>
-                  <td style={{ color: 'var(--color-gold)', fontWeight: 700 }}>Fold {f.fold}</td>
-                  <td>{f.train_dates.join(', ')}</td>
-                  <td style={{ color: '#38bdf8', fontWeight: 600 }}>{f.test_date}</td>
-                  <td>{f.train_observations.toLocaleString()}</td>
-                  <td>{f.test_observations.toLocaleString()}</td>
-                  <td>{f.log_model.train_r2.toFixed(4)}</td>
-                  <td style={{ color: f.log_model.oos_r2 > 0 ? 'var(--color-buy)' : 'var(--color-sell)' }}>
-                    {f.log_model.oos_r2.toFixed(4)}
-                  </td>
-                  <td style={{ color: 'var(--color-gold)' }}>{f.power_law_model.train_gamma_wls.toFixed(4)}</td>
-                  <td style={{ color: '#38bdf8' }}>{f.power_law_model.test_independent_gamma.toFixed(4)}</td>
-                  <td style={{ color: 'var(--text-main)', fontWeight: 600 }}>
-                    {f.power_law_model.gamma_drift !== null ? f.power_law_model.gamma_drift.toFixed(4) : '---'}
-                  </td>
-                </tr>
-              )) || (
-                <tr>
-                  <td colSpan={10} style={{ textAlign: 'center', color: 'var(--text-dim)' }}>
-                    Loading Cross-Day Walk-Forward experiments...
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Market Regime Summary Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
-          {expComparison?.regime_characterization && Object.entries(expComparison.regime_characterization).map(([dt, reg]) => (
-            <div key={dt} style={{ background: 'var(--bg-dark)', padding: '10px 14px', borderRadius: '4px', border: `1px solid ${dt === date ? 'var(--color-gold)' : 'var(--border-color)'}` }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-                <span className="mono" style={{ fontWeight: 700, color: dt === date ? 'var(--color-gold)' : 'var(--text-main)' }}>{dt}</span>
-                <span style={{ fontSize: '0.68rem', color: dt === date ? 'var(--color-gold)' : 'var(--text-dim)' }}>
-                  {dt === date ? 'CURRENT SELECTED DAY' : 'COMPARATIVE REGIME'}
+      {/* Multi-Day & Cross-Day Walk-Forward Experiment Comparison (P1 & D02/D05) */}
+      {(() => {
+        const activeCwf = compHorizon === 100 ? expComparison?.cross_day_walk_forward_k100 : expComparison?.cross_day_walk_forward_k20;
+        return (
+          <div className="mml-card" style={{ borderLeft: '4px solid var(--color-gold)' }}>
+            <div className="mml-card-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-gold)' }}>
+                  <GitBranch size={16} /> MULTI-DAY &amp; CROSS-DAY WALK-FORWARD EXPERIMENT COMPARISON
                 </span>
+                {/* Horizon Lag Selector Toggle (D05) */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginLeft: '6px' }}>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>HORIZON:</span>
+                  {[20, 100].map((kVal) => (
+                    <button
+                      key={kVal}
+                      onClick={() => setCompHorizon(kVal)}
+                      style={{
+                        padding: '2px 8px',
+                        fontSize: '0.72rem',
+                        borderRadius: '3px',
+                        fontWeight: compHorizon === kVal ? 700 : 500,
+                        border: `1px solid ${compHorizon === kVal ? 'var(--color-gold)' : 'var(--border-color)'}`,
+                        background: compHorizon === kVal ? 'rgba(234, 179, 8, 0.2)' : 'transparent',
+                        color: compHorizon === kVal ? 'var(--color-gold)' : 'var(--text-dim)',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      k={kVal}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div style={{ fontSize: '0.78rem', color: '#fff', fontWeight: 600, marginBottom: '6px' }}>{reg.regime_name}</div>
-              <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                <div>Realized Volatility: <span className="mono" style={{ color: '#f59e0b' }}>{reg.realized_volatility_bps} bps</span></div>
-                <div>24h Trade Volume: <span className="mono" style={{ color: 'var(--text-main)' }}>{reg.trade_count.toLocaleString()} ticks</span></div>
-                <div>Session Sample: <span className="mono" style={{ color: '#94a3b8' }}>{reg.session_sampled_window}</span></div>
-                <div>Stratified &gamma; (WLS): <span className="mono" style={{ color: 'var(--color-buy)', fontWeight: 600 }}>{reg.scaling_exponent_gamma_wls.toFixed(3)}</span></div>
-              </div>
+              <span className="mono" style={{ fontSize: '0.72rem', color: 'var(--color-gold)', background: 'rgba(234, 179, 8, 0.1)', padding: '2px 8px', borderRadius: '3px', border: '1px solid rgba(234, 179, 8, 0.3)' }}>
+                OUT-OF-DAY GENERALIZATION &bull; REGIME COMPARISON (k={compHorizon})
+              </span>
             </div>
-          ))}
-        </div>
 
-        <div style={{ marginTop: '12px', padding: '10px 14px', background: 'rgba(234, 179, 8, 0.08)', borderRadius: '4px', border: '1px solid rgba(234, 179, 8, 0.25)', fontSize: '0.74rem', color: '#fef08a', lineHeight: '1.5' }}>
-          <strong>Cross-Regime Empirical Conclusion:</strong> Sub-linear scaling exponent &gamma; exhibits tight cross-day persistence (&Delta;&gamma; &lt; 0.03 between trend, rangebound, and weekend sessions), confirming that child-order concave price response reflects invariant structural micro-orderbook mechanics rather than an overfitted single-day statistical artifact.
-        </div>
-      </div>
+            <div style={{ fontSize: '0.76rem', color: 'var(--text-dim)', marginBottom: '14px', lineHeight: '1.5' }}>
+              <strong>Expanding Cross-Day Walk-Forward Protocol:</strong> Rather than evaluating single-history intraday folds, the experiment engine tests whether the child-order scaling exponent &gamma; and logarithmic sensitivity generalise to unseen future trading days across distinct market regimes (Consolidation &rarr; Trend &rarr; Weekend Drift). Return labels are strictly isolated within each session boundary (Zero cross-day jump contamination).
+            </div>
+
+            {/* Folds Table */}
+            <div className="table-responsive" style={{ marginBottom: '14px' }}>
+              <table className="mml-table mono" style={{ fontSize: '0.76rem' }}>
+                <thead>
+                  <tr>
+                    <th>FOLD</th>
+                    <th>TRAINING DAYS</th>
+                    <th>OUT-OF-DAY TEST</th>
+                    <th>TRAIN OBS</th>
+                    <th>TEST OBS</th>
+                    <th>LOG TRAIN R²</th>
+                    <th>LOG OOS R²</th>
+                    <th>POWER LAW &gamma; (TRAIN)</th>
+                    <th>POWER LAW &gamma; (TEST INDEP)</th>
+                    <th>&gamma; PARAMETER DRIFT</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {activeCwf?.folds.map((f) => (
+                    <tr key={f.fold}>
+                      <td style={{ color: 'var(--color-gold)', fontWeight: 700 }}>Fold {f.fold}</td>
+                      <td>{f.train_dates.join(', ')}</td>
+                      <td style={{ color: '#38bdf8', fontWeight: 600 }}>{f.test_date}</td>
+                      <td>{f.train_observations.toLocaleString()}</td>
+                      <td>{f.test_observations.toLocaleString()}</td>
+                      <td>{f.log_model.train_r2.toFixed(4)}</td>
+                      <td style={{ color: f.log_model.oos_r2 > 0 ? 'var(--color-buy)' : 'var(--color-sell)' }}>
+                        {f.log_model.oos_r2.toFixed(4)}
+                      </td>
+                      <td style={{ color: 'var(--color-gold)' }}>{f.power_law_model.train_gamma_wls.toFixed(4)}</td>
+                      <td style={{ color: '#38bdf8' }}>{f.power_law_model.test_independent_gamma.toFixed(4)}</td>
+                      <td style={{ color: 'var(--text-main)', fontWeight: 600 }}>
+                        {f.power_law_model.gamma_drift !== null ? (f.power_law_model.gamma_drift > 0 ? `+${f.power_law_model.gamma_drift.toFixed(4)}` : f.power_law_model.gamma_drift.toFixed(4)) : '---'}
+                      </td>
+                    </tr>
+                  )) || (
+                    <tr>
+                      <td colSpan={10} style={{ textAlign: 'center', color: 'var(--text-dim)' }}>
+                        Loading Cross-Day Walk-Forward experiments (k={compHorizon})...
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Market Regime Summary Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+              {expComparison?.regime_characterization && Object.entries(expComparison.regime_characterization).map(([dt, reg]) => (
+                <div key={dt} style={{ background: 'var(--bg-dark)', padding: '10px 14px', borderRadius: '4px', border: `1px solid ${dt === date ? 'var(--color-gold)' : 'var(--border-color)'}` }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                    <span className="mono" style={{ fontWeight: 700, color: dt === date ? 'var(--color-gold)' : 'var(--text-main)' }}>{dt}</span>
+                    <span style={{ fontSize: '0.68rem', color: dt === date ? 'var(--color-gold)' : 'var(--text-dim)' }}>
+                      {dt === date ? 'CURRENT SELECTED DAY' : 'COMPARATIVE REGIME'}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: '#fff', fontWeight: 600, marginBottom: '6px' }}>{reg.regime_name}</div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                    <div>Realized Volatility: <span className="mono" style={{ color: '#f59e0b' }}>{reg.realized_volatility_bps} bps</span></div>
+                    <div>24h Trade Volume: <span className="mono" style={{ color: 'var(--text-main)' }}>{reg.trade_count.toLocaleString()} ticks</span></div>
+                    <div>Session Sample: <span className="mono" style={{ color: '#94a3b8' }}>{reg.session_sampled_window}</span></div>
+                    <div>Stratified &gamma; (WLS, k=20): <span className="mono" style={{ color: 'var(--color-buy)', fontWeight: 600 }}>{reg.scaling_exponent_gamma_wls ? reg.scaling_exponent_gamma_wls.toFixed(3) : '---'}</span></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Honest Empirical Conclusion & Methodological Disclaimer (D02) */}
+            <div style={{ marginTop: '12px', padding: '10px 14px', background: 'rgba(234, 179, 8, 0.08)', borderRadius: '4px', border: '1px solid rgba(234, 179, 8, 0.25)', fontSize: '0.74rem', color: '#fef08a', lineHeight: '1.5' }}>
+              <strong>跨日实证结论与局限性说明：</strong> {activeCwf?.summary_metrics?.empirical_conclusion || activeCwf?.empirical_conclusion || "当前三天样本的跨日预测表现有限，参数随估计口径与日期变化；结果仅描述该历史样本，不构成结构不变或普遍规律的证明。"}
+              {expComparison?.methodological_caveat && (
+                <div style={{ marginTop: '6px', color: 'var(--text-muted)', fontSize: '0.72rem' }}>
+                  &bull; {expComparison.methodological_caveat}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 };

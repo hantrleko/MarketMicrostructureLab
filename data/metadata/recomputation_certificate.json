@@ -1,6 +1,6 @@
 {
-  "schema_version": "1.3.0",
-  "certification_timestamp_utc": "2026-10-22T14:45:08.249017+00:00",
+  "schema_version": "1.0.0",
+  "certification_timestamp_utc": "2026-10-22T15:39:59.185321+00:00",
   "target_date": "2026-07-01",
   "target_horizon_lag": 20,
   "raw_archive": {
@@ -9,7 +9,7 @@
     "checksum_verified": true
   },
   "sample_identity": {
-    "spec_version": "1.3.0",
+    "spec_version": "1.0.0",
     "symbol": "BTCUSDT",
     "date": "2026-07-01",
     "selection_method": "SESSION_ACTIVE_WINDOW",

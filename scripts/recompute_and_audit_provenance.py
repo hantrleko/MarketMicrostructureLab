@@ -147,7 +147,7 @@ def audit_normalized_parquets() -> bool:
 
 def audit_model_json_artifacts() -> bool:
     print("\n" + "=" * 80)
-    print("STAGE 3: AUDITING 18 STATIC MODEL JSON FIXTURES & PROVENANCE MANIFEST")
+    print("STAGE 3: AUDITING 22 ARTIFACT FIXTURES & PROVENANCE MANIFEST (V1.0)")
     print("=" * 80)
     stage3_passed = True
 
@@ -158,8 +158,8 @@ def audit_model_json_artifacts() -> bool:
 
     prov = json.loads(prov_manifest_path.read_text(encoding="utf-8"))
     artifacts = prov.get("artifacts", {})
-    if len(artifacts) != 18:
-        print(f"[FAIL] Expected 18 artifacts in manifest, found {len(artifacts)}")
+    if len(artifacts) != 22:
+        print(f"[FAIL] Expected 22 artifacts in manifest, found {len(artifacts)}")
         stage3_passed = False
 
     for fname, meta in artifacts.items():
@@ -179,50 +179,65 @@ def audit_model_json_artifacts() -> bool:
             stage3_passed = False
             continue
 
-        # Semantic JSON validation (M1 & M3)
         data = json.loads(raw_bytes.decode("utf-8"))
-        lin = data.get("linear_model", {})
-        log = data.get("logarithmic_model", {})
-        pow_m = data.get("power_law_model", {})
 
-        # Verify contract schema version
-        if data.get("artifact_metadata", {}).get("schema_version") != "1.3.0":
-            print(f"[FAIL] Schema version not 1.3.0 in {fname}")
-            stage3_passed = False
-            continue
+        if fname.startswith("models_"):
+            lin = data.get("linear_model", {})
+            log = data.get("logarithmic_model", {})
+            pow_m = data.get("power_law_model", {})
 
-        # Verify sample accounting and provenance existence
-        if "sample_provenance" not in data or "sample_accounting" not in data:
-            print(f"[FAIL] Missing sample_provenance or sample_accounting in {fname}")
-            stage3_passed = False
-            continue
-
-        # Verify status-driven contract
-        for model_name, m_dict in [("linear", lin), ("log", log), ("power", pow_m)]:
-            status = m_dict.get("status")
-            if status not in ("ESTIMATED", "NOT_ESTIMABLE", "FIT_FAILED"):
-                print(f"[FAIL] Invalid status '{status}' in {fname} for {model_name}")
+            # Verify contract schema version
+            if data.get("artifact_metadata", {}).get("schema_version") != "1.0.0":
+                print(f"[FAIL] Schema version not 1.0.0 in {fname}")
                 stage3_passed = False
+                continue
 
-            if status != "ESTIMATED":
-                if m_dict.get("fit") is not None or m_dict.get("error") is None:
-                    print(f"[FAIL] M1 violation in {fname} for {model_name}: status={status} but fit is not null or error is missing")
+            # Verify sample accounting and provenance existence
+            if "sample_provenance" not in data or "sample_accounting" not in data:
+                print(f"[FAIL] Missing sample_provenance or sample_accounting in {fname}")
+                stage3_passed = False
+                continue
+
+            # Verify status-driven contract
+            for model_name, m_dict in [("linear", lin), ("log", log), ("power", pow_m)]:
+                status = m_dict.get("status")
+                if status not in ("ESTIMATED", "NOT_ESTIMABLE", "FIT_FAILED"):
+                    print(f"[FAIL] Invalid status '{status}' in {fname} for {model_name}")
                     stage3_passed = False
 
-        # Verify Moving Block Bootstrap sensitivity grid
-        mbb = data.get("moving_block_bootstrap", {})
-        sens_table = mbb.get("sensitivity_table", [])
-        if not sens_table or len(sens_table) < 8:  # 4 block sizes * 2 estimators
-            print(f"[FAIL] Incomplete sensitivity table in {fname} ({len(sens_table)} entries)")
-            stage3_passed = False
+                if status != "ESTIMATED":
+                    if m_dict.get("fit") is not None or m_dict.get("error") is None:
+                        print(f"[FAIL] M1 violation in {fname} for {model_name}: status={status} but fit is not null or error is missing")
+                        stage3_passed = False
 
-        # Verify Walk-Forward Cross-Validation
-        wf = data.get("walk_forward_validation", {})
-        if len(wf.get("folds", [])) != 3 or "pooled_oos" not in wf:
-            print(f"[FAIL] Incomplete walk-forward validation in {fname}")
-            stage3_passed = False
+            # Verify Moving Block Bootstrap sensitivity grid
+            mbb = data.get("moving_block_bootstrap", {})
+            sens_table = mbb.get("sensitivity_table", [])
+            if not sens_table or len(sens_table) < 8:  # 4 block sizes * 2 estimators
+                print(f"[FAIL] Incomplete sensitivity table in {fname} ({len(sens_table)} entries)")
+                stage3_passed = False
 
-        print(f"[PASS] {fname:<28} Size: {actual_size:>6,} B | SHA: {actual_sha[:16]}... | Contract: 1.3.0 Verified")
+            # Verify Walk-Forward Cross-Validation
+            wf = data.get("walk_forward_validation", {})
+            if len(wf.get("folds", [])) != 3 or "pooled_oos" not in wf:
+                print(f"[FAIL] Incomplete walk-forward validation in {fname}")
+                stage3_passed = False
+
+            print(f"[PASS] {fname:<28} Size: {actual_size:>6,} B | SHA: {actual_sha[:16]}... | Contract: 1.0.0 Verified")
+
+        elif fname.startswith("response_"):
+            if "curves" not in data or "sample_size" not in data or "sample_provenance" not in data:
+                print(f"[FAIL] Invalid price response curve format in {fname}")
+                stage3_passed = False
+            else:
+                print(f"[PASS] {fname:<28} Size: {actual_size:>6,} B | SHA: {actual_sha[:16]}... | Response Curve V1.0 Verified")
+
+        elif fname == "experiments_comparison.json":
+            if data.get("schema_version") != "1.0.0" or "cross_day_walk_forward_k20" not in data:
+                print(f"[FAIL] Invalid experiment comparison suite in {fname}")
+                stage3_passed = False
+            else:
+                print(f"[PASS] {fname:<28} Size: {actual_size:>6,} B | SHA: {actual_sha[:16]}... | Cross-Day Walk-Forward V1.0 Verified")
 
     return stage3_passed
 
@@ -399,7 +414,7 @@ def audit_live_recomputation(date_str: str = "2026-07-01", horizon: int = 20) ->
         print("\n[PASS] Full recomputation benchmark from raw Binance Vision ZIP directly matches published static artifact (< 1e-6)!")
         # Emit Authoritative Recomputation Certificate
         cert_data = {
-            "schema_version": "1.3.0",
+            "schema_version": "1.0.0",
             "certification_timestamp_utc": datetime.now(timezone.utc).isoformat(),
             "target_date": date_str,
             "target_horizon_lag": horizon,
@@ -446,7 +461,7 @@ def main():
         print("=" * 80)
         print(f"Stage 1 (Raw Archive Integrity):               NOT RUN (Requires Production Raw Data)")
         print(f"Stage 2 (Normalized Parquet Schema & Hashes):  NOT RUN (Requires Production Datasets)")
-        print(f"Stage 3 (18 Model JSONs & Contract 1.3.0):     {'PASSED' if p3 else 'FAILED'}")
+        print(f"Stage 3 (22 Artifacts & Contract 1.0.0):       {'PASSED' if p3 else 'FAILED'}")
         print(f"Stage 4 (Full Raw ZIP to Model Recomputation): NOT RUN (Requires Production Datasets)")
         print("=" * 80)
         if p3:
@@ -482,7 +497,7 @@ def main():
         print("=" * 80)
         print(f"Stage 1 (Raw Archive Integrity & Checksums):   FAILED (Missing raw archives: {missing_raw})")
         print(f"Stage 2 (Normalized Parquet Schema & Hashes):  FAILED (Missing Parquet partitions: {missing_norm})")
-        print(f"Stage 3 (18 Model JSONs & Contract 1.3.0):     {'PASSED' if p3 else 'FAILED'}")
+        print(f"Stage 3 (22 Artifacts & Contract 1.0.0):       {'PASSED' if p3 else 'FAILED'}")
         print(f"Stage 4 (Full Raw ZIP to Model Recomputation): FAILED (Missing production data inputs)")
         print("\n[RESULT: INCOMPLETE] Full end-to-end pipeline audit failed due to missing raw archives or normalized Parquets.")
         sys.exit(1)
@@ -498,7 +513,7 @@ def main():
     print("=" * 80)
     print(f"Stage 1 (Raw Archive Integrity & Checksums):   {'PASSED' if p1 else 'FAILED'}")
     print(f"Stage 2 (Normalized Parquet Schema & Hashes):  {'PASSED' if p2 else 'FAILED'}")
-    print(f"Stage 3 (18 Model JSONs & Contract 1.3.0):     {'PASSED' if p3 else 'FAILED'}")
+    print(f"Stage 3 (22 Artifacts & Contract 1.0.0):       {'PASSED' if p3 else 'FAILED'}")
     print(f"Stage 4 (Full Raw ZIP to Model Recomputation): {'PASSED' if p4 else 'FAILED'}")
 
     if p1 and p2 and p3 and p4:

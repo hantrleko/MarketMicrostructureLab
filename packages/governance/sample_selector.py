@@ -103,8 +103,8 @@ class SampleAccountingLedger:
     impact_model_purpose: str = "Econometric estimation of structural impact models, HAC inference, Block Bootstrap & Walk-Forward CV"
     window_difference_explanation: str = (
         "The 250,000 impact model trades are a strict temporal sub-window of the 300,000 response window "
-        "(both starting at index 1,041,712, ~06:14 UTC). The 250,000 size is chosen to keep Newey-West HAC "
-        "covariance matrix calculation and Moving Block Bootstrap (1,000 iterations x 4 block lengths) "
+        "(both starting at the session active offset index). The 250,000 size is chosen to keep Newey-West HAC "
+        "covariance matrix calculation and Moving Block Bootstrap (100 iterations x 4 block lengths) "
         "computationally tractable while ensuring statistical power."
     )
 

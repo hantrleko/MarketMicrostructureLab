@@ -42,7 +42,7 @@
     "response_curve_trade_ids_sha256": "71c54b500e8329a471c54d271a77fcb014ccec832abffb508ad46a957b1576e9",
     "response_curve_purpose": "Multi-lag empirical price response function R(l) across lags l in [1, 100]",
     "impact_model_purpose": "Econometric estimation of structural impact models, HAC inference, Block Bootstrap & Walk-Forward CV",
-    "window_difference_explanation": "The 250,000 impact model trades are a strict temporal sub-window of the 300,000 response window (both starting at index 1,041,712, ~06:14 UTC). The 250,000 size is chosen to keep Newey-West HAC covariance matrix calculation and Moving Block Bootstrap (1,000 iterations x 4 block lengths) computationally tractable while ensuring statistical power.",
+    "window_difference_explanation": "The 250,000 impact model trades are a strict temporal sub-window of the 300,000 response window (both starting at the session active offset index). The 250,000 size is chosen to keep Newey-West HAC covariance matrix calculation and Moving Block Bootstrap (100 iterations x 4 block lengths) computationally tractable while ensuring statistical power.",
     "horizon_lag": 10,
     "effective_horizon_observations": 249990,
     "horizon_loss_explanation": "At lag k, forward return requires price at i+k; the final k trades cannot form forward returns.",
@@ -62,7 +62,7 @@
     "sample_end_utc": "2026-07-03T08:30:15.108467Z",
     "sample_duration_seconds": 10379.853011,
     "sampling_method": "CHRONOLOGICAL_TICK_RESPONSE",
-    "generation_timestamp_utc": "2026-10-22T16:01:43.817729+00:00",
+    "generation_timestamp_utc": "2026-10-23T13:11:08.686056+00:00",
     "status": "EXPLORATORY_RESEARCH",
     "scope_limitation_disclosure": "Analyzed sample covers consecutive chronological window from 2026-07-03T05:37:15.255456Z to 2026-07-03T08:30:15.108467Z (10379.9s, 249,990 tick executions). Microstructure empirical parameters (scaling exponent, autocorrelation, point-mass proportions) reflect this specific intraday regime and cannot be extrapolated to full 24-hour trading without cross-regime validation."
   },
@@ -2215,8 +2215,8 @@
   ],
   "artifact_metadata": {
     "schema_version": "1.0.0",
-    "build_commit": "478aaff",
-    "generation_timestamp_utc": "2026-10-22T16:01:43.848223+00:00",
+    "build_commit": "76ba37f",
+    "generation_timestamp_utc": "2026-10-23T13:11:08.716798+00:00",
     "dataset_source": "NORMALIZED_PARQUET",
     "dataset_file": "normalized/exchange=binance/market=spot/symbol=BTCUSDT/date=2026-07-03/trades.parquet",
     "dataset_sha256": "89071f3f8b1a3e9518fdf2179e82c216e0084ed66a3e3dd38adc98c63861e0a4",
@@ -2284,7 +2284,7 @@
       "response_curve_trade_ids_sha256": "71c54b500e8329a471c54d271a77fcb014ccec832abffb508ad46a957b1576e9",
       "response_curve_purpose": "Multi-lag empirical price response function R(l) across lags l in [1, 100]",
       "impact_model_purpose": "Econometric estimation of structural impact models, HAC inference, Block Bootstrap & Walk-Forward CV",
-      "window_difference_explanation": "The 250,000 impact model trades are a strict temporal sub-window of the 300,000 response window (both starting at index 1,041,712, ~06:14 UTC). The 250,000 size is chosen to keep Newey-West HAC covariance matrix calculation and Moving Block Bootstrap (1,000 iterations x 4 block lengths) computationally tractable while ensuring statistical power.",
+      "window_difference_explanation": "The 250,000 impact model trades are a strict temporal sub-window of the 300,000 response window (both starting at the session active offset index). The 250,000 size is chosen to keep Newey-West HAC covariance matrix calculation and Moving Block Bootstrap (100 iterations x 4 block lengths) computationally tractable while ensuring statistical power.",
       "horizon_lag": 10,
       "effective_horizon_observations": 249990,
       "horizon_loss_explanation": "At lag k, forward return requires price at i+k; the final k trades cannot form forward returns.",
@@ -2297,8 +2297,8 @@
       "sample_trade_ids_sha256": "94eda50802a5ae014e3250d2d1c0267b6589d9557ef0e465956d939e9d079412"
     },
     "execution_environment": {
-      "build_commit": "478aaff",
-      "generation_timestamp_utc": "2026-10-22T16:01:43.848393+00:00",
+      "build_commit": "76ba37f",
+      "generation_timestamp_utc": "2026-10-23T13:11:08.716940+00:00",
       "environment_type": "AUTHORIZED_PRODUCTION_ENVIRONMENT",
       "production_recomputed": true
     }

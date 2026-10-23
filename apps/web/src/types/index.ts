@@ -128,6 +128,7 @@ export interface ResponseCurvePoint {
 export interface PriceResponseData {
   symbol: string;
   sample_size: number;
+  sample_provenance?: SampleProvenance;
   quintile_bounds?: Array<{
     quintile: number;
     min_qty: number;
@@ -576,6 +577,7 @@ export interface ExperimentComparisonSuite {
 export interface ImpactModelsData {
   horizon_events: number;
   observations: number;
+  sample_size?: number;
   specification_note?: string;
   sample_provenance?: SampleProvenance;
   sample_accounting?: SampleAccounting;

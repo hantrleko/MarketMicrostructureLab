@@ -1,12 +1,15 @@
 {
   "schema_version": "1.0.0",
-  "certification_timestamp_utc": "2026-10-22T15:55:04.838299+00:00",
+  "certification_timestamp_utc": "2026-10-23T13:16:05.293509+00:00",
   "target_date": "2026-07-01",
   "target_horizon_lag": 20,
   "raw_archive": {
     "file": "BTCUSDT-trades-2026-07-01.zip",
     "sha256": "c1366b2200130527cdd87da1c5b1a012ac31de00db93b3db2a13281187bb8653",
-    "checksum_verified": true
+    "checksum_file": "BTCUSDT-trades-2026-07-01.zip.CHECKSUM",
+    "checksum_expected_sha256": "c1366b2200130527cdd87da1c5b1a012ac31de00db93b3db2a13281187bb8653",
+    "checksum_verified": true,
+    "verification_method": "BINANCE_VISION_OFFICIAL_SHA256_DIGEST"
   },
   "sample_identity": {
     "spec_version": "1.0.0",

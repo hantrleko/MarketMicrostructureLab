@@ -53,6 +53,76 @@ def compute_sha256(filepath: Path) -> str:
     return hasher.hexdigest()
 
 
+def verify_archive_checksum(zip_path: Path, chk_path: Path) -> tuple[bool, str, str, str]:
+    """
+    Cryptographically verifies a raw Binance Vision ZIP archive against its official .CHECKSUM file.
+    Returns: (is_valid, actual_sha256, expected_sha256, diagnostic_message)
+    """
+    if not zip_path.exists():
+        return False, "", "", f"Raw archive file missing: {zip_path}"
+    if not chk_path.exists():
+        return False, "", "", f"Official .CHECKSUM file missing: {chk_path}"
+
+    try:
+        chk_content = chk_path.read_text(encoding="utf-8").strip()
+        tokens = chk_content.split()
+        if not tokens:
+            return False, "", "", f"Empty .CHECKSUM file: {chk_path}"
+        expected_hash = tokens[0].lower()
+    except Exception as e:
+        return False, "", "", f"Failed to read .CHECKSUM file {chk_path}: {e}"
+
+    actual_hash = compute_sha256(zip_path).lower()
+    if actual_hash != expected_hash:
+        return False, actual_hash, expected_hash, f"Hash mismatch: actual {actual_hash} != expected {expected_hash}"
+
+    return True, actual_hash, expected_hash, "Official checksum verified successfully."
+
+
+def emit_recomputation_certificate(
+    raw_zip: Path,
+    chk_path: Path,
+    date_str: str,
+    horizon: int,
+    sample_identity: dict,
+    all_matched: bool,
+    cert_output_path: Path | None = None
+) -> bool:
+    """
+    Strict certificate issuance entry point. Refuses to emit certificate with checksum_verified: true
+    unless verify_archive_checksum genuinely passes and numerical parity delta is strictly < 1e-6.
+    """
+    chk_ok, actual_sha, expected_sha, chk_msg = verify_archive_checksum(raw_zip, chk_path)
+    if not chk_ok:
+        raise ValueError(f"Cannot emit recomputation certificate: Checksum verification failed for {raw_zip.name}: {chk_msg}")
+    if not all_matched:
+        raise ValueError("Cannot emit recomputation certificate: Numerical parity delta exceeds tolerance (< 1e-6).")
+
+    cert_data = {
+        "schema_version": "1.0.0",
+        "certification_timestamp_utc": datetime.now(timezone.utc).isoformat(),
+        "target_date": date_str,
+        "target_horizon_lag": horizon,
+        "raw_archive": {
+            "file": raw_zip.name,
+            "sha256": actual_sha,
+            "checksum_file": chk_path.name,
+            "checksum_expected_sha256": expected_sha,
+            "checksum_verified": True,
+            "verification_method": "BINANCE_VISION_OFFICIAL_SHA256_DIGEST"
+        },
+        "sample_identity": sample_identity,
+        "numerical_parity_status": "EXACT_MATCH_DELTA_ZERO",
+        "verification_verdict": "CERTIFIED_FULL_RAW_RECOMPUTATION"
+    }
+    target_file = cert_output_path or (METADATA_DIR / "recomputation_certificate.json")
+    target_file.parent.mkdir(parents=True, exist_ok=True)
+    with open(target_file, "w", encoding="utf-8") as f:
+        json.dump(cert_data, f, indent=2)
+    print(f"[+] Authoritative recomputation certificate successfully emitted at: {target_file}")
+    return True
+
+
 def audit_raw_archives() -> bool:
     print("\n" + "=" * 80)
     print("STAGE 1: AUDITING RAW ARCHIVE INTEGRITY & OFFICIAL CHECKSUMS")
@@ -63,23 +133,11 @@ def audit_raw_archives() -> bool:
         zip_path = RAW_DIR / f"BTCUSDT-trades-{d}.zip"
         chk_path = RAW_DIR / f"BTCUSDT-trades-{d}.zip.CHECKSUM"
 
-        if not zip_path.exists():
-            print(f"[FAIL] Raw zip missing: {zip_path}")
-            stage1_passed = False
-            continue
-
-        if not chk_path.exists():
-            print(f"[FAIL] Checksum file missing: {chk_path}")
-            stage1_passed = False
-            continue
-
-        expected_hash = chk_path.read_text(encoding="utf-8").strip().split()[0]
-        actual_hash = compute_sha256(zip_path)
-
-        if expected_hash.lower() == actual_hash.lower():
+        chk_ok, actual_hash, expected_hash, msg = verify_archive_checksum(zip_path, chk_path)
+        if chk_ok:
             print(f"[PASS] {zip_path.name:<32} Size: {zip_path.stat().st_size:>10,} B | SHA: {actual_hash[:16]}... (Official Match)")
         else:
-            print(f"[FAIL] Checksum mismatch for {zip_path.name}: expected {expected_hash}, got {actual_hash}")
+            print(f"[FAIL] Checksum audit failed for {zip_path.name}: {msg}")
             stage1_passed = False
 
     return stage1_passed
@@ -249,8 +307,12 @@ def audit_live_recomputation(date_str: str = "2026-07-01", horizon: int = 20) ->
     print("=" * 80)
 
     raw_zip = RAW_DIR / f"BTCUSDT-trades-{date_str}.zip"
-    if not raw_zip.exists():
-        print(f"[FAIL] Raw Binance Vision ZIP missing for recomputation: {raw_zip}")
+    chk_path = RAW_DIR / f"BTCUSDT-trades-{date_str}.zip.CHECKSUM"
+
+    # Strictly verify archive checksum against official .CHECKSUM first
+    chk_ok, actual_sha, expected_sha, chk_msg = verify_archive_checksum(raw_zip, chk_path)
+    if not chk_ok:
+        print(f"[FAIL] Raw archive checksum verification failed for {raw_zip.name}: {chk_msg}")
         return False
 
     parquet_path = NORMALIZED_DIR / f"date={date_str}" / "trades.parquet"
@@ -412,25 +474,15 @@ def audit_live_recomputation(date_str: str = "2026-07-01", horizon: int = 20) ->
 
     if all_matched:
         print("\n[PASS] Full recomputation benchmark from raw Binance Vision ZIP directly matches published static artifact (< 1e-6)!")
-        # Emit Authoritative Recomputation Certificate
-        cert_data = {
-            "schema_version": "1.0.0",
-            "certification_timestamp_utc": datetime.now(timezone.utc).isoformat(),
-            "target_date": date_str,
-            "target_horizon_lag": horizon,
-            "raw_archive": {
-                "file": raw_zip.name,
-                "sha256": compute_sha256(raw_zip),
-                "checksum_verified": True
-            },
-            "sample_identity": prov_parq.to_dict(),
-            "numerical_parity_status": "EXACT_MATCH_DELTA_ZERO",
-            "verification_verdict": "CERTIFIED_FULL_RAW_RECOMPUTATION"
-        }
-        cert_file = METADATA_DIR / "recomputation_certificate.json"
-        with open(cert_file, "w", encoding="utf-8") as f:
-            json.dump(cert_data, f, indent=2)
-        print(f"[+] Recomputation certificate generated at: {cert_file}")
+        # Emit Authoritative Recomputation Certificate through strict verification gateway
+        emit_recomputation_certificate(
+            raw_zip=raw_zip,
+            chk_path=chk_path,
+            date_str=date_str,
+            horizon=horizon,
+            sample_identity=prov_parq.to_dict(),
+            all_matched=all_matched
+        )
     else:
         print("\n[FAIL] Discrepancy observed between live recomputed values and published static artifacts.")
 

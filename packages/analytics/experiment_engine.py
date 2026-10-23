@@ -298,9 +298,9 @@ class ExperimentEngine:
         impact_model = NonlinearImpactModel()
 
         regime_labels = {
-            "2026-07-01": "研究者标注: 日内震荡盘整 (Consolidation)",
-            "2026-07-02": "研究者标注: 动量趋势日 (Directional Trend)",
-            "2026-07-03": "研究者标注: 周末低流动性漂移 (Weekend Drift)"
+            "2026-07-01": "研究者探索性标注: 样本期日内盘整 (Sample Period Consolidation)",
+            "2026-07-02": "研究者探索性标注: 样本期价格单边波动 (Sample Period Directional Price Move)",
+            "2026-07-03": "研究者探索性标注: 周五交易活跃度回落 (Friday Session Volume Moderation)"
         }
 
         regime_characterization = {}
@@ -340,6 +340,11 @@ class ExperimentEngine:
             "cross_day_walk_forward_k20": cwf_20,
             "cross_day_walk_forward_k100": cwf_100,
             "regime_characterization": regime_characterization,
+            "regime_classification_method": "RESEARCHER_EXPLORATORY_ANNOTATION",
+            "regime_classification_caveat": (
+                "状态标签系研究者依据该特定历史子样本成交分布与波动所作的定性描述性标注（非算法无监督状态聚类），"
+                "仅指代特定截面窗口，不构成普遍市场状态的外推。"
+            ),
             "methodological_caveat": (
                 "Single-trade price responses R(v, k) at the tick level reflect transient orderbook liquidity hole depletion, "
                 "not cumulative meta-order market impact. Rejecting gamma=0.5 or observing negative/unstable tick exponents "

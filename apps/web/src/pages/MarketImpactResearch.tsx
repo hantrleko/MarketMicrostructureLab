@@ -42,6 +42,11 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
       target_horizon: horizon,
       sample_provenance: modelsData.sample_provenance,
       sample_accounting: modelsData.sample_accounting,
+      response_curve_provenance: priceResp?.sample_provenance || null,
+      time_windows: {
+        response_curve: { start_utc: respStartTime, end_utc: respEndTime },
+        impact_model: { start_utc: modelStartTime, end_utc: modelEndTime }
+      },
       artifact_metadata: modelsData.artifact_metadata,
       provenance_chain: modelsData.provenance_chain,
       models: {
@@ -98,6 +103,32 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
       // Monotonic query id will ignore results from superseded queries
     };
   }, [date, horizon]);
+
+  // Dynamic time formatting from unified provenance & sample accounting (no hardcoded timestamps)
+  const formatTimeOnly = (isoStr?: string) => {
+    if (!isoStr || !isoStr.includes('T')) return '';
+    return isoStr.split('T')[1]?.slice(0, 8) || '';
+  };
+
+  const respStartTime = formatTimeOnly(
+    modelsData?.sample_accounting?.response_curve_start_time_utc ||
+    priceResp?.sample_provenance?.start_time_utc
+  );
+  const respEndTime = formatTimeOnly(
+    modelsData?.sample_accounting?.response_curve_end_time_utc ||
+    priceResp?.sample_provenance?.end_time_utc
+  );
+  const respTimeRangeBadge = respStartTime && respEndTime ? `(${respStartTime} - ${respEndTime} UTC)` : '';
+
+  const modelStartTime = formatTimeOnly(
+    modelsData?.sample_accounting?.impact_model_start_time_utc ||
+    modelsData?.sample_metadata?.sample_start_utc
+  );
+  const modelEndTime = formatTimeOnly(
+    modelsData?.sample_accounting?.impact_model_end_time_utc ||
+    modelsData?.sample_metadata?.sample_end_utc
+  );
+  const modelTimeRangeBadge = modelStartTime && modelEndTime ? `(${modelStartTime} - ${modelEndTime} UTC)` : '';
 
   // Price response curves
   const lags = priceResp?.curves.map((c) => `${c.lag_events}`) || [];
@@ -401,7 +432,7 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
         </div>
 
         <div style={{ fontSize: '0.76rem', color: 'var(--text-dim)', marginBottom: '14px', lineHeight: '1.5' }}>
-          <strong>Sample Definition &amp; Disaggregation Hierarchy:</strong> Price response curve and nonlinear models are evaluated over active session trade windows starting at index 1,041,712 (offset 25%, avoiding 00:00 UTC rollover artifacts). The 250,000 impact model trades are a strict temporal sub-window of the 300,000 response window trades to maintain computational tractability for HAC Newey-West matrix inversion ($O(N \cdot L)$) and Moving Block Bootstrap (1,000 iterations &times; 4 block lengths).
+          <strong>Sample Definition &amp; Disaggregation Hierarchy:</strong> Price response curve and nonlinear models are evaluated over active session trade windows starting at index {modelsData?.sample_provenance?.window_start_index?.toLocaleString() || modelsData?.sample_accounting?.session_start_index?.toLocaleString() || '---'} (offset 25%, avoiding 00:00 UTC rollover artifacts). The 250,000 impact model trades are a strict temporal sub-window of the 300,000 response window trades to maintain computational tractability for HAC Newey-West matrix inversion ($O(N \cdot L)$) and Moving Block Bootstrap (100 iterations &times; 4 block lengths).
         </div>
 
         <div className="table-responsive">
@@ -432,7 +463,7 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
                 <td style={{ color: 'var(--color-buy)' }}>
                   {modelsData?.sample_accounting?.response_curve_window_trades?.toLocaleString() || '300,000'}
                 </td>
-                <td>{modelsData?.sample_accounting?.response_curve_start_time_utc ? modelsData.sample_accounting.response_curve_start_time_utc.split('T')[1]?.slice(0, 8) : '06:14:12'} &rarr; {modelsData?.sample_accounting?.response_curve_end_time_utc ? modelsData.sample_accounting.response_curve_end_time_utc.split('T')[1]?.slice(0, 8) : '08:12:45'}</td>
+                <td>{respStartTime || '---'} &rarr; {respEndTime || '---'}</td>
                 <td>{modelsData?.sample_accounting?.response_curve_start_trade_id ? modelsData.sample_accounting.response_curve_start_trade_id.toLocaleString() : '---'} &rarr; {modelsData?.sample_accounting?.response_curve_end_trade_id ? modelsData.sample_accounting.response_curve_end_trade_id.toLocaleString() : '---'}</td>
                 <td>Active session slice (offset 25%)</td>
                 <td>Multi-lag empirical response function R(k), k &isin; [1, 100]</td>
@@ -442,8 +473,8 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
                 <td style={{ color: '#38bdf8' }}>
                   {modelsData?.sample_accounting?.impact_model_window_trades?.toLocaleString() || '250,000'}
                 </td>
-                <td>{modelsData?.sample_accounting?.impact_model_start_time_utc ? modelsData.sample_accounting.impact_model_start_time_utc.split('T')[1]?.slice(0, 8) : '06:14:12'} &rarr; {modelsData?.sample_accounting?.impact_model_end_time_utc ? modelsData.sample_accounting.impact_model_end_time_utc.split('T')[1]?.slice(0, 8) : '07:52:18'}</td>
-                <td>{modelsData?.sample_accounting?.impact_model_start_trade_id?.toLocaleString() || '6,466,989,766'} &rarr; {modelsData?.sample_accounting?.impact_model_end_trade_id?.toLocaleString() || '6,467,239,765'}</td>
+                <td>{modelStartTime || '---'} &rarr; {modelEndTime || '---'}</td>
+                <td>{modelsData?.sample_accounting?.impact_model_start_trade_id?.toLocaleString() || '---'} &rarr; {modelsData?.sample_accounting?.impact_model_end_trade_id?.toLocaleString() || '---'}</td>
                 <td>Strict sub-window of response trades</td>
                 <td>Linear, Log, Power-Law, MBB, Walk-Forward estimation</td>
               </tr>
@@ -501,7 +532,7 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
         <div className="mml-card-title">
           <span>EVENT-TIME PRICE RESPONSE CURVES R(k) & 95% HAC CONFIDENCE BANDS</span>
           <span className="mono" style={{ fontSize: '0.75rem', color: 'var(--color-buy)' }}>
-            RESPONSE WINDOW: {priceResp?.sample_size?.toLocaleString() || '300,000'} REAL TRADES (06:14 - 08:12 UTC)
+            RESPONSE WINDOW: {(modelsData?.sample_accounting?.response_curve_window_trades || priceResp?.sample_size || 300000).toLocaleString()} REAL TRADES {respTimeRangeBadge}
           </span>
         </div>
         {loading ? (
@@ -520,7 +551,7 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
           <div className="mml-card-title">
             <span>PRICE RESPONSE VS. TRADE SIZE: COMPETING SPECIFICATIONS</span>
             <span className="mono" style={{ fontSize: '0.75rem', color: 'var(--color-gold)' }}>
-              MODEL SAMPLE: {modelsData?.observations?.toLocaleString() || '250,000'} TRADES (06:14 - 07:52 UTC) &bull; k={horizon}
+              MODEL SAMPLE: {(modelsData?.sample_accounting?.impact_model_window_trades || modelsData?.sample_size || modelsData?.observations || 250000).toLocaleString()} TRADES {modelTimeRangeBadge} &bull; k={horizon}
             </span>
           </div>
           <ReactECharts option={impactFitOption} style={{ height: '320px', width: '100%' }} />
@@ -1328,7 +1359,7 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
             </div>
 
             <div style={{ fontSize: '0.76rem', color: 'var(--text-dim)', marginBottom: '14px', lineHeight: '1.5' }}>
-              <strong>Expanding Cross-Day Walk-Forward Protocol:</strong> Rather than evaluating single-history intraday folds, the experiment engine tests whether the child-order scaling exponent &gamma; and logarithmic sensitivity generalise to unseen future trading days across distinct market regimes (Consolidation &rarr; Trend &rarr; Weekend Drift). Return labels are strictly isolated within each session boundary (Zero cross-day jump contamination).
+              <strong>Expanding Cross-Day Walk-Forward Protocol:</strong> Rather than evaluating single-history intraday folds, the experiment engine tests whether the child-order scaling exponent &gamma; and logarithmic sensitivity generalise to unseen future trading days across discrete daily market regimes (Consolidation &rarr; Directional Price Move &rarr; Friday Session Moderation; qualitative exploratory annotations). Return labels are strictly isolated within each session boundary (Zero cross-day jump contamination).
             </div>
 
             {/* Folds Table */}
@@ -1396,6 +1427,9 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
                   </div>
                 </div>
               ))}
+              <div style={{ gridColumn: '1 / -1', fontSize: '0.70rem', color: 'var(--text-dim)', marginTop: '2px' }}>
+                * 标注属性说明：状态标签系研究者依据该特定历史子样本成交分布与波动所作的定性描述性标注（非算法无监督分类），仅指代特定历史截面，不构成普遍市场状态规律外推。
+              </div>
             </div>
 
             {/* Honest Empirical Conclusion & Methodological Disclaimer (D02) */}

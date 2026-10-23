@@ -29,8 +29,13 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
   const [modelsData, setModelsData] = useState<ImpactModelsData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [retryKey, setRetryKey] = useState<number>(0);
   const [expComparison, setExpComparison] = useState<ExperimentComparisonSuite | null>(null);
   const activeQueryIdRef = useRef<number>(0);
+
+  const handleRetry = () => {
+    setRetryKey((k) => k + 1);
+  };
 
   const exportEvidencePackage = () => {
     if (!modelsData) return;
@@ -102,7 +107,7 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
     return () => {
       // Monotonic query id will ignore results from superseded queries
     };
-  }, [date, horizon]);
+  }, [date, horizon, retryKey]);
 
   // Dynamic time formatting from unified provenance & sample accounting (no hardcoded timestamps)
   const formatTimeOnly = (isoStr?: string) => {
@@ -324,21 +329,43 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '10px', fontSize: '0.73rem', color: 'var(--text-muted)' }}>
           <div>
             <span style={{ color: 'var(--text-dim)' }}>Sample Chronology: </span>
-            <span className="mono" style={{ color: '#fff' }}>
-              {modelsData?.sample_metadata?.sample_start_utc ? modelsData.sample_metadata.sample_start_utc.split('T')[1]?.slice(0, 8) : '00:00:00'} &rarr; {modelsData?.sample_metadata?.sample_end_utc ? modelsData.sample_metadata.sample_end_utc.split('T')[1]?.slice(0, 8) : '04:23:18'} UTC
-            </span>
+            {loading ? (
+              <span className="mono" style={{ color: '#38bdf8' }}>正在读取样本信息...</span>
+            ) : error ? (
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                <span className="mono" style={{ color: 'var(--color-sell)' }}>样本时间暂不可用</span>
+                <button
+                  onClick={handleRetry}
+                  style={{
+                    background: 'rgba(239, 68, 68, 0.15)',
+                    border: '1px solid rgba(239, 68, 68, 0.4)',
+                    color: '#f87171',
+                    fontSize: '0.68rem',
+                    padding: '1px 6px',
+                    borderRadius: '3px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  重试
+                </button>
+              </span>
+            ) : (
+              <span className="mono" style={{ color: '#fff' }}>
+                {modelStartTime || '---'} &rarr; {modelEndTime || '---'} UTC
+              </span>
+            )}
           </div>
           <div>
             <span style={{ color: 'var(--text-dim)' }}>Physical Span: </span>
             <span className="mono" style={{ color: 'var(--color-gold)' }}>
-              {modelsData?.sample_metadata?.sample_duration_seconds ? `${(modelsData.sample_metadata.sample_duration_seconds / 3600).toFixed(2)}h (${modelsData.sample_metadata.sample_duration_seconds.toFixed(0)}s)` : '---'}
+              {loading ? '正在读取...' : error ? '---' : modelsData?.sample_metadata?.sample_duration_seconds ? `${(modelsData.sample_metadata.sample_duration_seconds / 3600).toFixed(2)}h (${modelsData.sample_metadata.sample_duration_seconds.toFixed(0)}s)` : '---'}
             </span>
-            <span style={{ color: 'var(--text-dim)' }}> ({modelsData?.observations?.toLocaleString() || '250,000'} ticks)</span>
+            <span style={{ color: 'var(--text-dim)' }}> ({loading ? '...' : error ? '---' : (modelsData?.observations?.toLocaleString() || '250,000')} ticks)</span>
           </div>
           <div>
             <span style={{ color: 'var(--text-dim)' }}>Generation / Commit: </span>
             <span className="mono" style={{ color: 'var(--color-buy)' }}>
-              {modelsData?.artifact_metadata?.generation_timestamp_utc ? modelsData.artifact_metadata.generation_timestamp_utc.slice(0, 19).replace('T', ' ') : 'Static Fixture'} ({modelsData?.artifact_metadata?.build_commit || 'HEAD'})
+              {loading ? '正在读取...' : error ? '---' : modelsData?.artifact_metadata?.generation_timestamp_utc ? modelsData.artifact_metadata.generation_timestamp_utc.slice(0, 19).replace('T', ' ') : 'Static Fixture'} ({modelsData?.artifact_metadata?.build_commit || 'HEAD'})
             </span>
           </div>
           <div>
@@ -390,12 +417,29 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
 
       {/* Error Banner */}
       {error && (
-        <div className="mml-card" style={{ borderLeft: '4px solid var(--color-sell)', display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <AlertTriangle color="var(--color-sell)" size={24} />
-          <div>
-            <div style={{ fontWeight: 600, color: 'var(--color-sell)' }}>Data Query Error</div>
-            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{error}</div>
+        <div className="mml-card" style={{ borderLeft: '4px solid var(--color-sell)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <AlertTriangle color="var(--color-sell)" size={24} />
+            <div>
+              <div style={{ fontWeight: 600, color: 'var(--color-sell)' }}>Data Query Error</div>
+              <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{error}</div>
+            </div>
           </div>
+          <button
+            onClick={handleRetry}
+            style={{
+              background: 'rgba(239, 68, 68, 0.2)',
+              border: '1px solid var(--color-sell)',
+              color: '#f87171',
+              fontSize: '0.75rem',
+              padding: '4px 12px',
+              borderRadius: '3px',
+              cursor: 'pointer',
+              fontWeight: 600
+            }}
+          >
+            重试
+          </button>
         </div>
       )}
 

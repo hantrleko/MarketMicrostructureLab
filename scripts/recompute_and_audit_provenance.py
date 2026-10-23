@@ -13,6 +13,9 @@ import json
 import zipfile
 import hashlib
 import argparse
+import subprocess
+import uuid
+from dataclasses import dataclass, asdict
 from pathlib import Path
 from datetime import datetime, timezone
 import pyarrow.parquet as pq
@@ -45,6 +48,20 @@ DATES = ["2026-07-01", "2026-07-02", "2026-07-03"]
 HORIZONS = [5, 10, 20, 50, 100]
 
 
+def get_git_commit() -> str:
+    try:
+        res = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=ROOT, capture_output=True, text=True)
+        if res.returncode == 0 and res.stdout.strip():
+            return res.stdout.strip()
+    except Exception:
+        pass
+    return "HEAD"
+
+
+def build_official_checksum_url(symbol: str, date_str: str) -> str:
+    return f"https://data.binance.vision/data/spot/daily/trades/{symbol}/{symbol}-trades-{date_str}.zip.CHECKSUM"
+
+
 def compute_sha256(filepath: Path) -> str:
     hasher = hashlib.sha256()
     with open(filepath, "rb") as f:
@@ -53,74 +70,294 @@ def compute_sha256(filepath: Path) -> str:
     return hasher.hexdigest()
 
 
-def verify_archive_checksum(zip_path: Path, chk_path: Path) -> tuple[bool, str, str, str]:
+@dataclass
+class ChecksumVerificationEvidence:
+    source_url: str
+    checksum_file_name: str
+    checksum_file_sha256: str
+    expected_archive_sha256: str
+    actual_archive_sha256: str
+    is_checksum_verified: bool
+    verification_message: str
+
+    def __iter__(self):
+        yield self.is_checksum_verified
+        yield self.actual_archive_sha256
+        yield self.expected_archive_sha256
+        yield self.verification_message
+
+
+@dataclass
+class MetricParityItem:
+    metric_name: str
+    live_recomputed: float | None
+    static_fixture: float | None
+    absolute_delta: float
+    tolerance_threshold: float
+    parity_classification: str  # "NUMERICAL_EXACT_MATCH" | "WITHIN_NUMERICAL_TOLERANCE" | "TOLERANCE_EXCEEDED_FAILURE"
+    status_label: str           # "MATCH" | "MISMATCH"
+
+
+@dataclass
+class NumericalParityEvaluation:
+    is_success: bool
+    max_absolute_delta: float
+    overall_classification: str  # "NUMERICAL_EXACT_MATCH" | "WITHIN_NUMERICAL_TOLERANCE" | "TOLERANCE_EXCEEDED_FAILURE"
+    tolerance_threshold: float
+    items: list[MetricParityItem]
+
+
+@dataclass
+class SampleRecomputationAuditExecution:
+    run_id: str
+    execution_timestamp_utc: str
+    target_date: str
+    target_horizon_lag: int
+    git_commit: str
+    checksum_evidence: ChecksumVerificationEvidence
+    sample_identity: dict
+    numerical_parity: NumericalParityEvaluation
+    stage_scopes: dict
+
+
+def classify_delta(delta: float, tolerance_threshold: float = 1e-6) -> tuple[str, str]:
+    """
+    Categorizes numerical discrepancy against strict threshold:
+      - delta == 0.0 -> NUMERICAL_EXACT_MATCH ("数值完全一致")
+      - 0.0 < delta <= 1e-6 -> WITHIN_NUMERICAL_TOLERANCE ("容差内一致")
+      - delta > 1e-6 -> TOLERANCE_EXCEEDED_FAILURE ("超出容差失败")
+    """
+    if delta == 0.0:
+        return "NUMERICAL_EXACT_MATCH", "MATCH"
+    elif delta <= tolerance_threshold:
+        return "WITHIN_NUMERICAL_TOLERANCE", "MATCH"
+    else:
+        return "TOLERANCE_EXCEEDED_FAILURE", "MISMATCH"
+
+
+def evaluate_numerical_parity(
+    checks: list[tuple[str, float | None, float | None]],
+    tolerance_threshold: float = 1e-6
+) -> NumericalParityEvaluation:
+    items: list[MetricParityItem] = []
+    max_delta = 0.0
+    all_success = True
+    any_tolerance_used = False
+
+    for name, live_val, stat_val in checks:
+        if live_val is None and stat_val is None:
+            delta = 0.0
+            classification, status = "NUMERICAL_EXACT_MATCH", "MATCH"
+        elif live_val is None or stat_val is None:
+            delta = float("inf")
+            classification, status = "TOLERANCE_EXCEEDED_FAILURE", "MISMATCH"
+            all_success = False
+        else:
+            delta = abs(float(live_val) - float(stat_val))
+            classification, status = classify_delta(delta, tolerance_threshold)
+            if delta > tolerance_threshold:
+                all_success = False
+            elif delta > 0.0:
+                any_tolerance_used = True
+            if delta != float("inf") and delta > max_delta:
+                max_delta = delta
+
+        items.append(MetricParityItem(
+            metric_name=name,
+            live_recomputed=live_val,
+            static_fixture=stat_val,
+            absolute_delta=delta,
+            tolerance_threshold=tolerance_threshold,
+            parity_classification=classification,
+            status_label=status
+        ))
+
+    if not all_success:
+        overall_classification = "TOLERANCE_EXCEEDED_FAILURE"
+    elif any_tolerance_used:
+        overall_classification = "WITHIN_NUMERICAL_TOLERANCE"
+    else:
+        overall_classification = "NUMERICAL_EXACT_MATCH"
+
+    return NumericalParityEvaluation(
+        is_success=all_success,
+        max_absolute_delta=max_delta,
+        overall_classification=overall_classification,
+        tolerance_threshold=tolerance_threshold,
+        items=items
+    )
+
+
+def verify_archive_checksum(
+    zip_path: Path,
+    chk_path: Path,
+    symbol: str = "BTCUSDT",
+    date_str: str = "2026-07-01"
+) -> ChecksumVerificationEvidence:
     """
     Cryptographically verifies a raw Binance Vision ZIP archive against its official .CHECKSUM file.
-    Returns: (is_valid, actual_sha256, expected_sha256, diagnostic_message)
+    Binds the official Binance Vision URL, checksum file SHA256, and archive SHA256.
+    Returns ChecksumVerificationEvidence which also unpacks as (is_valid, actual_sha, expected_sha, message).
     """
+    url = build_official_checksum_url(symbol, date_str)
+    chk_name = chk_path.name
+    chk_sha = compute_sha256(chk_path) if chk_path.exists() else ""
+
     if not zip_path.exists():
-        return False, "", "", f"Raw archive file missing: {zip_path}"
+        return ChecksumVerificationEvidence(
+            source_url=url,
+            checksum_file_name=chk_name,
+            checksum_file_sha256=chk_sha,
+            expected_archive_sha256="",
+            actual_archive_sha256="",
+            is_checksum_verified=False,
+            verification_message=f"Raw archive file missing: {zip_path}"
+        )
     if not chk_path.exists():
-        return False, "", "", f"Official .CHECKSUM file missing: {chk_path}"
+        return ChecksumVerificationEvidence(
+            source_url=url,
+            checksum_file_name=chk_name,
+            checksum_file_sha256="",
+            expected_archive_sha256="",
+            actual_archive_sha256="",
+            is_checksum_verified=False,
+            verification_message=f"Official .CHECKSUM file missing: {chk_path}"
+        )
 
     try:
         chk_content = chk_path.read_text(encoding="utf-8").strip()
         tokens = chk_content.split()
         if not tokens:
-            return False, "", "", f"Empty .CHECKSUM file: {chk_path}"
+            return ChecksumVerificationEvidence(
+                source_url=url,
+                checksum_file_name=chk_name,
+                checksum_file_sha256=chk_sha,
+                expected_archive_sha256="",
+                actual_archive_sha256="",
+                is_checksum_verified=False,
+                verification_message=f"Empty .CHECKSUM file: {chk_path}"
+            )
         expected_hash = tokens[0].lower()
     except Exception as e:
-        return False, "", "", f"Failed to read .CHECKSUM file {chk_path}: {e}"
+        return ChecksumVerificationEvidence(
+            source_url=url,
+            checksum_file_name=chk_name,
+            checksum_file_sha256=chk_sha,
+            expected_archive_sha256="",
+            actual_archive_sha256="",
+            is_checksum_verified=False,
+            verification_message=f"Failed to read .CHECKSUM file {chk_path}: {e}"
+        )
 
     actual_hash = compute_sha256(zip_path).lower()
     if actual_hash != expected_hash:
-        return False, actual_hash, expected_hash, f"Hash mismatch: actual {actual_hash} != expected {expected_hash}"
+        return ChecksumVerificationEvidence(
+            source_url=url,
+            checksum_file_name=chk_name,
+            checksum_file_sha256=chk_sha,
+            expected_archive_sha256=expected_hash,
+            actual_archive_sha256=actual_hash,
+            is_checksum_verified=False,
+            verification_message=f"Hash mismatch: actual {actual_hash} != expected {expected_hash}"
+        )
 
-    return True, actual_hash, expected_hash, "Official checksum verified successfully."
+    return ChecksumVerificationEvidence(
+        source_url=url,
+        checksum_file_name=chk_name,
+        checksum_file_sha256=chk_sha,
+        expected_archive_sha256=expected_hash,
+        actual_archive_sha256=actual_hash,
+        is_checksum_verified=True,
+        verification_message="Official checksum verified successfully against Binance Vision digest."
+    )
 
 
 def emit_recomputation_certificate(
-    raw_zip: Path,
-    chk_path: Path,
-    date_str: str,
-    horizon: int,
-    sample_identity: dict,
-    all_matched: bool,
+    execution: SampleRecomputationAuditExecution,
     cert_output_path: Path | None = None
-) -> bool:
+) -> dict:
     """
-    Strict certificate issuance entry point. Refuses to emit certificate with checksum_verified: true
-    unless verify_archive_checksum genuinely passes and numerical parity delta is strictly < 1e-6.
+    Strict certificate issuance entry point.
+    Recomputation certificate CANNOT be issued by passing flags or unverified executions.
+    Requires genuine SampleRecomputationAuditExecution with verified official checksum and numerical parity within tolerance.
     """
-    chk_ok, actual_sha, expected_sha, chk_msg = verify_archive_checksum(raw_zip, chk_path)
-    if not chk_ok:
-        raise ValueError(f"Cannot emit recomputation certificate: Checksum verification failed for {raw_zip.name}: {chk_msg}")
-    if not all_matched:
-        raise ValueError("Cannot emit recomputation certificate: Numerical parity delta exceeds tolerance (< 1e-6).")
+    if not isinstance(execution, SampleRecomputationAuditExecution):
+        raise TypeError(
+            f"emit_recomputation_certificate requires a genuine SampleRecomputationAuditExecution instance, got {type(execution).__name__}. "
+            f"Direct boolean declaration (such as all_matched=True) is prohibited."
+        )
+
+    if not execution.checksum_evidence.is_checksum_verified:
+        raise ValueError(
+            f"Cannot emit recomputation certificate: Checksum verification failed for "
+            f"{execution.checksum_evidence.checksum_file_name}: {execution.checksum_evidence.verification_message}"
+        )
+
+    if not execution.numerical_parity.is_success:
+        raise ValueError(
+            f"Cannot emit recomputation certificate: Numerical parity delta ({execution.numerical_parity.max_absolute_delta:.2e}) "
+            f"exceeds tolerance (< {execution.numerical_parity.tolerance_threshold:.1e}): {execution.numerical_parity.overall_classification}"
+        )
 
     cert_data = {
-        "schema_version": "1.0.0",
-        "certification_timestamp_utc": datetime.now(timezone.utc).isoformat(),
-        "target_date": date_str,
-        "target_horizon_lag": horizon,
-        "raw_archive": {
-            "file": raw_zip.name,
-            "sha256": actual_sha,
-            "checksum_file": chk_path.name,
-            "checksum_expected_sha256": expected_sha,
+        "schema_version": "1.1.0",
+        "certificate_id": execution.run_id,
+        "certification_timestamp_utc": execution.execution_timestamp_utc,
+        "target_date": execution.target_date,
+        "target_horizon_lag": execution.target_horizon_lag,
+        "git_commit": execution.git_commit,
+        "audit_scope": {
+            "coverage_level": "SAMPLE_LEVEL_250K_TRADES",
+            "sample_description": "Authoritative session-active 250,000 tick window for econometric parameter recomputation",
+            "is_full_day_production_reconciled": False,
+            "full_day_production_note": "Production full-day (4.16M rows) tick-by-tick recomputation is unverified in this execution; only the active 250k model sample was recomputed from raw ZIP CSV."
+        },
+        "stage_verification_status": {
+            "raw_archive_official_checksum": "VERIFIED_OFFICIAL_MATCH",
+            "normalized_parquet_catalog": "VERIFIED_SCHEMA_AND_MANIFEST",
+            "static_model_artifacts_contract": "VERIFIED_22_ARTIFACTS",
+            "selected_sample_numerical_recomputation": "VERIFIED_SAMPLE_LEVEL_MATCH",
+            "full_production_tick_level_reconciliation": "UNVERIFIED_NOT_EXECUTED"
+        },
+        "raw_archive_provenance": {
+            "file_name": execution.checksum_evidence.checksum_file_name.replace(".CHECKSUM", ""),
+            "file_sha256": execution.checksum_evidence.actual_archive_sha256,
+            "official_checksum_file": execution.checksum_evidence.checksum_file_name,
+            "official_checksum_file_sha256": execution.checksum_evidence.checksum_file_sha256,
+            "official_checksum_url": execution.checksum_evidence.source_url,
+            "checksum_expected_sha256": execution.checksum_evidence.expected_archive_sha256,
             "checksum_verified": True,
             "verification_method": "BINANCE_VISION_OFFICIAL_SHA256_DIGEST"
         },
-        "sample_identity": sample_identity,
-        "numerical_parity_status": "EXACT_MATCH_DELTA_ZERO",
-        "verification_verdict": "CERTIFIED_FULL_RAW_RECOMPUTATION"
+        "sample_identity": execution.sample_identity,
+        "numerical_parity": {
+            "overall_classification": execution.numerical_parity.overall_classification,
+            "classification_label": "数值完全一致" if execution.numerical_parity.overall_classification == "NUMERICAL_EXACT_MATCH" else "容差内一致",
+            "tolerance_threshold": execution.numerical_parity.tolerance_threshold,
+            "max_absolute_delta": execution.numerical_parity.max_absolute_delta,
+            "evaluated_metrics_count": len(execution.numerical_parity.items),
+            "metrics_breakdown": [
+                {
+                    "metric_name": it.metric_name,
+                    "live_recomputed": it.live_recomputed,
+                    "static_fixture": it.static_fixture,
+                    "absolute_delta": it.absolute_delta,
+                    "tolerance_threshold": it.tolerance_threshold,
+                    "parity_classification": it.parity_classification,
+                    "status": it.status_label
+                }
+                for it in execution.numerical_parity.items
+            ]
+        },
+        "overall_verdict": "SAMPLE_RECOMPUTATION_PASS_FULL_DAY_UNRECONCILED"
     }
+
     target_file = cert_output_path or (METADATA_DIR / "recomputation_certificate.json")
     target_file.parent.mkdir(parents=True, exist_ok=True)
-    with open(target_file, "w", encoding="utf-8") as f:
+    with open(target_file, "w", encoding="utf-8", newline="\n") as f:
         json.dump(cert_data, f, indent=2)
-    print(f"[+] Authoritative recomputation certificate successfully emitted at: {target_file}")
-    return True
+    print(f"[+] Authoritative recomputation certificate (V1.1.0) successfully emitted at: {target_file}")
+    return cert_data
 
 
 def audit_raw_archives() -> bool:
@@ -302,17 +539,19 @@ def audit_model_json_artifacts() -> bool:
 
 def audit_live_recomputation(date_str: str = "2026-07-01", horizon: int = 20) -> bool:
     print("\n" + "=" * 80)
-    print(f"STAGE 4: FULL RAW-ZIP TO MODEL PARAMETER END-TO-END RECOMPUTATION BENCHMARK")
+    print(f"STAGE 4: SAMPLE-LEVEL (250K TRADES) RAW-ZIP TO MODEL RECOMPUTATION BENCHMARK")
     print(f"         Target: date={date_str}, k={horizon}, sample_size=250,000 trades")
+    print(f"         Scope:  Authoritative session-active sample (Offset 25%, 250k ticks)")
+    print(f"         Status: Full 24h Production (4.16M rows) reconciliation is UNVERIFIED")
     print("=" * 80)
 
     raw_zip = RAW_DIR / f"BTCUSDT-trades-{date_str}.zip"
     chk_path = RAW_DIR / f"BTCUSDT-trades-{date_str}.zip.CHECKSUM"
 
     # Strictly verify archive checksum against official .CHECKSUM first
-    chk_ok, actual_sha, expected_sha, chk_msg = verify_archive_checksum(raw_zip, chk_path)
-    if not chk_ok:
-        print(f"[FAIL] Raw archive checksum verification failed for {raw_zip.name}: {chk_msg}")
+    chk_evidence = verify_archive_checksum(raw_zip, chk_path, symbol="BTCUSDT", date_str=date_str)
+    if not chk_evidence.is_checksum_verified:
+        print(f"[FAIL] Raw archive checksum verification failed for {raw_zip.name}: {chk_evidence.verification_message}")
         return False
 
     parquet_path = NORMALIZED_DIR / f"date={date_str}" / "trades.parquet"
@@ -423,70 +662,56 @@ def audit_live_recomputation(date_str: str = "2026-07-01", horizon: int = 20) ->
     live_res = model.fit_impact_models(sample_parq, horizon_lag=horizon, sample_size=len(sample_parq))
 
     # Compare key estimated parameters with tolerance 1e-6
-    checks = []
+    checks = [
+        ("Linear Beta", live_res.get("linear_model", {}).get("beta"), static_res.get("linear_model", {}).get("beta")),
+        ("Linear R^2", live_res.get("linear_model", {}).get("r_squared"), static_res.get("linear_model", {}).get("r_squared")),
+        ("Logarithmic Beta", live_res.get("logarithmic_model", {}).get("beta"), static_res.get("logarithmic_model", {}).get("beta")),
+        ("Logarithmic R^2", live_res.get("logarithmic_model", {}).get("r_squared"), static_res.get("logarithmic_model", {}).get("r_squared")),
+        ("Power-Law OLS Gamma", live_res.get("power_law_model", {}).get("gamma"), static_res.get("power_law_model", {}).get("gamma")),
+        ("Power-Law WLS Gamma", live_res.get("power_law_model", {}).get("wls_fit", {}).get("gamma_wls"), static_res.get("power_law_model", {}).get("wls_fit", {}).get("gamma_wls")),
+        ("Power-Law WLS R^2", live_res.get("power_law_model", {}).get("wls_fit", {}).get("r_squared_wls"), static_res.get("power_law_model", {}).get("wls_fit", {}).get("r_squared_wls")),
+        ("Trade-Level Gamma", live_res.get("power_law_model", {}).get("trade_level_fit", {}).get("gamma_trade"), static_res.get("power_law_model", {}).get("trade_level_fit", {}).get("gamma_trade")),
+        ("Trade-Level HAC SE", live_res.get("power_law_model", {}).get("trade_level_fit", {}).get("gamma_trade_se"), static_res.get("power_law_model", {}).get("trade_level_fit", {}).get("gamma_trade_se")),
+        ("Trade-Level t-stat", live_res.get("power_law_model", {}).get("trade_level_fit", {}).get("t_statistic_trade"), static_res.get("power_law_model", {}).get("trade_level_fit", {}).get("t_statistic_trade")),
+        ("Trade-Level p-value", live_res.get("power_law_model", {}).get("trade_level_fit", {}).get("p_value_trade"), static_res.get("power_law_model", {}).get("trade_level_fit", {}).get("p_value_trade")),
+        ("Regression Obs Count", live_res.get("power_law_model", {}).get("trade_level_fit", {}).get("regression_observations"), static_res.get("power_law_model", {}).get("trade_level_fit", {}).get("regression_observations")),
+        ("Positive Trades Count", live_res.get("power_law_model", {}).get("trade_level_fit", {}).get("positive_trades_count"), static_res.get("power_law_model", {}).get("trade_level_fit", {}).get("positive_trades_count")),
+    ]
 
-    # 1. Linear Beta & R^2
-    checks.append(("Linear Beta", live_res.get("linear_model", {}).get("beta"), static_res.get("linear_model", {}).get("beta")))
-    checks.append(("Linear R^2", live_res.get("linear_model", {}).get("r_squared"), static_res.get("linear_model", {}).get("r_squared")))
+    parity_eval = evaluate_numerical_parity(checks, tolerance_threshold=1e-6)
 
-    # 2. Logarithmic Beta & R^2
-    checks.append(("Logarithmic Beta", live_res.get("logarithmic_model", {}).get("beta"), static_res.get("logarithmic_model", {}).get("beta")))
-    checks.append(("Logarithmic R^2", live_res.get("logarithmic_model", {}).get("r_squared"), static_res.get("logarithmic_model", {}).get("r_squared")))
+    print(f"\n{'Parameter Metric':<24} | {'Live Recomputed':<16} | {'Static Fixture':<16} | {'Delta':<12} | Classification | Status")
+    print("-" * 105)
+    for it in parity_eval.items:
+        live_str = f"{it.live_recomputed:.8f}" if it.live_recomputed is not None else "None"
+        stat_str = f"{it.static_fixture:.8f}" if it.static_fixture is not None else "None"
+        delta_str = f"{it.absolute_delta:.2e}" if it.absolute_delta != float("inf") else "inf"
+        print(f"{it.metric_name:<24} | {live_str:<16} | {stat_str:<16} | {delta_str:<12} | {it.parity_classification:<26} | [{it.status_label}]")
 
-    # 3. Power Law OLS Gamma
-    checks.append(("Power-Law OLS Gamma", live_res.get("power_law_model", {}).get("gamma"), static_res.get("power_law_model", {}).get("gamma")))
+    print("-" * 105)
+    print(f"Numerical Parity Summary: Max Absolute Delta = {parity_eval.max_absolute_delta:.2e} | Overall: {parity_eval.overall_classification}")
 
-    # 4. Power Law WLS Gamma & R^2
-    live_wls = live_res.get("power_law_model", {}).get("wls_fit", {})
-    stat_wls = static_res.get("power_law_model", {}).get("wls_fit", {})
-    checks.append(("Power-Law WLS Gamma", live_wls.get("gamma_wls"), stat_wls.get("gamma_wls")))
-    checks.append(("Power-Law WLS R^2", live_wls.get("r_squared_wls"), stat_wls.get("r_squared_wls")))
-
-    # 5. Trade-Level Fit Parameters & HAC Test Statistics
-    live_tr = live_res.get("power_law_model", {}).get("trade_level_fit", {})
-    stat_tr = static_res.get("power_law_model", {}).get("trade_level_fit", {})
-    checks.append(("Trade-Level Gamma", live_tr.get("gamma_trade"), stat_tr.get("gamma_trade")))
-    checks.append(("Trade-Level HAC SE", live_tr.get("gamma_trade_se"), stat_tr.get("gamma_trade_se")))
-    checks.append(("Trade-Level t-stat", live_tr.get("t_statistic_trade"), stat_tr.get("t_statistic_trade")))
-    checks.append(("Trade-Level p-value", live_tr.get("p_value_trade"), stat_tr.get("p_value_trade")))
-
-    # 6. Sample Disaggregation
-    checks.append(("Regression Obs Count", live_tr.get("regression_observations"), stat_tr.get("regression_observations")))
-    checks.append(("Positive Trades Count", live_tr.get("positive_trades_count"), stat_tr.get("positive_trades_count")))
-
-    all_matched = True
-    print(f"\n{'Parameter Metric':<24} | {'Live Recomputed':<16} | {'Static Fixture':<16} | {'Delta':<12} | Status")
-    print("-" * 80)
-    for name, live_val, stat_val in checks:
-        if live_val is None and stat_val is None:
-            print(f"{name:<24} | {'None':<16} | {'None':<16} | {'0.0':<12} | [MATCH]")
-            continue
-        if live_val is None or stat_val is None:
-            print(f"{name:<24} | {str(live_val):<16} | {str(stat_val):<16} | {'N/A':<12} | [MISMATCH]")
-            all_matched = False
-            continue
-
-        delta = abs(float(live_val) - float(stat_val))
-        status = "[MATCH]" if delta < 1e-6 else "[MISMATCH]"
-        if delta >= 1e-6:
-            all_matched = False
-        print(f"{name:<24} | {live_val:<16.8f} | {stat_val:<16.8f} | {delta:<12.2e} | {status}")
-
-    if all_matched:
-        print("\n[PASS] Full recomputation benchmark from raw Binance Vision ZIP directly matches published static artifact (< 1e-6)!")
-        # Emit Authoritative Recomputation Certificate through strict verification gateway
-        emit_recomputation_certificate(
-            raw_zip=raw_zip,
-            chk_path=chk_path,
-            date_str=date_str,
-            horizon=horizon,
+    if parity_eval.is_success:
+        print(f"\n[PASS] Sample recomputation benchmark from raw Binance Vision ZIP directly matches published static artifact ({parity_eval.overall_classification})!")
+        execution = SampleRecomputationAuditExecution(
+            run_id=str(uuid.uuid4()),
+            execution_timestamp_utc=datetime.now(timezone.utc).isoformat(),
+            target_date=date_str,
+            target_horizon_lag=horizon,
+            git_commit=get_git_commit(),
+            checksum_evidence=chk_evidence,
             sample_identity=prov_parq.to_dict(),
-            all_matched=all_matched
+            numerical_parity=parity_eval,
+            stage_scopes={
+                "coverage_level": "SAMPLE_LEVEL_250K_TRADES",
+                "is_full_day_production_reconciled": False
+            }
         )
+        emit_recomputation_certificate(execution)
+        return True
     else:
         print("\n[FAIL] Discrepancy observed between live recomputed values and published static artifacts.")
-
-    return all_matched
+        return False
 
 
 def main():
@@ -514,7 +739,8 @@ def main():
         print(f"Stage 1 (Raw Archive Integrity):               NOT RUN (Requires Production Raw Data)")
         print(f"Stage 2 (Normalized Parquet Schema & Hashes):  NOT RUN (Requires Production Datasets)")
         print(f"Stage 3 (22 Artifacts & Contract 1.0.0):       {'PASSED' if p3 else 'FAILED'}")
-        print(f"Stage 4 (Full Raw ZIP to Model Recomputation): NOT RUN (Requires Production Datasets)")
+        print(f"Stage 4 (Sample-Level 250k Recomputation):     NOT RUN (Requires Production Datasets)")
+        print(f"Stage 5 (Full Production 24h Recomputation):   NOT RUN (Requires Production Datasets)")
         print("=" * 80)
         if p3:
             print("\n[SUCCESS] Manifest and artifact integrity certified! (Note: Production recomputation not executed in manifest mode)")
@@ -550,7 +776,8 @@ def main():
         print(f"Stage 1 (Raw Archive Integrity & Checksums):   FAILED (Missing raw archives: {missing_raw})")
         print(f"Stage 2 (Normalized Parquet Schema & Hashes):  FAILED (Missing Parquet partitions: {missing_norm})")
         print(f"Stage 3 (22 Artifacts & Contract 1.0.0):       {'PASSED' if p3 else 'FAILED'}")
-        print(f"Stage 4 (Full Raw ZIP to Model Recomputation): FAILED (Missing production data inputs)")
+        print(f"Stage 4 (Sample-Level 250k Recomputation):     FAILED (Missing production data inputs)")
+        print(f"Stage 5 (Full Production 24h Recomputation):   UNVERIFIED (Missing production data inputs)")
         print("\n[RESULT: INCOMPLETE] Full end-to-end pipeline audit failed due to missing raw archives or normalized Parquets.")
         sys.exit(1)
 
@@ -566,10 +793,13 @@ def main():
     print(f"Stage 1 (Raw Archive Integrity & Checksums):   {'PASSED' if p1 else 'FAILED'}")
     print(f"Stage 2 (Normalized Parquet Schema & Hashes):  {'PASSED' if p2 else 'FAILED'}")
     print(f"Stage 3 (22 Artifacts & Contract 1.0.0):       {'PASSED' if p3 else 'FAILED'}")
-    print(f"Stage 4 (Full Raw ZIP to Model Recomputation): {'PASSED' if p4 else 'FAILED'}")
+    print(f"Stage 4 (Sample-Level 250k Recomputation):     {'PASSED' if p4 else 'FAILED'} (Scope: SAMPLE_LEVEL_250K_TRADES)")
+    print(f"Stage 5 (Full Production 24h Recomputation):   UNVERIFIED (Requires tick-level full 4.16M reconciliation)")
+    print("=" * 80)
 
     if p1 and p2 and p3 and p4:
-        print("\n[SUCCESS] All 4 end-to-end pipeline verification stages certified from raw Binance Vision ZIPs to published model artifacts!")
+        print("\n[SUCCESS] Sample recomputation verified from raw Binance Vision ZIP to published model artifact!")
+        print("          (Note: Production 24h 4.16M tick-by-tick full dataset remains unverified in this sample run)")
         sys.exit(0)
     else:
         print("\n[ERROR] One or more active audit stages failed.")

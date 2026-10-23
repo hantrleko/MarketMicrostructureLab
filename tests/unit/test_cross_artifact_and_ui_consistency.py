@@ -114,3 +114,26 @@ def test_response_curves_provenance_and_timestamps():
         assert len(data["curves"]) == 15
         assert data["curves"][0]["lag_events"] == 1
         assert data["curves"][-1]["lag_events"] == 500
+
+
+def test_ui_sample_chronology_strictly_reads_metadata_without_fallbacks():
+    """
+    CRITICAL QUALITY GATE:
+    Verifies that MarketImpactResearch.tsx does not contain stale fallback timestamps
+    ('00:00:00' -> '04:23:18'), displays '正在读取样本信息...' during loading,
+    '样本时间暂不可用' on error, and provides retry capability.
+    """
+    tsx_file = ROOT / "apps" / "web" / "src" / "pages" / "MarketImpactResearch.tsx"
+    assert tsx_file.exists(), "MarketImpactResearch.tsx missing"
+    content = tsx_file.read_text(encoding="utf-8")
+
+    # Stale fallback timestamps must NOT exist
+    assert "04:23:18" not in content, "Stale fallback timestamp '04:23:18' found in MarketImpactResearch.tsx"
+    assert "'00:00:00'" not in content, "Stale fallback timestamp '00:00:00' found in MarketImpactResearch.tsx"
+
+    # Status-driven loading and error states
+    assert "正在读取样本信息..." in content, "Missing '正在读取样本信息...' loading state in MarketImpactResearch.tsx"
+    assert "样本时间暂不可用" in content, "Missing '样本时间暂不可用' error state in MarketImpactResearch.tsx"
+    assert "handleRetry" in content, "Missing handleRetry callback in MarketImpactResearch.tsx"
+    assert "重试" in content, "Missing retry button in MarketImpactResearch.tsx"
+

@@ -7,6 +7,9 @@ from scripts.recompute_and_audit_provenance import (
     audit_live_recomputation,
     verify_archive_checksum,
     emit_recomputation_certificate,
+    evaluate_numerical_parity,
+    SampleRecomputationAuditExecution,
+    ChecksumVerificationEvidence,
     compute_sha256,
     RAW_DIR,
     NORMALIZED_DIR,
@@ -54,16 +57,24 @@ def test_certificate_cannot_be_generated_with_unverified_checksum(tmp_path):
     zip_file.write_bytes(b"PK\x03\x04dummy_zip_content")
     chk_file.write_text("badhash123  test-archive.zip\n", encoding="utf-8")
 
+    chk_evidence = verify_archive_checksum(zip_file, chk_file, date_str="2026-07-01")
+    assert not chk_evidence.is_checksum_verified
+
+    parity = evaluate_numerical_parity([("Linear Beta", 0.05, 0.05)])
+    execution = SampleRecomputationAuditExecution(
+        run_id="test-run-unverified",
+        execution_timestamp_utc="2026-10-23T00:00:00Z",
+        target_date="2026-07-01",
+        target_horizon_lag=20,
+        git_commit="HEAD",
+        checksum_evidence=chk_evidence,
+        sample_identity={"test": 1},
+        numerical_parity=parity,
+        stage_scopes={"coverage_level": "SAMPLE_LEVEL_250K_TRADES", "is_full_day_production_reconciled": False}
+    )
+
     with pytest.raises(ValueError, match="Checksum verification failed"):
-        emit_recomputation_certificate(
-            raw_zip=zip_file,
-            chk_path=chk_file,
-            date_str="2026-07-01",
-            horizon=20,
-            sample_identity={"test": 1},
-            all_matched=True,
-            cert_output_path=cert_file
-        )
+        emit_recomputation_certificate(execution, cert_output_path=cert_file)
 
     # Certificate must NOT be created
     assert not cert_file.exists(), "Certificate must not exist after verification failure"
@@ -79,18 +90,36 @@ def test_certificate_cannot_be_generated_with_numerical_discrepancy(tmp_path):
     real_sha = compute_sha256(zip_file)
     chk_file.write_text(f"{real_sha}  test-archive.zip\n", encoding="utf-8")
 
-    with pytest.raises(ValueError, match="Numerical parity delta exceeds tolerance"):
-        emit_recomputation_certificate(
-            raw_zip=zip_file,
-            chk_path=chk_file,
-            date_str="2026-07-01",
-            horizon=20,
-            sample_identity={"test": 1},
-            all_matched=False,
-            cert_output_path=cert_file
-        )
+    chk_evidence = verify_archive_checksum(zip_file, chk_file, date_str="2026-07-01")
+    assert chk_evidence.is_checksum_verified
+
+    # Discrepancy > 1e-6
+    parity = evaluate_numerical_parity([("Linear Beta", 0.05, 0.055)])
+    assert not parity.is_success
+    assert parity.overall_classification == "TOLERANCE_EXCEEDED_FAILURE"
+
+    execution = SampleRecomputationAuditExecution(
+        run_id="test-run-discrepancy",
+        execution_timestamp_utc="2026-10-23T00:00:00Z",
+        target_date="2026-07-01",
+        target_horizon_lag=20,
+        git_commit="HEAD",
+        checksum_evidence=chk_evidence,
+        sample_identity={"test": 1},
+        numerical_parity=parity,
+        stage_scopes={"coverage_level": "SAMPLE_LEVEL_250K_TRADES", "is_full_day_production_reconciled": False}
+    )
+
+    with pytest.raises(ValueError, match="Numerical parity delta"):
+        emit_recomputation_certificate(execution, cert_output_path=cert_file)
 
     assert not cert_file.exists()
+
+
+def test_certificate_issuance_rejects_raw_boolean_parameters():
+    """Verifies that legacy manual pass declaration (all_matched=True) is rejected with TypeError."""
+    with pytest.raises(TypeError, match="requires a genuine SampleRecomputationAuditExecution"):
+        emit_recomputation_certificate("invalid_argument_type")  # type: ignore
 
 
 @pytest.mark.production_data

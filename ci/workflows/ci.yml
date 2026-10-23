@@ -66,6 +66,9 @@ jobs:
       - name: Production TypeScript & Vite Build
         run: npm run build
 
+      - name: UI Bundle & Mathematical Typesetting Parity Gate
+        run: npm run test:ui
+
   docker-container-smoke-test:
     name: Docker Container Build & Runtime Smoke Test
     needs: [fixture-smoke-and-reproducibility, frontend-build-and-audit]

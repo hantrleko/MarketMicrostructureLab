@@ -137,3 +137,54 @@ def test_ui_sample_chronology_strictly_reads_metadata_without_fallbacks():
     assert "handleRetry" in content, "Missing handleRetry callback in MarketImpactResearch.tsx"
     assert "重试" in content, "Missing retry button in MarketImpactResearch.tsx"
 
+
+def test_ui_v11_layout_math_and_bundle_parity():
+    """
+    V1.1 QUALITY GATE:
+    Verifies that UI incorporates KaTeX math typography, zero unrendered LaTeX leaks,
+    adaptive statistical card grids, compact header (<96px), and initial replay status guidance.
+    """
+    web_src = ROOT / "apps" / "web" / "src"
+
+    # 1. KaTeX MathFormula component exists
+    math_comp = web_src / "components" / "MathFormula.tsx"
+    assert math_comp.exists(), "Missing MathFormula.tsx component"
+    math_content = math_comp.read_text(encoding="utf-8")
+    assert "katex" in math_content, "MathFormula does not import katex"
+
+    # 2. MarketImpactResearch imports and uses MathFormula with zero unrendered LaTeX in text
+    impact_tsx = web_src / "pages" / "MarketImpactResearch.tsx"
+    impact_content = impact_tsx.read_text(encoding="utf-8")
+    assert "MathFormula" in impact_content, "MarketImpactResearch.tsx does not use MathFormula"
+    assert "$\\mathcal" not in impact_content, "Exposed unrendered $\\mathcal found in MarketImpactResearch.tsx"
+    assert "$\\mathbb" not in impact_content, "Exposed unrendered $\\mathbb found in MarketImpactResearch.tsx"
+    assert "stat-cards-adaptive" in impact_content, "stat-cards-adaptive not used in MarketImpactResearch.tsx"
+
+    # 3. index.css contains responsive inspector and adaptive grid classes
+    css_file = web_src / "index.css"
+    css_content = css_file.read_text(encoding="utf-8")
+    assert ".stat-cards-adaptive" in css_content, "Missing .stat-cards-adaptive in index.css"
+    assert ".responsive-inspector-grid" in css_content, "Missing .responsive-inspector-grid in index.css"
+    assert ".responsive-orderbook-grid" in css_content, "Missing .responsive-orderbook-grid in index.css"
+    assert "max-height: 96px" in css_content, "Header max-height 96px constraint missing in index.css"
+
+    # 4. MarketReplay has compact initial 1-trade notice and tight yMin/yMax framing
+    replay_tsx = web_src / "pages" / "MarketReplay.tsx"
+    replay_content = replay_tsx.read_text(encoding="utf-8")
+    assert "已加载" in replay_content and "当前显示第 1 笔" in replay_content, (
+        "MarketReplay.tsx missing initial 1-trade guidance notice"
+    )
+    assert "minClipPrice" in replay_content and "maxClipPrice" in replay_content, (
+        "MarketReplay.tsx missing clip price framing logic"
+    )
+    assert "responsive-inspector-grid" in replay_content, (
+        "MarketReplay.tsx missing responsive-inspector-grid container"
+    )
+
+    # 5. MMLChart lightweight core wrapper exists and is used across pages
+    chart_comp = web_src / "components" / "MMLChart.tsx"
+    assert chart_comp.exists(), "Missing MMLChart.tsx lightweight core component"
+    chart_content = chart_comp.read_text(encoding="utf-8")
+    assert "echarts/core" in chart_content, "MMLChart does not use echarts/core"
+
+

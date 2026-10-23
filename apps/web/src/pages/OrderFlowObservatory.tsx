@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import ReactECharts from 'echarts-for-react';
 import { fetchFlowBuckets, fetchAutocorrelation, fetchDistributions, fetchHawkes } from '../api/client';
 import { FlowBucket, AutocorrResult, TradeSizeDistribution, DurationDistribution } from '../types';
 import { ShieldCheck, Info, AlertTriangle } from 'lucide-react';
+import { MMLChart } from '../components/MMLChart';
 
 interface OrderFlowObservatoryProps {
   date: string;
@@ -286,7 +286,7 @@ export const OrderFlowObservatory: React.FC<OrderFlowObservatoryProps> = ({ date
             Computing Polars trade flow aggregations...
           </div>
         ) : (
-          <ReactECharts option={flowChartOption} style={{ height: '380px', width: '100%' }} />
+          <MMLChart option={flowChartOption} style={{ height: '380px', width: '100%' }} />
         )}
       </div>
 
@@ -300,7 +300,7 @@ export const OrderFlowObservatory: React.FC<OrderFlowObservatoryProps> = ({ date
               rho(1) = {autocorr?.autocorrelations?.[0]?.toFixed(4) || '---'}
             </span>
           </div>
-          <ReactECharts option={autocorrOption} style={{ height: '280px', width: '100%' }} />
+          <MMLChart option={autocorrOption} style={{ height: '280px', width: '100%' }} />
           <div style={{ fontSize: '0.74rem', color: 'var(--text-dim)', marginTop: '8px', lineHeight: '1.4' }}>
             <strong>Strong Trade-Sign Persistence:</strong> Confirms extreme intraday continuity (rho(1) &asymp; 0.93, rho(50) &asymp; 0.70).
             Note: Formal statistical Long Memory requires verifying power-law decay across k &ge; 10^3 ~ 10^4 and aggregated trade structures.
@@ -315,7 +315,7 @@ export const OrderFlowObservatory: React.FC<OrderFlowObservatoryProps> = ({ date
               MEDIAN: {sizeDist?.median_qty ? sizeDist.median_qty.toFixed(4) : '---'} BTC
             </span>
           </div>
-          <ReactECharts option={sizeOption} style={{ height: '280px', width: '100%' }} />
+          <MMLChart option={sizeOption} style={{ height: '280px', width: '100%' }} />
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', marginTop: '8px', color: 'var(--text-muted)' }}>
             <span>P25: <strong className="mono">{sizeDist?.p25_qty?.toFixed(4) || '---'}</strong></span>
             <span>P75: <strong className="mono">{sizeDist?.p75_qty?.toFixed(4) || '---'}</strong></span>

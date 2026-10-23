@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import ReactECharts from 'echarts-for-react';
 import { Play, Pause, SkipForward, RotateCcw, FastForward, Clock, Zap, Timer, AlertTriangle } from 'lucide-react';
 import { fetchReplayWindow } from '../api/client';
 import { ReplayTrade } from '../types';
+import { MMLChart } from '../components/MMLChart';
 
 interface MarketReplayProps {
   date: string;
@@ -489,7 +489,7 @@ export const MarketReplay: React.FC<MarketReplayProps> = ({ date }) => {
             </div>
           ) : (
             <>
-              <ReactECharts option={chartOption} style={{ height: '350px', width: '100%' }} />
+              <MMLChart option={chartOption} style={{ height: '350px', width: '100%' }} />
               <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', marginTop: '8px', lineHeight: '1.4' }}>
                 * <strong>CVD Scope Notice:</strong> Cumulative Volume Delta (CVD) is calculated strictly as cumulative aggressive buy minus sell volume within this loaded replay clip (anchored to 0.0 BTC at clip onset {clipStartUtc} UTC), not the full 24-hour day cumulative sum. Physical market span covered: {clipDurationSec}s.
               </div>

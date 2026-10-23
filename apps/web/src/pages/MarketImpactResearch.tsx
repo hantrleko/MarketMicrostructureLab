@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import ReactECharts from 'echarts-for-react';
 import { fetchPriceResponse, fetchImpactModels } from '../api/client';
 import { PriceResponseData, ImpactModelsData, WalkForwardFold, WalkForwardValidation, ExperimentComparisonSuite } from '../types';
 import { CheckCircle, Scale, Layers, AlertTriangle, ShieldCheck, Database, Hash, GitBranch, Download, BookOpen } from 'lucide-react';
 import { MathFormula } from '../components/MathFormula';
+import { MMLChart } from '../components/MMLChart';
 
 interface MarketImpactResearchProps {
   date: string;
@@ -638,7 +638,7 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
               Calculating event-time price responses...
             </div>
           ) : (
-            <ReactECharts option={responseOption} style={{ height: '320px', width: '100%' }} />
+            <MMLChart option={responseOption} style={{ height: '320px', width: '100%' }} />
           )}
         </div>
 
@@ -650,7 +650,7 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({ date
               {(modelsData?.sample_accounting?.impact_model_window_trades || modelsData?.sample_size || modelsData?.observations || 250000).toLocaleString()} TRADES {modelTimeRangeBadge} &bull; k={horizon}
             </span>
           </div>
-          <ReactECharts option={impactFitOption} style={{ height: '320px', width: '100%' }} />
+          <MMLChart option={impactFitOption} style={{ height: '320px', width: '100%' }} />
           {(!isLinEstimated || !isLogEstimated || !isPowEstimated) && (
             <div style={{ marginTop: '8px', padding: '6px 10px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '4px', fontSize: '0.72rem', color: '#fca5a5' }}>
               <AlertTriangle size={12} style={{ display: 'inline', marginRight: '5px' }} />

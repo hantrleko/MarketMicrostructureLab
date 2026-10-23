@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import ReactECharts from 'echarts-for-react';
 import { fetchOrderBookStatus, controlOrderBook, fetchLiveOrderBook } from '../api/client';
 import { OrderBookStatusResponse, OrderBookLadderResponse, DataSourceStatus } from '../types';
 import { AlertCircle, Wifi, Cpu, Database, Play, Square, Activity, Layers, ShieldAlert } from 'lucide-react';
+import { MMLChart } from '../components/MMLChart';
 
 export const OrderBookLab: React.FC = () => {
   const [obStatus, setObStatus] = useState<OrderBookStatusResponse | null>(null);
@@ -476,7 +476,7 @@ export const OrderBookLab: React.FC = () => {
               </span>
             </div>
 
-            <ReactECharts option={chartOption} style={{ height: '360px', width: '100%' }} />
+            <MMLChart option={chartOption} style={{ height: '360px', width: '100%' }} />
           </div>
 
           {/* Architecture Checklist */}

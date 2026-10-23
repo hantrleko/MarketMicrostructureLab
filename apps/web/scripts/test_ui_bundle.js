@@ -57,6 +57,19 @@ assert(hasReact, 'Isolated vendor-react chunk emitted');
 assert(hasIcons, 'Isolated vendor-icons chunk emitted');
 assert(hasChart, 'Lightweight MMLChart component chunk emitted');
 
+// Vite 8 / Rolldown Node CJS interop (__toESM(mod, 1)) turns
+// `echarts-for-react/lib/core`'s default export into the module.exports
+// object. React then throws minified error #130 and unmounts #root.
+// The chart chunk must pass the component class itself to jsx(), not `.default`.
+if (hasChart) {
+  const chartChunk = jsFiles.find(f => f.startsWith('MMLChart'));
+  const chartSource = fs.readFileSync(path.join(ASSETS, chartChunk), 'utf-8');
+  const nodeModeInterop = /\(\s*\)\s*,\s*1\s*\)/.test(chartSource);
+  const jsxOnDefault = /jsx\)\(\s*[A-Za-z_$][\w$]*\.default\s*,/.test(chartSource);
+  assert(!nodeModeInterop, 'MMLChart chunk does not call Node CJS interop __toESM(mod, 1)');
+  assert(!jsxOnDefault, 'MMLChart chunk does not pass a .default namespace object to jsx()');
+}
+
 // 4. Verify No Raw Unrendered Math Leaks in Output
 let leakedRawMath = false;
 for (const jsFile of jsFiles) {

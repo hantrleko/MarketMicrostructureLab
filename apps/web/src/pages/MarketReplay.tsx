@@ -145,6 +145,16 @@ export const MarketReplay: React.FC<MarketReplayProps> = ({ date }) => {
     return [t.event_time_utc.split('T')[1].replace('Z', ''), runningCvd];
   });
 
+  // Calculate price extremes for tight, responsive y-axis framing
+  const clipPrices = trades.map((t) => t.price).filter((p) => typeof p === 'number' && !isNaN(p));
+  const minClipPrice = clipPrices.length > 0 ? Math.min(...clipPrices) : undefined;
+  const maxClipPrice = clipPrices.length > 0 ? Math.max(...clipPrices) : undefined;
+  const pricePadding = (minClipPrice !== undefined && maxClipPrice !== undefined)
+    ? Math.max(0.5, (maxClipPrice - minClipPrice) * 0.08)
+    : 1;
+  const yMin = minClipPrice !== undefined ? Math.floor(minClipPrice - pricePadding) : undefined;
+  const yMax = maxClipPrice !== undefined ? Math.ceil(maxClipPrice + pricePadding) : undefined;
+
   const chartOption = {
     backgroundColor: 'transparent',
     tooltip: {
@@ -177,6 +187,8 @@ export const MarketReplay: React.FC<MarketReplayProps> = ({ date }) => {
         type: 'value',
         gridIndex: 0,
         scale: true,
+        min: yMin,
+        max: yMax,
         splitLine: { lineStyle: { color: '#161e2e' } },
         axisLabel: { color: '#64748b', fontFamily: 'JetBrains Mono', fontSize: 10 }
       },
@@ -247,31 +259,45 @@ export const MarketReplay: React.FC<MarketReplayProps> = ({ date }) => {
     : '0.000';
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      {/* Historical Event Replay Disclosure Banner (M2) */}
-      <div className="mml-card" style={{ borderLeft: '4px solid var(--color-buy)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <Clock size={22} color="var(--color-buy)" />
-          <div>
-            <div style={{ fontWeight: 700, fontSize: '0.88rem', letterSpacing: '0.03em' }}>
-              HISTORICAL EVENT-TIME REPLAY &bull; BINANCE VISION SPOT ARCHIVE (BTC/USDT)
-            </div>
-            <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
-              Offline deterministic event playback of normalized tick-level trades. This is an archival research tool for visualizing high-frequency execution sequences, not an active real-time market data feed.
-            </div>
-          </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      {/* Historical Event Replay Disclosure Strip */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: '8px',
+        padding: '6px 12px',
+        background: 'rgba(15, 23, 42, 0.65)',
+        border: '1px solid var(--border-color)',
+        borderRadius: '4px',
+        fontSize: '0.74rem'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Clock size={15} color="var(--color-buy)" />
+          <span style={{ fontWeight: 700, color: '#f1f5f9', letterSpacing: '0.02em' }}>
+            HISTORICAL EVENT REPLAY &bull; BINANCE SPOT BTC/USDT ARCHIVE ({date})
+          </span>
+          <span style={{ color: 'var(--text-muted)' }}>
+            &bull; Deterministic tick playback
+          </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '0.68rem', fontFamily: 'var(--font-mono)', background: 'rgba(16, 185, 129, 0.15)', color: 'var(--color-buy)', padding: '2px 8px', borderRadius: '3px', fontWeight: 700 }}>
-            HISTORICAL ARCHIVE &bull; NON-REALTIME
+          <span className="mono" style={{ fontSize: '0.68rem', background: 'rgba(16, 185, 129, 0.15)', color: 'var(--color-buy)', padding: '2px 8px', borderRadius: '3px', fontWeight: 600 }}>
+            OFFLINE ARCHIVE &bull; NON-REALTIME
           </span>
+          {isTruncated && (
+            <span className="badge-gold" style={{ fontSize: '0.68rem', padding: '2px 8px' }}>
+              BUFFER TRUNCATED: {trades.length} / {totalInWindow.toLocaleString()} TICKS
+            </span>
+          )}
         </div>
       </div>
 
       {/* Error Banner */}
       {error && (
-        <div className="mml-card" style={{ borderLeft: '4px solid var(--color-sell)', display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <AlertTriangle color="var(--color-sell)" size={24} />
+        <div className="mml-card" style={{ borderLeft: '4px solid var(--color-sell)', display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px' }}>
+          <AlertTriangle color="var(--color-sell)" size={20} />
           <div>
             <div style={{ fontWeight: 600, color: 'var(--color-sell)' }}>Replay Window Error</div>
             <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{error}</div>
@@ -279,223 +305,175 @@ export const MarketReplay: React.FC<MarketReplayProps> = ({ date }) => {
         </div>
       )}
 
-      {/* Session Jumper Bar */}
-      <div className="mml-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <Clock size={16} color="var(--color-gold)" />
-          <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)' }}>
-            PRE-INDEXED INTRADAY WINDOWS:
-          </span>
-          {sessions.map((s) => (
-            <button
-              key={s.offset}
-              onClick={() => setStartSecond(s.offset)}
-              style={{
-                background: startSecond === s.offset ? 'var(--color-buy)' : 'var(--bg-dark)',
-                color: startSecond === s.offset ? '#080b10' : 'var(--text-muted)',
-                fontWeight: startSecond === s.offset ? 700 : 500,
-                border: '1px solid var(--border-color)',
-                padding: '5px 12px',
-                borderRadius: '4px',
-                fontSize: '0.78rem',
-                fontFamily: 'var(--font-mono)'
-              }}
-            >
-              {s.label}
-            </button>
-          ))}
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '0.76rem', color: 'var(--text-dim)' }}>PLAYBACK MODE:</span>
-          <button
-            onClick={() => setPlaybackMode('EVENT_INDEX')}
-            style={{
-              background: playbackMode === 'EVENT_INDEX' ? 'var(--color-gold)' : 'transparent',
-              color: playbackMode === 'EVENT_INDEX' ? '#080b10' : 'var(--text-muted)',
-              border: `1px solid ${playbackMode === 'EVENT_INDEX' ? 'var(--color-gold)' : 'var(--border-color)'}`,
-              padding: '4px 8px',
-              borderRadius: '3px',
-              fontSize: '0.74rem',
-              fontWeight: 600
-            }}
-          >
-            <Zap size={12} style={{ display: 'inline', marginRight: '4px' }} /> CONSTANT RATE (TPS)
-          </button>
-          <button
-            onClick={() => setPlaybackMode('REAL_CLOCK')}
-            style={{
-              background: playbackMode === 'REAL_CLOCK' ? 'var(--color-buy)' : 'transparent',
-              color: playbackMode === 'REAL_CLOCK' ? '#080b10' : 'var(--text-muted)',
-              border: `1px solid ${playbackMode === 'REAL_CLOCK' ? 'var(--color-buy)' : 'var(--border-color)'}`,
-              padding: '4px 8px',
-              borderRadius: '3px',
-              fontSize: '0.74rem',
-              fontWeight: 600
-            }}
-          >
-            <Timer size={12} style={{ display: 'inline', marginRight: '4px' }} /> PROPORTIONAL CLOCK
-          </button>
-        </div>
-      </div>
-
-      {/* Disaggregated Sample & Coverage Metric Panel */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(4, 1fr)',
-        gap: '12px',
-        background: 'var(--bg-card)',
-        border: '1px solid var(--border-color)',
-        borderRadius: '6px',
-        padding: '12px 16px'
-      }}>
-        <div>
-          <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            1. Window Total Events
-          </div>
-          <div className="mono" style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--color-gold)', marginTop: '2px' }}>
-            {totalInWindow.toLocaleString()}
-          </div>
-          <div style={{ fontSize: '0.64rem', color: 'var(--text-muted)' }}>
-            Nominal Span: 60.0s window
-          </div>
-        </div>
-
-        <div>
-          <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            2. Loaded Buffer Events
-          </div>
-          <div className="mono" style={{ fontSize: '1.05rem', fontWeight: 700, color: '#fff', marginTop: '2px' }}>
-            {trades.length.toLocaleString()}
-          </div>
-          <div style={{ fontSize: '0.64rem', color: isTruncated ? 'var(--color-gold)' : 'var(--color-buy)' }}>
-            {((trades.length / Math.max(1, totalInWindow)) * 100).toFixed(1)}% ({clipStartUtc}-{clipEndUtc}, {clipDurationSec}s)
-          </div>
-        </div>
-
-        <div>
-          <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            3. Rendered / Playback
-          </div>
-          <div className="mono" style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--color-buy)', marginTop: '2px' }}>
-            {visibleTrades.length.toLocaleString()} / {trades.length.toLocaleString()}
-          </div>
-          <div style={{ fontSize: '0.64rem', color: 'var(--text-muted)' }}>
-            {playbackMode === 'REAL_CLOCK' ? `Clock Paced (${playbackSpeed}x)` : `Fixed (${playbackSpeed * 10} tps)`}
-          </div>
-        </div>
-
-        <div>
-          <div style={{ fontSize: '0.68rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            4. Model Estimation Baseline
-          </div>
-          <div className="mono" style={{ fontSize: '1.05rem', fontWeight: 700, color: '#a78bfa', marginTop: '2px' }}>
-            250k - 300k
-          </div>
-          <div style={{ fontSize: '0.64rem', color: 'var(--text-muted)' }}>
-            Econometric sample size
-          </div>
-        </div>
-      </div>
-
-      {/* Control Bar */}
-      <div className="mml-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <button
-            onClick={() => setIsPlaying(!isPlaying)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              background: isPlaying ? 'var(--color-sell)' : 'var(--color-buy)',
-              color: '#080b10',
-              fontWeight: 700,
-              padding: '8px 18px',
-              borderRadius: '4px',
-              fontSize: '0.85rem'
-            }}
-          >
-            {isPlaying ? <Pause size={16} /> : <Play size={16} />}
-            {isPlaying ? 'PAUSE' : 'PLAY REPLAY'}
-          </button>
-
-          <button
-            onClick={() => setCurrentIndex((prev) => Math.min(trades.length - 1, prev + 1))}
-            disabled={isPlaying || currentIndex >= trades.length - 1}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              background: 'var(--bg-dark)',
-              border: '1px solid var(--border-color)',
-              color: 'var(--text-main)',
-              padding: '8px 14px',
-              borderRadius: '4px',
-              fontSize: '0.85rem'
-            }}
-          >
-            <SkipForward size={14} /> STEP
-          </button>
-
-          <button
-            onClick={() => { setIsPlaying(false); setCurrentIndex(0); }}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              background: 'var(--bg-dark)',
-              border: '1px solid var(--border-color)',
-              color: 'var(--text-muted)',
-              padding: '8px 12px',
-              borderRadius: '4px',
-              fontSize: '0.85rem'
-            }}
-          >
-            <RotateCcw size={14} /> RESET
-          </button>
-
-          {/* Speed control */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: '12px' }}>
-            <FastForward size={14} color="var(--text-dim)" />
-            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>SPEED:</span>
-            {[1, 2, 5, 10].map((spd) => (
+      {/* Consolidated Compact Replay Toolbar (~85px, 2 rows) */}
+      <div className="mml-card" style={{ padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        {/* Row 1: Session Jumpers & Playback Mode & Window Counts */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
+            <span style={{ fontSize: '0.74rem', fontWeight: 700, color: 'var(--color-gold)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <Clock size={13} /> SESSIONS:
+            </span>
+            {sessions.map((s) => (
               <button
-                key={spd}
-                onClick={() => setPlaybackSpeed(spd)}
+                key={s.offset}
+                onClick={() => setStartSecond(s.offset)}
                 style={{
-                  background: playbackSpeed === spd ? 'var(--color-buy-soft)' : 'transparent',
-                  color: playbackSpeed === spd ? 'var(--color-buy)' : 'var(--text-dim)',
-                  border: `1px solid ${playbackSpeed === spd ? 'var(--color-buy)' : 'var(--border-color)'}`,
-                  padding: '4px 8px',
+                  background: startSecond === s.offset ? 'var(--color-buy)' : 'var(--bg-dark)',
+                  color: startSecond === s.offset ? '#080b10' : 'var(--text-muted)',
+                  fontWeight: startSecond === s.offset ? 700 : 500,
+                  border: '1px solid var(--border-color)',
+                  padding: '3px 8px',
                   borderRadius: '3px',
-                  fontSize: '0.75rem',
-                  fontWeight: 600
+                  fontSize: '0.72rem',
+                  fontFamily: 'var(--font-mono)',
+                  cursor: 'pointer'
                 }}
               >
-                {spd}x
+                {s.label}
               </button>
             ))}
           </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>MODE:</span>
+            <button
+              onClick={() => setPlaybackMode('EVENT_INDEX')}
+              style={{
+                background: playbackMode === 'EVENT_INDEX' ? 'var(--color-gold)' : 'transparent',
+                color: playbackMode === 'EVENT_INDEX' ? '#080b10' : 'var(--text-muted)',
+                border: `1px solid ${playbackMode === 'EVENT_INDEX' ? 'var(--color-gold)' : 'var(--border-color)'}`,
+                padding: '3px 7px',
+                borderRadius: '3px',
+                fontSize: '0.70rem',
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}
+            >
+              <Zap size={11} style={{ display: 'inline', marginRight: '3px' }} /> TPS RATE
+            </button>
+            <button
+              onClick={() => setPlaybackMode('REAL_CLOCK')}
+              style={{
+                background: playbackMode === 'REAL_CLOCK' ? 'var(--color-buy)' : 'transparent',
+                color: playbackMode === 'REAL_CLOCK' ? '#080b10' : 'var(--text-muted)',
+                border: `1px solid ${playbackMode === 'REAL_CLOCK' ? 'var(--color-buy)' : 'var(--border-color)'}`,
+                padding: '3px 7px',
+                borderRadius: '3px',
+                fontSize: '0.70rem',
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}
+            >
+              <Timer size={11} style={{ display: 'inline', marginRight: '3px' }} /> PROPORTIONAL CLOCK
+            </button>
+
+            <div className="mono" style={{ fontSize: '0.74rem', color: 'var(--text-dim)', marginLeft: '6px' }}>
+              WINDOW: <strong style={{ color: 'var(--color-gold)' }}>{totalInWindow.toLocaleString()}</strong> IN 60s
+              <span style={{ marginLeft: '4px', color: 'var(--text-muted)' }}>({clipStartUtc}&rarr;{clipEndUtc}, {clipDurationSec}s)</span>
+            </div>
+          </div>
         </div>
 
-        {/* Verification & Window Counts Display */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div className="mono" style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-            DISPLAYED: <strong style={{ color: '#fff' }}>{visibleTrades.length}</strong> / {trades.length}
+        {/* Row 2: Playback Controls, Speed, and Dynamic Status */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', paddingTop: '8px', borderTop: '1px solid rgba(255, 255, 255, 0.06)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+            <button
+              onClick={() => setIsPlaying(!isPlaying)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                background: isPlaying ? 'var(--color-sell)' : 'var(--color-buy)',
+                color: '#080b10',
+                fontWeight: 700,
+                padding: '5px 14px',
+                borderRadius: '4px',
+                fontSize: '0.78rem',
+                cursor: 'pointer'
+              }}
+            >
+              {isPlaying ? <Pause size={14} /> : <Play size={14} />}
+              {isPlaying ? 'PAUSE' : 'PLAY'}
+            </button>
+
+            <button
+              onClick={() => setCurrentIndex((prev) => Math.min(trades.length - 1, prev + 1))}
+              disabled={isPlaying || currentIndex >= trades.length - 1}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '3px',
+                background: 'var(--bg-dark)',
+                border: '1px solid var(--border-color)',
+                color: 'var(--text-main)',
+                padding: '5px 10px',
+                borderRadius: '4px',
+                fontSize: '0.76rem',
+                cursor: 'pointer'
+              }}
+            >
+              <SkipForward size={13} /> STEP
+            </button>
+
+            <button
+              onClick={() => { setIsPlaying(false); setCurrentIndex(0); }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '3px',
+                background: 'var(--bg-dark)',
+                border: '1px solid var(--border-color)',
+                color: 'var(--text-muted)',
+                padding: '5px 10px',
+                borderRadius: '4px',
+                fontSize: '0.76rem',
+                cursor: 'pointer'
+              }}
+            >
+              <RotateCcw size={13} /> RESET
+            </button>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginLeft: '6px' }}>
+              <FastForward size={12} color="var(--text-dim)" />
+              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>SPEED:</span>
+              {[1, 2, 5, 10].map((spd) => (
+                <button
+                  key={spd}
+                  onClick={() => setPlaybackSpeed(spd)}
+                  style={{
+                    background: playbackSpeed === spd ? 'var(--color-buy-soft)' : 'transparent',
+                    color: playbackSpeed === spd ? 'var(--color-buy)' : 'var(--text-dim)',
+                    border: `1px solid ${playbackSpeed === spd ? 'var(--color-buy)' : 'var(--border-color)'}`,
+                    padding: '2px 6px',
+                    borderRadius: '3px',
+                    fontSize: '0.70rem',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  {spd}x
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="mono" style={{ fontSize: '0.8rem', color: 'var(--color-gold)' }}>
-            WINDOW EVENTS (60s): <strong>{totalInWindow.toLocaleString()}</strong>
+
+          {/* Dynamic User Guidance Notice (P1) */}
+          <div className="mono" style={{ fontSize: '0.76rem' }}>
+            {currentIndex === 0 ? (
+              <span style={{ color: 'var(--color-gold)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                已加载 {trades.length.toLocaleString()} 笔（片段跨度 {clipDurationSec}s），当前显示第 1 笔，点击「PLAY」开始回放
+              </span>
+            ) : (
+              <span style={{ color: 'var(--text-muted)' }}>
+                当前显示第 <strong style={{ color: '#fff' }}>{(currentIndex + 1).toLocaleString()}</strong> / {trades.length.toLocaleString()} 笔 ({(((currentIndex + 1) / Math.max(1, trades.length)) * 100).toFixed(1)}%) &bull; {playbackMode === 'REAL_CLOCK' ? `Proportional ${playbackSpeed}x` : `${playbackSpeed * 10} tps`}
+              </span>
+            )}
           </div>
-          {isTruncated && (
-            <span className="badge-gold" style={{ fontSize: '0.7rem' }}>
-              SLICE TRUNCATED AT {trades.length}
-            </span>
-          )}
         </div>
       </div>
 
       {/* Main Charts & Inspector Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '20px' }}>
+      <div className="responsive-inspector-grid">
         {/* Trajectory & CVD Canvas */}
         <div className="mml-card">
           <div className="mml-card-title">
@@ -506,12 +484,12 @@ export const MarketReplay: React.FC<MarketReplayProps> = ({ date }) => {
           </div>
 
           {loading ? (
-            <div style={{ height: '420px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-dim)' }}>
+            <div style={{ height: '350px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-dim)' }}>
               Loading high-precision trade events from DuckDB Parquet layer...
             </div>
           ) : (
             <>
-              <ReactECharts option={chartOption} style={{ height: '420px', width: '100%' }} />
+              <ReactECharts option={chartOption} style={{ height: '350px', width: '100%' }} />
               <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', marginTop: '8px', lineHeight: '1.4' }}>
                 * <strong>CVD Scope Notice:</strong> Cumulative Volume Delta (CVD) is calculated strictly as cumulative aggressive buy minus sell volume within this loaded replay clip (anchored to 0.0 BTC at clip onset {clipStartUtc} UTC), not the full 24-hour day cumulative sum. Physical market span covered: {clipDurationSec}s.
               </div>

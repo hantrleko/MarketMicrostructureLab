@@ -1,4 +1,5 @@
-import { Activity, LineChart, PlayCircle, Layers, ShieldCheck } from 'lucide-react';
+import React from 'react';
+import { Activity, LineChart, PlayCircle, Layers, ShieldCheck, ChevronRight } from 'lucide-react';
 
 interface HeaderProps {
   activeTab: string;
@@ -17,133 +18,120 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const tabs = [
     { id: 'replay', label: 'Market Replay', icon: PlayCircle },
-    { id: 'observatory', label: 'Order Flow Observatory', icon: Activity },
-    { id: 'impact', label: 'Market Impact Research', icon: LineChart },
-    { id: 'integrity', label: 'Data Integrity Console', icon: ShieldCheck },
-    { id: 'orderbook', label: 'Order Book Lab (Phase 2)', icon: Layers },
+    { id: 'observatory', label: 'Order Flow', icon: Activity },
+    { id: 'impact', label: 'Impact Research', icon: LineChart },
+    { id: 'integrity', label: 'Data Integrity', icon: ShieldCheck },
+    { id: 'orderbook', label: 'Order Book (L2)', icon: Layers },
   ];
 
   return (
-    <header style={{
-      background: 'var(--bg-dark)',
-      borderBottom: '1px solid var(--border-color)',
-      padding: '12px 28px',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      position: 'sticky',
-      top: 0,
-      zIndex: 100
-    }}>
-      {/* Brand & Symbol Selector */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+    <header className="app-header">
+      {/* Row 1: Brand, Symbol/Date, Historical Status (Target: ~38px) */}
+      <div className="header-top-bar">
+        {/* Brand & Market Identification */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
           <div style={{
-            width: '12px',
-            height: '12px',
+            width: '10px',
+            height: '10px',
             borderRadius: '2px',
             background: 'var(--color-gold)',
-            boxShadow: '0 0 10px var(--color-gold)'
+            boxShadow: '0 0 8px rgba(255, 215, 0, 0.4)',
+            flexShrink: 0
           }} />
-          <div>
-            <div style={{ fontWeight: 800, letterSpacing: '0.08em', fontSize: '1.05rem', color: '#fff' }}>
-              MML <span style={{ color: 'var(--color-buy)', fontWeight: 500 }}>// MICROSTRUCTURE LAB V1.0</span>
-            </div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', letterSpacing: '0.04em' }}>
-              BINANCE SPOT BTC/USDT RESEARCH PLATFORM
-            </div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', whiteSpace: 'nowrap', overflow: 'hidden' }}>
+            <span style={{ fontWeight: 800, letterSpacing: '0.06em', fontSize: '0.98rem', color: '#fff' }}>
+              MML
+            </span>
+            <span style={{ color: 'var(--color-buy)', fontSize: '0.78rem', fontWeight: 600 }}>
+              BTC/USDT Spot
+            </span>
+          </div>
+
+          {/* Date Selector */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: '8px' }}>
+            <span style={{ fontSize: '0.74rem', color: 'var(--text-dim)', whiteSpace: 'nowrap' }}>DATE:</span>
+            <select
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              style={{
+                background: 'var(--bg-card)',
+                color: 'var(--text-main)',
+                border: '1px solid var(--border-highlight)',
+                padding: '3px 8px',
+                borderRadius: '3px',
+                fontFamily: 'var(--font-mono)',
+                fontSize: '0.76rem',
+                outline: 'none',
+                cursor: 'pointer'
+              }}
+            >
+              {availableDates.map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
-        {/* Date Selector */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: '16px' }}>
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>DATE:</span>
-          <select
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            style={{
-              background: 'var(--bg-card)',
-              color: 'var(--text-main)',
-              border: '1px solid var(--border-highlight)',
-              padding: '6px 12px',
-              borderRadius: '4px',
-              fontFamily: 'var(--font-mono)',
-              fontSize: '0.85rem',
-              outline: 'none',
-              cursor: 'pointer'
-            }}
-          >
-            {availableDates.map((d) => (
-              <option key={d} value={d}>
-                {d} (Verified)
-              </option>
-            ))}
-          </select>
+        {/* Historical Status Badge (No duplicate version badge) */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '5px',
+            background: 'rgba(0, 229, 255, 0.08)',
+            border: '1px solid rgba(0, 229, 255, 0.25)',
+            padding: '2px 8px',
+            borderRadius: '12px',
+            fontSize: '0.72rem',
+            color: 'var(--color-buy)'
+          }}>
+            <span style={{
+              width: '5px',
+              height: '5px',
+              borderRadius: '50%',
+              background: 'var(--color-buy)',
+              boxShadow: '0 0 5px var(--color-buy)'
+            }} />
+            <span className="mono" style={{ letterSpacing: '0.02em' }}>HISTORICAL SPOT ARCHIVE</span>
+          </div>
         </div>
       </div>
 
-      {/* Navigation Tabs */}
-      <nav style={{ display: 'flex', gap: '4px' }}>
-        {tabs.map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '8px 16px',
-                borderRadius: '6px',
-                fontSize: '0.86rem',
-                fontWeight: isActive ? 600 : 500,
-                background: isActive ? 'var(--bg-card-hover)' : 'transparent',
-                color: isActive ? 'var(--color-buy)' : 'var(--text-muted)',
-                borderBottom: isActive ? '2px solid var(--color-buy)' : '2px solid transparent',
-              }}
-            >
-              <Icon size={16} />
-              {tab.label}
-            </button>
-          );
-        })}
-      </nav>
+      {/* Row 2: Short-Label Navigation Bar with Mobile Touch Scroll (Target: ~42px) */}
+      <div className="header-nav-wrapper">
+        <nav className="header-nav-scroll">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`header-nav-btn ${isActive ? 'active' : ''}`}
+                title={tab.label}
+              >
+                <Icon size={14} />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
+        </nav>
 
-      {/* Real-time Status Badge */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+        {/* Mobile horizontal scroll hint indicator */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '6px',
-          background: 'rgba(0, 229, 255, 0.08)',
-          border: '1px solid rgba(0, 229, 255, 0.25)',
-          padding: '4px 10px',
-          borderRadius: '20px',
-          fontSize: '0.75rem',
-          color: 'var(--color-buy)'
+          color: 'var(--text-dim)',
+          fontSize: '0.68rem',
+          marginLeft: 'auto',
+          paddingLeft: '6px',
+          opacity: 0.7,
+          pointerEvents: 'none'
         }}>
-          <span style={{
-            width: '6px',
-            height: '6px',
-            borderRadius: '50%',
-            background: 'var(--color-buy)',
-            boxShadow: '0 0 6px var(--color-buy)'
-          }} />
-          <span className="mono">VERIFIED DATASET</span>
+          <ChevronRight size={14} />
         </div>
-        <span className="mono" style={{
-          background: 'rgba(255, 215, 0, 0.12)',
-          border: '1px solid rgba(255, 215, 0, 0.3)',
-          color: 'var(--color-gold)',
-          padding: '2px 8px',
-          borderRadius: '4px',
-          fontSize: '0.72rem',
-          fontWeight: 700
-        }}>
-          V1.0
-        </span>
       </div>
     </header>
   );

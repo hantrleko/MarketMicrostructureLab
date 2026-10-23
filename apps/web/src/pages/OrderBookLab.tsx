@@ -336,7 +336,7 @@ export const OrderBookLab: React.FC = () => {
       </div>
 
       {/* Main Order Book Ladder & OFI Streaming Chart Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '420px 1fr', gap: '20px' }}>
+      <div className="responsive-orderbook-grid">
         {/* L2 Depth Ladder */}
         <div className="mml-card">
           <div className="mml-card-title">

@@ -1,0 +1,44 @@
+{
+  "symbol": "BTCUSDT",
+  "date": "2026-07-02",
+  "audit_timestamp_utc": "2026-10-17T09:35:16.451665+00:00",
+  "status": "PASSED",
+  "checks": {
+    "total_records": 3883096,
+    "duplicate_trade_ids": 0,
+    "invalid_price_count": 0,
+    "invalid_base_qty_count": 0,
+    "invalid_quote_qty_count": 0,
+    "arithmetic_mismatches": 0,
+    "chronological_reversals": 0,
+    "invalid_aggressor_side": 0,
+    "negative_trade_id_steps": 0,
+    "large_trade_id_jumps": 0
+  },
+  "chronology_and_gaps": {
+    "first_event_utc": "2026-07-02T00:00:00.058300Z",
+    "last_event_utc": "2026-07-02T23:59:59.535942Z",
+    "duration_min_ms": 0.0,
+    "duration_mean_ms": 22.25015809347956,
+    "duration_median_ms": 0.0,
+    "duration_p95_ms": 50.357,
+    "duration_p99_ms": 658.7769999999999,
+    "duration_max_ms": 9586.88,
+    "max_gap_seconds": 9.586879999999999,
+    "simultaneous_trades_count": 3434225,
+    "simultaneous_pct": 88.44038365263181
+  },
+  "volume_and_sides": {
+    "buy_trades": 1990557,
+    "sell_trades": 1892539,
+    "buy_ratio": 0.5126211146981686,
+    "sell_ratio": 0.4873788853018313,
+    "min_price": 59588.0,
+    "max_price": 62200.0,
+    "mean_price": 61159.40878917493,
+    "total_base_volume": 21382.141630000002,
+    "total_quote_volume": 1308156569.7200916
+  },
+  "license": "CC BY-NC-SA 4.0",
+  "license_terms": "Binance Vision Public Data Terms (Sections 3.1 & 4.5 NonCommercial, ShareAlike)"
+}

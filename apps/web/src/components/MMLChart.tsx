@@ -1,5 +1,9 @@
 import React from 'react';
-import ReactEChartsCore from 'echarts-for-react/lib/core';
+// lib/core is CJS. Vite 8 / Rolldown's Node interop (__toESM(mod, 1)) sets
+// the default export to the whole module.exports object, so React.createElement
+// receives { default: Component } and throws minified error #130. esm/core is
+// a real `export default` class and stays a valid element type.
+import ReactEChartsCore from 'echarts-for-react/esm/core';
 import * as echarts from 'echarts/core';
 import { LineChart, BarChart, ScatterChart } from 'echarts/charts';
 import {

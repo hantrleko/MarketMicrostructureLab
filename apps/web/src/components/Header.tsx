@@ -47,54 +47,77 @@ export const Header: React.FC<HeaderProps> = ({
             </span>
           </div>
 
-          {/* Date Selector */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: '8px' }}>
-            <span style={{ fontSize: '0.74rem', color: 'var(--text-dim)', whiteSpace: 'nowrap' }}>DATE:</span>
-            <select
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              style={{
-                background: 'var(--bg-card)',
-                color: 'var(--text-main)',
-                border: '1px solid var(--border-highlight)',
-                padding: '3px 8px',
-                borderRadius: '3px',
-                fontFamily: 'var(--font-mono)',
-                fontSize: '0.76rem',
-                outline: 'none',
-                cursor: 'pointer'
-              }}
-            >
-              {availableDates.map((d) => (
-                <option key={d} value={d}>
-                  {d}
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* Contextual Date Selector or L2 Engine Indicator */}
+          {activeTab === 'orderbook' ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: '8px' }}>
+              <span
+                className="mono"
+                style={{
+                  fontSize: '0.72rem',
+                  fontWeight: 600,
+                  color: '#38bdf8',
+                  background: 'rgba(56, 189, 248, 0.1)',
+                  border: '1px solid rgba(56, 189, 248, 0.3)',
+                  padding: '2px 8px',
+                  borderRadius: '3px',
+                  letterSpacing: '0.02em'
+                }}
+                title="Order Book module operates in live WebSocket synchronization or simulated local demo, independent of historical archives."
+              >
+                L2 REAL-TIME / SIMULATED ENGINE
+              </span>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: '8px' }}>
+              <span style={{ fontSize: '0.74rem', color: 'var(--text-dim)', whiteSpace: 'nowrap' }}>DATE:</span>
+              <select
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                style={{
+                  background: 'var(--bg-card)',
+                  color: 'var(--text-main)',
+                  border: '1px solid var(--border-highlight)',
+                  padding: '3px 8px',
+                  borderRadius: '3px',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '0.76rem',
+                  outline: 'none',
+                  cursor: 'pointer'
+                }}
+              >
+                {availableDates.map((d) => (
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
 
-        {/* Historical Status Badge (No duplicate version badge) */}
+        {/* Status Badge (Contextual: Archive vs L2 Live) */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
           <div style={{
             display: 'inline-flex',
             alignItems: 'center',
             gap: '5px',
-            background: 'rgba(0, 229, 255, 0.08)',
-            border: '1px solid rgba(0, 229, 255, 0.25)',
+            background: activeTab === 'orderbook' ? 'rgba(56, 189, 248, 0.08)' : 'rgba(0, 229, 255, 0.08)',
+            border: `1px solid ${activeTab === 'orderbook' ? 'rgba(56, 189, 248, 0.25)' : 'rgba(0, 229, 255, 0.25)'}`,
             padding: '2px 8px',
             borderRadius: '12px',
             fontSize: '0.72rem',
-            color: 'var(--color-buy)'
+            color: activeTab === 'orderbook' ? '#38bdf8' : 'var(--color-buy)'
           }}>
             <span style={{
               width: '5px',
               height: '5px',
               borderRadius: '50%',
-              background: 'var(--color-buy)',
-              boxShadow: '0 0 5px var(--color-buy)'
+              background: activeTab === 'orderbook' ? '#38bdf8' : 'var(--color-buy)',
+              boxShadow: `0 0 5px ${activeTab === 'orderbook' ? '#38bdf8' : 'var(--color-buy)'}`
             }} />
-            <span className="mono" style={{ letterSpacing: '0.02em' }}>HISTORICAL SPOT ARCHIVE</span>
+            <span className="mono" style={{ letterSpacing: '0.02em' }}>
+              {activeTab === 'orderbook' ? 'L2 LIVE / DEMO ENGINE' : 'HISTORICAL SPOT ARCHIVE'}
+            </span>
           </div>
         </div>
       </div>

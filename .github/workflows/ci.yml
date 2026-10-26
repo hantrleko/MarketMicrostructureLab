@@ -89,7 +89,7 @@ jobs:
           tags: market-microstructure-lab:ci
           build-args: |
             BUILD_COMMIT=${{ github.sha }}
-            DATA_VERSION=V1.2.0 Institutional Rigor
+            DATA_VERSION=V1.1.0 Institutional Rigor
 
       - name: Start Container
         run: |

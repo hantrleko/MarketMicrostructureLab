@@ -66,6 +66,7 @@ export interface AutocorrResult {
   mean_direction: number;
   lags: number[];
   autocorrelations: number[];
+  sample_provenance?: any;
 }
 
 export interface DistributionBin {

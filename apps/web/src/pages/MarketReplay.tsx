@@ -6,10 +6,11 @@ import { MMLChart } from '../components/MMLChart';
 
 interface MarketReplayProps {
   date: string;
+  initialSession?: number;
 }
 
-export const MarketReplay: React.FC<MarketReplayProps> = ({ date }) => {
-  const [startSecond, setStartSecond] = useState<number>(0);
+export const MarketReplay: React.FC<MarketReplayProps> = ({ date, initialSession }) => {
+  const [startSecond, setStartSecond] = useState<number>(initialSession !== undefined ? initialSession : 0);
   const [durationSeconds] = useState<number>(60);
   const [trades, setTrades] = useState<ReplayTrade[]>([]);
   const [totalInWindow, setTotalInWindow] = useState<number>(0);
@@ -28,10 +29,17 @@ export const MarketReplay: React.FC<MarketReplayProps> = ({ date }) => {
   // Available pre-indexed intraday market sessions
   const sessions = [
     { label: '00:00 UTC (Day Open)', offset: 0 },
+    { label: '05:49 UTC (Model Onset, 25%)', offset: 20994 },
     { label: '08:00 UTC (London Open)', offset: 28800 },
     { label: '14:00 UTC (US Influx)', offset: 50400 },
     { label: '20:00 UTC (Late Liquidity)', offset: 72000 }
   ];
+
+  useEffect(() => {
+    if (initialSession !== undefined) {
+      setStartSecond(initialSession);
+    }
+  }, [initialSession]);
 
   // Load trade window
   useEffect(() => {

@@ -1,15 +1,16 @@
 {
   "schema_version": "1.1.0",
-  "certificate_id": "e3fb64ed-e690-484a-b080-60e94734838b",
-  "certification_timestamp_utc": "2026-10-23T14:23:08.800417+00:00",
+  "certificate_id": "456f4cb2-f930-4646-9cef-0f80b5cd22fb",
+  "certification_timestamp_utc": "2026-10-26T15:13:38.561687+00:00",
   "target_date": "2026-07-01",
   "target_horizon_lag": 20,
-  "git_commit": "fc7a25f",
+  "git_commit": "6633dcb",
   "audit_scope": {
     "coverage_level": "SAMPLE_LEVEL_250K_TRADES",
     "sample_description": "Authoritative session-active 250,000 tick window for econometric parameter recomputation",
     "is_full_day_production_reconciled": false,
-    "full_day_production_note": "Production full-day (4.16M rows) tick-by-tick recomputation is unverified in this execution; only the active 250k model sample was recomputed from raw ZIP CSV."
+    "full_day_production_note": "Production full-day (4.16M rows) tick-by-tick recomputation is unverified in this execution; only the active 250k model sample was recomputed from raw ZIP CSV.",
+    "total_verified_trades": 250000
   },
   "stage_verification_status": {
     "raw_archive_official_checksum": "VERIFIED_OFFICIAL_MATCH",

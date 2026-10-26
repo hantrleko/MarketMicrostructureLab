@@ -16,7 +16,7 @@ Market Microstructure Lab (MML) V1.1.2 incorporates the comprehensive **Research
 2. **Trade-Level Positive-Response Sub-Sample**: The trade-level log-log regression ($\hat{\gamma}_{\text{trade}} = +0.1272$) is explicitly designated as strictly conditional on the positive-response sub-sample ($\mathcal{R}_i > 0$). Zero and adverse price changes (accounting for 28.2% of sample on July 1: 70,574 trades out of 249,980; 71.8% positive response trades analyzed) are excluded by the logarithmic transform; hence this regression is an exploratory sub-sample check, not an unconditional full-sample validation.
 3. **Standard Error Clarification**: WLS standard errors are classical weighted standard errors unadjusted for cross-tier residual autocorrelation, whereas Trade-Level and Price Response $R(k)$ standard errors employ Newey-West HAC robust covariance.
 4. **Transparent Out-of-Sample (OOS) Windows**: Rather than claiming full-day 00-12 / 12-24 splits, OOS validation explicitly reports the real chronological 50%/50% half of the active estimation sample (e.g. ~05:49-06:40 UTC train vs ~06:40-07:48 UTC test on July 1).
-5. **Hawkes Point Process Stability & Sensitivity**: Evaluated across standardized 5,000-event windows. Raw tick sequences on July 1 ($\rho = 1.0050$, `SUPERCRITICAL_UNSTABLE`) and July 2 ($\rho = 1.0153$, `SUPERCRITICAL_UNSTABLE`) show near-critical/supercritical instability with prominent model specification warnings. Timestamp aggregation reduces branching ratios by ~40-45% to subcritical stability ($\rho \approx 0.5935$), demonstrating extreme sensitivity to timestamp collisions and event resolution.
+5. **Hawkes Point Process Stability & Sensitivity**: Evaluated across standardized 5,000-event windows. Raw tick sequences on July 1 ($\rho = 0.8540$, `SUBCRITICAL_STABLE`) and July 2 ($\rho = 1.0237$, `SUPERCRITICAL_UNSTABLE`) show near-critical/supercritical instability with prominent model specification warnings. Timestamp aggregation reduces branching ratios by ~40-45% to subcritical stability ($\rho \approx 0.2879$), demonstrating extreme sensitivity to timestamp collisions and event resolution.
 6. **Physical Replay Clip Duration & CVD Scope**: Market Replay clearly distinguishes the 60s nominal query window from the actual physical market span covered by loaded trades (~24.5s on high-density sessions), and explicitly documents that CVD represents the cumulative sum within the loaded replay clip, not the full 24-hour day.
 7. **Licensing Consistency**: Universal **CC BY-NC-SA 4.0** (Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International) applied across all pages, footers, data consoles, and report documents per Binance Vision Public Data Terms Sections 3.1 & 4.5.
 
@@ -56,12 +56,12 @@ Market Microstructure Lab (MML) V1.1.2 incorporates the comprehensive **Research
 | **WLS 95% Confidence Interval** | [-0.1557, 0.0080] | [-0.1396, -0.0042] | [-0.2086, -0.0226] | Classical WLS SE (Contains 0 on Jul 1; strictly negative on Jul 2–3; rejects 0.5) |
 | **Trade-Level HAC $\hat{\gamma}_{\text{trade}}$ (R > 0 Sub-Sample)** | +0.1272 | +0.1160 | +0.0774 | Conditional on positive tick response (R > 0) |
 | **Trade-Level Excluded Non-Positive Ratio** | 28.2% (70,574 trades) | 30.2% (75,421 trades) | 36.8% (91,943 trades) | Zero and adverse price ticks dropped by ln(R) |
-| **Hawkes Spectral Radius (Raw 5k Ticks)** | 1.0050 (`SUPERCRITICAL_UNSTABLE`) | 1.0153 (`SUPERCRITICAL_UNSTABLE`) | 0.9647 (`SUBCRITICAL_STABLE`) | Supercritical / near-critical boundary |
-| **Hawkes Spectral Radius (Aggregated)** | 0.5935 (`SUBCRITICAL_STABLE`) | 0.8935 (`SUBCRITICAL_STABLE`) | 0.5532 (`SUBCRITICAL_STABLE`) | Timestamp sensitivity confirmed |
-| **Trade Event Slicing Compression** | 88.9% | 88.9% | 84.6% | High frequency fill clustering |
-| **Hawkes Spectral Radius (Raw 5k Ticks)** | 1.0050 (`SUPERCRITICAL_UNSTABLE`) | 1.0153 (`SUPERCRITICAL_UNSTABLE`) | 0.9647 (`SUBCRITICAL_STABLE`) | Supercritical / near-critical boundary |
-| **Hawkes Spectral Radius (Aggregated)** | 0.5935 (`SUBCRITICAL_STABLE`) | 0.8935 (`SUBCRITICAL_STABLE`) | 0.5532 (`SUBCRITICAL_STABLE`) | Timestamp sensitivity confirmed |
-| **Trade Event Slicing Compression** | 88.9% | 88.9% | 84.6% | High frequency fill clustering |
+| **Hawkes Spectral Radius (Raw 5k Ticks)** | 0.8540 (`SUBCRITICAL_STABLE`) | 1.0237 (`SUPERCRITICAL_UNSTABLE`) | 0.9453 (`SUBCRITICAL_STABLE`) | Supercritical / near-critical boundary |
+| **Hawkes Spectral Radius (Aggregated)** | 0.2879 (`SUBCRITICAL_STABLE`) | 0.8278 (`SUBCRITICAL_STABLE`) | 0.5667 (`SUBCRITICAL_STABLE`) | Timestamp sensitivity confirmed |
+| **Trade Event Slicing Compression** | 78.2% | 88.6% | 87.1% | High frequency fill clustering |
+| **Hawkes Spectral Radius (Raw 5k Ticks)** | 0.8540 (`SUBCRITICAL_STABLE`) | 1.0237 (`SUPERCRITICAL_UNSTABLE`) | 0.9453 (`SUBCRITICAL_STABLE`) | Supercritical / near-critical boundary |
+| **Hawkes Spectral Radius (Aggregated)** | 0.2879 (`SUBCRITICAL_STABLE`) | 0.8278 (`SUBCRITICAL_STABLE`) | 0.5667 (`SUBCRITICAL_STABLE`) | Timestamp sensitivity confirmed |
+| **Trade Event Slicing Compression** | 78.2% | 88.6% | 87.1% | High frequency fill clustering |
 
 ---
 

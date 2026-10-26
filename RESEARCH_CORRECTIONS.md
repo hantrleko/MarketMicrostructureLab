@@ -41,83 +41,11 @@ This document details all methodological, statistical, and engineering correctio
   - **Conclusion**: Both unweighted tier OLS and tier-weighted WLS reject $\gamma = 0.5$ for individual child orders ($p < 10^{-15}$). Child-order models exhibit low in-sample and out-of-sample explanatory power ($R^2 < 0.02$), while stratified power-law estimates vary across dates and weighting specifications (unweighted tier OLS 95% CIs encompass zero, whereas tier-weighted WLS 95% CIs are strictly negative on July 2–3).
 
 ### 2.3 Bivariate Hawkes Process & Control Model (2026-07-01)
-- **Raw Trades Spectral Radius**: $\rho(\Gamma_{\text{raw}}) = 1.0050$ (SUPERCRITICAL_UNSTABLE)
-- **Timestamp-Aggregated Sensitivity Check**: $\rho(\Gamma_{\text{agg}}) = 0.5935$ (SUBCRITICAL_STABLE)
-- **Self-Excitation Drop**: Buy $\to$ Buy drops from 0.9054 to 0.3297.
+- **Raw Trades Spectral Radius**: $\rho(\Gamma_{\text{raw}}) = 0.8540$ (SUBCRITICAL_STABLE)
+- **Timestamp-Aggregated Sensitivity Check**: $\rho(\Gamma_{\text{agg}}) = 0.2879$ (SUBCRITICAL_STABLE)
+- **Self-Excitation Drop**: Buy $\to$ Buy drops from 0.8540 to 0.2879.
 - **Conclusion**: Branching ratios show extreme sensitivity to timestamp collisions and event resolution. Aggregation demonstrates that high-frequency clustering estimates cannot be directly asserted as trader behavior mechanisms without accounting for exchange execution protocol details.
 
 ---
 
 *Generated automatically by `scripts/reproduce_research_report.py` on verified 10,621,476 Binance BTCUSDT trade records.*
-
-
----
-
-## 3. Data Governance, Cross-Talk Elimination & Statistical Integrity Upgrades (V1.1.2)
-
-| Issue / Vulnerability | Previous State | Corrected Production Architecture |
-| :--- | :--- | :--- |
-| **Data Cross-Talk & Mismatch** | Silent fallback to fixtures on missing dates; requests for unsupported symbols (e.g. `ETHUSDT`) fell back to `BTCUSDT` sample fixtures. | **Data Manifest Registry (`packages/governance/manifest.py`)**: Strict symbol validation (HTTP 422 `UNSUPPORTED_SYMBOL`), missing partition handling (HTTP 404 `DATASET_NOT_FOUND`), and runtime content validation (HTTP 500 `DATA_IDENTITY_MISMATCH` if content differs from requested symbol/date). |
-| **Production Fail-Close** | Dev fallback to fixtures was active in all environments. | **Strict Production Fail-Close**: When `MML_ENV=production`, fixture fallback is strictly disabled; missing normalized partitions immediately fail-close (HTTP 404). |
-| **Frontend Value Fallbacks** | Frontend UI contained hardcoded default numbers (`0.0452`, `-11.74`, `[-0.156, +0.008]`, `[-0.119, +0.058]`, `-13.74`) when API returned null or inestimable models. | **Zero Frontend Fabrication**: Completely eradicated hardcoded numeric fallbacks; inestimable or missing statistics strictly render `NA` or `---`. |
-| **Sample Count Ambiguity** | Window events and replay slices were conflated. | **Disaggregated Sample Reporting**: Distinctly isolates and displays: (1) Window Total Events (60s), (2) Loaded Buffer Events & physical span, (3) Rendered Playback Step, and (4) Model Estimation Sample Baseline. |
-| **64-bit Nanosecond Precision** | Nanosecond timestamps risks JS IEEE 754 float64 truncation (loss of precision for 19-digit ints). | **Strict String Serialization**: All nanosecond timestamps and trade IDs are serialized as string across all JSON interfaces, preserving exact 64-bit integer fidelity. |
-| **OOS Power-Law Generalization** | OOS validation was restricted to a single 50/50 split on the Log model without power-law testing. | **Dual OOS & Walk-Forward Validation**: Evaluates both Log and Power-Law models on identical purged test sets; adds 3-fold expanding Walk-Forward Purged Cross-Validation. |
-| **Dependency & CI Gates** | Dependencies were unlocked; lack of automated security audit in CI. | **Locked Dependency Stack & CI**: Exact `requirements-lock.txt` and `package-lock.json`; automated security gates with `pip-audit` (0 vulnerabilities) and `npm audit` (0 vulnerabilities); comprehensive GitHub Actions CI (`.github/workflows/ci.yml`). |
-
----
-
-## 4. Institutional Verification & Release Gate Certification (2026-10-21 Upgrade)
-
-### 4.1 Release Hash & Size Inconsistency Resolved (P0-1)
-- **Root Cause**: On Windows environments, default Python file writing translated newline characters to `\r\n` (CRLF), creating a discrepancy between locally generated manifests (which hashed CRLF bytes) and Git/web-hosted artifacts (which converted CRLF to LF, e.g. 47,230 bytes local vs. 46,020 bytes live).
-- **Remediation**:
-  1. Enforced `newline="\n"` on all JSON writes across `scripts/export_models_manifest.py`.
-  2. Created `.gitattributes` with `*.json text eol=lf` to lock LF line endings across all platforms and operating systems.
-  3. Configured `git config core.autocrlf false` in `scripts/deploy_gh_pages.py`.
-  4. Verified all 18 published model JSON artifacts and `models_provenance_manifest.json` on the live GitHub Pages CDN (`https://hantrleko.github.io/MarketMicrostructureLab/data/`): **18/18 verified 100% byte-for-byte in exact size and SHA-256 checksum**.
-
-### 4.2 Faithful Statistical Failure Reporting (P0-2)
-- **Unconstrained Real $R^2$**: Removed all `max(-1.0, ...)` clamping across single holdout OOS, walk-forward folds, and pooled evaluations in `packages/impact_models/nonlinear_impact.py`. Raw out-of-sample explanatory metrics are preserved faithfully even under extreme out-of-sample divergence ($R^2 < -1.0$).
-- **Zero Dropped Folds**: Planned expanding walk-forward folds are never discarded. Degenerate or inestimable partitions explicitly report `status: "NOT_ESTIMABLE"` with `None` parameters and $R^2$, and `effective_denominator_ss_tot` recorded.
-- **Explicit Fit Failure**: Fitting exceptions are captured and reported as `status: "FIT_FAILED: <reason>"` with `None` values, completely eliminating artificial $R^2=0$ or zero-prediction substitutions.
-- **Unit Test Coverage**: Validated via unit test suite in `tests/unit/test_oos_leakage_and_aggregation.py` (49/49 Python tests passing).
-
-### 4.3 API Crosstalk & Stale UI Fallback Prevention (P0-3)
-- **Server Error Preservation**: `safeFetch` in `apps/web/src/api/client.ts` now inspects HTTP responses; explicit backend errors (HTTP 400, 404, 422, 500, 503) immediately throw `ApiError` with backend details rather than silently falling back to static BTC fixtures.
-- **Static Archive Constraint**: Static archive access is strictly validated: requests for unsupported symbols (e.g. `ETHUSDT`) immediately return HTTP 422 (`ApiError`), and un-indexed dates return HTTP 404. Cross-talk between symbols is mathematically impossible.
-- **Immediate State Invalidation**: Frontend page components (`MarketImpactResearch`, `MarketReplay`, `OrderFlowObservatory`, `DataIntegrityConsole`) reset and clear previous dataset state on query change or fetch initiation, preventing stale data from masquerading as current results, and render clear error banners on failure.
-
-### 4.4 CI Workflow & Release Gate Status (P0-4)
-- **Workflow Implementation**: Complete multi-stage CI pipeline implemented in `ci/workflows/ci.yml` and `.github/workflows/ci.yml` with Python 3.13 regression testing, `pip-audit`, Vite production build, `npm audit`, Docker container build via `docker/setup-buildx-action@v3`, and runtime container smoke testing (testing health, datasets metadata, and HTTP 503 default-deny on unconfigured orderbook admin key).
-- **GitHub Token OAuth Scope Constraint**: The GitHub CLI token configured in this environment possesses scopes `['gist', 'read:org', 'repo']` and lacks the GitHub `workflow` scope. Pushes to `.github/workflows/` are blocked by GitHub remote policy (`GH007: refusing to allow an OAuth App to create or update workflow without workflow scope`). The exact workflow is maintained and version-controlled under `ci/workflows/ci.yml`.
-- **Status of Production Parquet & Container Verification**: As per audit guidelines, the production 10M+ Parquet data files are not tracked in the git repository checkout (quarantined to local data directory), and Docker daemon is not active in this host environment. Recomputation on full production Parquet and container runtime validation are accurately recorded as **未验证 (Unverified)**.
-
----
-
-## 5. Statistical Inference Contract, MBB Temporal Sensitivity & Provenance Certification (V1.3.0 Master Release)
-
-| Milestone / Requirement | Implementation Details | Econometric & Engineering Impact |
-| :--- | :--- | :--- |
-| **M1: Status-Driven Model Contract & Zero Results Elimination (P0)** | Implemented `make_fit_result` across all nonlinear models. Status values strictly partitioned into `"ESTIMATED"`, `"NOT_ESTIMABLE"`, and `"FIT_FAILED"`. Failures explicitly set `fit: null` and all parameters to `None` with stable error codes (`INSUFFICIENT_DATA`, `INVALID_INPUT`, `SINGULAR_DESIGN`, `SOLVER_ERROR`, `NON_FINITE_OUTPUT`). Constant targets ($SS_{\text{tot}} \le 10^{-12}$) produce $\beta=0.0$ with $R^2=\text{None}$ and diagnostic `UNDEFINED_METRIC`. | Completely eliminates consumer confusion between failed estimation and genuine zero effect. Suppresses zero-slope flat lines on the frontend chart. |
-| **M2: Historical Research vs. Real-Time Separation (P0)** | Embedded prominent research disclosure banners on `/impact` and `/replay` displaying exact UTC metadata, asset (`BTC/USDT`), data source (`Binance Vision Spot Archive`), physical duration (~4.4h, 250,000 tick executions), dataset cutoff UTC, and build commit. Replay is strictly designated as offline historical event playback. Monotonic query sequencing (`activeQueryIdRef`) prevents out-of-order response overwrites. | Eliminates false expectations of live data or real-time exchange connectivity; enforces clean HTTP 422 rejection on unsupported symbols (e.g. `ETHUSDT`) without silent fallback. |
-| **M3: Moving Block Bootstrap & Temporal Sensitivity Grid (P1)** | Implemented multi-block bootstrap across block lengths $b \in [50, 100, 250, 500]$ events with explicit unit descriptions. Evaluated dual hypotheses ($H_0: \gamma = 0$ and $H_0: \gamma = 0.5$) with empirical CI containment. Populated `inference_sensitivity_table` and sensitivity verdict (`SENSITIVE_TO_TEMPORAL_DEPENDENCE_SPECIFICATION` if conclusions flip across block sizes). | Surfaces dependence sensitivity directly to consumers, preventing unjustified claims of robust power-law scaling under autocorrelation. |
-| **M4: Bounded Empirical Framing (P1)** | Standardized theoretical framing across UI, documentation, and reports: "Square-root price impact ($I(Q) \approx Y \sigma \sqrt{Q/V}$) is an empirical scaling relationship established for cumulative institutional meta-orders executed over hours or days; it is not an axiomatic law or physical theorem." Child-order tick response $\mathcal{R}(v, k)$ is bounded to transient liquidity depletion. Confidence interval containment of zero is framed strictly as un-detected difference, never proof of zero effect. | Eliminates epistemic overreach; aligns econometric claims strictly with empirical evidence. |
-| **M5: CI Workflow & Full Test Suite (P1)** | Maintained CI workflow in `ci/workflows/ci.yml`. Documented exact OAuth scope requirements (`gh auth refresh -h github.com -s workflow`). Expanded Python test suite to 57 unit and regression tests (100% passing). | Guarantees regression protection across all model contracts, OOS purging, and API security gates. |
-| **M6: End-to-End Data Provenance & Recomputation Audit (P1)** | Authored `scripts/recompute_and_audit_provenance.py` covering: Stage 1 (raw Binance Vision zips & official SHA-256 checksums), Stage 2 (normalized Parquet schemas, row counts, and manifest hashes), and Stage 3 (18 static JSON fixtures & provenance manifest). | Certified complete 3-stage cryptographic and semantic provenance from official exchange archives to web deployment. |
-| **M7: Docker Deployment Status Clarification (P1)** | Explicitly designated Docker runtime as `EXPERIMENTAL / UNVERIFIED (LOCAL RUNTIME)` due to lack of local Docker daemon. Clearly distinguished static GitHub Pages (Contract 1.3.0) from local DuckDB API runtime. | Provides transparent operational disclosure without asserting unexecuted container verifications. |
-
----
-
-## 6. Significance Testing Rigor, Multi-Hypothesis MBB Sensitivity & End-to-End Recomputation Benchmark (2026-10-21 V1.3.1 Upgrade)
-
-| Issue / Vulnerability | Previous State | Corrected Production Architecture | Empirical Impact & Evidence |
-| :--- | :--- | :--- | :--- |
-| **Significance Conclusion Hardcoding** | Frontend UI and diagnostics table displayed hardcoded `(p < 0.001)` across OLS, WLS, and Trade-Level models. On 2026-07-01 at $k=100$, Trade-Level HAC showed $t = -1.45$ but claimed `p < 0.001 (Reject)`. | **Dynamic Significance Formatting & Exact Test Statistics**: `trade_level_fit` computes and exports exact Newey-West $t$-statistics, two-sided $p$-values, degrees of freedom, and `is_significant_5pct` boolean. Frontend dynamically formats p-values with exact thresholds (`p < 0.001`, `p = X.XXX (Reject)`, or `p = X.XXX (Retain H0)`). | On 2026-07-01 at $k=100$: $t = -1.4483 \implies p = 0.1475 > 0.05$. UI and contract faithfully report `t = -1.45 vs 0 (p = 0.148 (Retain H0))` with `is_significant_5pct: false`. Eliminates all false significance claims. |
-| **MBB Stability False-Negative** | `compute_moving_block_bootstrap` checked only whether WLS CI zero containment flipped across block sizes. On 2026-07-02 at $k=50$, unweighted tier OLS zero-containment flipped between $b=50$ (contains 0) and $b=100$ (excludes 0), but the verdict erroneously reported `STABLE_ACROSS_BLOCK_SIZES`. | **Multi-Hypothesis Sensitivity Check**: Evaluates all 4 hypothesis tests across block sizes $b \in [50, 100, 250, 500]$: (1) WLS $H_0: \gamma = 0$, (2) WLS $H_0: \gamma = 0.5$, (3) OLS $H_0: \gamma = 0$, (4) OLS $H_0: \gamma = 0.5$. If any conclusion flips, flags `sensitivity_verdict: "SENSITIVE_TO_TEMPORAL_DEPENDENCE_SPECIFICATION"` and details the flipped hypotheses in `sensitivity_summary`. | On 2026-07-02 $k=50$, correctly identifies that OLS zero-containment flips across block sizes, warning consumers that power-law conclusions depend on temporal dependence assumptions. |
-| **Audit Verification Parity Gap & Full Audit Semantics** | Audit script only verified file hashes and manifests without recomputing parameters from raw data. `--mode full` reported `SUCCESS` and exit 0 even when raw files were missing. | **Genuine Raw-ZIP Recomputation Benchmark & Fail-Close Semantics**: Upgraded Stage 4 in `scripts/recompute_and_audit_provenance.py` to extract raw CSV directly from `data/raw/BTCUSDT-trades-2026-07-01.zip`, verify bitwise ingestion parity against `trades.parquet` (Price: 0.0, Qty: 0.0, Dir: 0, TS: 0), and fit nonlinear models live. If raw archives or Parquets are missing, `--mode full` reports `[RESULT: INCOMPLETE]` and exits with code 1. Clean clones audit fixtures via `--mode manifest` (exit 0). | Live recomputation benchmark confirms exact numerical parity ($\Delta = 0.00\text{e}+00$) across 13 parameter metrics. Eliminates false pass on missing production inputs. |
-| **Trade-Level Sample Accounting & Equilibrium Copy Clarification** | The 55,757 regression trades (stride=4 systematic sampling for HAC tractability) were conflated with the 223,025 positive price displacement trades. Methodological notes retained "structural equilibrium theorem", contradicting the bounded empirical framing. | **Disaggregated Sample Accounting & Bounded Copy Revision**: `trade_level_fit` now exposes `regression_observations: 55757` and `sampling_stride: 4` alongside `positive_trades_count: 223025`. Frontend table and footnotes clearly distinguish evaluated regression subsample from total positive displacement events. Revised research interpretation to state that the Square-Root Law is an empirical scaling relationship for institutional meta-orders, not an axiomatic law or universal structural equilibrium theorem. | Prevents sample size ambiguity and ensures 100% philosophical consistency across all research text. |
-| **Clean Clone Test Suite Integrity** | A clean git clone failed 2 tests in `test_m6_provenance_audit.py` because 80MB+ raw ZIPs and 85MB+ Parquets are gitignored. Test counts in documentation were stated as 57 passed without distinguishing clean vs. production environments. | **Test Suite Decoupling & Marker Segregation**: Decorated production dataset tests with `@pytest.mark.production_data` and graceful `pytest.skip` when external files are missing. Clean clone passes **57/57** unit and fixture tests with 0 failures (`pytest -m "not production_data"`). Production data environment passes **60/60** tests. Documented exact `gh auth refresh -h github.com -s workflow` command for GitHub Actions setup. | Guarantees green CI on clean checkouts while preserving rigorous production data verification locally. |
-
-
-

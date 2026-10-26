@@ -25,6 +25,7 @@ from packages.impact_models.price_response import PriceResponseEngine
 from packages.impact_models.nonlinear_impact import NonlinearImpactModel
 from packages.analytics.hawkes import BivariateHawkesModel
 from packages.reporting.quality_audit import DataQualityAuditor
+from packages.governance.sample_selector import SampleSelector, SampleSelectionSpec
 
 def save_json(data: dict, filename: str):
     out_path = STATIC_DATA_DIR / filename
@@ -126,15 +127,24 @@ def main():
                 "buckets": records
             }, f"buckets_{interval}_{d}.json")
 
-        # Signed Autocorrelation
-        sample_df = df.slice(n_trades // 4, 300_000)
+        # Signed Autocorrelation & Distributions via canonical SampleSelector
+        spec_300k = SampleSelectionSpec(
+            symbol="BTCUSDT",
+            date=d,
+            selection_method="SESSION_ACTIVE_WINDOW",
+            offset_ratio=0.25,
+            target_sample_size=300_000
+        )
+        sample_df, prov_300k = SampleSelector.select_sample(df, spec_300k)
         autocorr_data = trade_flow.compute_signed_autocorrelation(sample_df, max_lag=50)
+        autocorr_data["sample_provenance"] = prov_300k.to_dict()
         save_json(autocorr_data, f"autocorr_{d}.json")
 
         # Distributions (Trade Size and Inter-trade Duration)
         size_dist = trade_flow.compute_trade_size_distribution(sample_df, num_bins=35)
         dur_dist = trade_flow.compute_duration_distribution(sample_df, max_ms_cutoff=1500.0, num_bins=40)
         save_json({
+            "sample_provenance": prov_300k.to_dict(),
             "trade_size_distribution": size_dist,
             "duration_distribution": dur_dist
         }, f"distributions_{d}.json")
@@ -154,11 +164,11 @@ def main():
         hawkes_data = hawkes_engine.fit_trades(df, sample_size=5_000)
         save_json(hawkes_data, f"hawkes_{d}.json")
 
-        # Intraday Replay Windows (00:00, 08:00, 14:00, 20:00 UTC)
+        # Intraday Replay Windows (00:00, 05:49 Model Onset, 08:00, 14:00, 20:00 UTC)
         base_ns = int(df["event_timestamp_ns"][0])
         limit = 1500
         duration_s = 60
-        offsets = [0, 28800, 50400, 72000]
+        offsets = [0, 20994, 28800, 50400, 72000]
 
         for offset in offsets:
             target_start = base_ns + (offset * 1_000_000_000)

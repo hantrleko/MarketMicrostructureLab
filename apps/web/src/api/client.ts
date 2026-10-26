@@ -176,10 +176,12 @@ export async function fetchAutocorrelation(symbol: string, date: string, maxLag:
 export async function fetchDistributions(symbol: string, date: string): Promise<{
   trade_size_distribution: TradeSizeDistribution;
   duration_distribution: DurationDistribution;
+  sample_provenance?: any;
 }> {
   return safeFetch<{
     trade_size_distribution: TradeSizeDistribution;
     duration_distribution: DurationDistribution;
+    sample_provenance?: any;
   }>(`flow/distributions?symbol=${symbol}&date=${date}`, `distributions_${date}.json`, { symbol, date });
 }
 
@@ -208,8 +210,8 @@ export async function fetchReplayWindow(
   durationSeconds: number = 60,
   limit: number = 2000
 ): Promise<ReplayWindowResponse> {
-  // Pre-indexed intraday offsets: 0 (00:00), 28800 (08:00), 50400 (14:00), 72000 (20:00)
-  const availableOffsets = [0, 28800, 50400, 72000];
+  // Pre-indexed intraday offsets: 0 (00:00), 20994 (05:49 Model Onset), 28800 (08:00), 50400 (14:00), 72000 (20:00)
+  const availableOffsets = [0, 20994, 28800, 50400, 72000];
   const matchedOffset = availableOffsets.reduce((prev, curr) =>
     Math.abs(curr - startSecond) < Math.abs(prev - startSecond) ? curr : prev
   );

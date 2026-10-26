@@ -28,6 +28,7 @@ import numpy as np
 import polars as pl
 from scipy.optimize import minimize
 from scipy.stats import kstest
+from packages.governance.sample_selector import SampleSelector, SampleSelectionSpec
 
 
 class BivariateHawkesModel:
@@ -52,11 +53,28 @@ class BivariateHawkesModel:
         - Microsecond-aggregated control model comparison
         - Jitter sensitivity evaluation
         """
-        if len(df) > sample_size:
-            start_idx = len(df) // 3
-            sub_df = df.slice(start_idx, sample_size)
+        if "price" in df.columns and ("base_quantity" in df.columns or "quantity" in df.columns):
+            symbol = df["symbol"][0] if "symbol" in df.columns else "BTCUSDT"
+            date_str = str(df["event_time_utc"][0])[:10] if "event_time_utc" in df.columns else "2026-07-01"
+            spec = SampleSelectionSpec(
+                symbol=symbol,
+                date=date_str,
+                selection_method="SESSION_ACTIVE_WINDOW",
+                offset_ratio=0.25,
+                target_sample_size=sample_size
+            )
+            sub_df, prov = SampleSelector.select_sample(df, spec)
+            provenance_dict = prov.to_dict()
         else:
-            sub_df = df
+            if len(df) > sample_size:
+                start_idx = int(len(df) * 0.25)
+                sub_df = df.slice(start_idx, sample_size)
+            else:
+                sub_df = df
+            provenance_dict = {
+                "selection_method": "CUSTOM_OR_SYNTHETIC",
+                "sample_size": len(sub_df)
+            }
 
         # Deterministic ordering by timestamp and trade_id
         if "trade_id" in sub_df.columns:
@@ -86,6 +104,7 @@ class BivariateHawkesModel:
 
         return {
             "sample_events": len(raw_ns),
+            "sample_provenance": provenance_dict,
             "observation_window_seconds": res_primary["T"],
             "decay_beta": self.beta,
             "buy_events_count": res_primary["n_buy"],

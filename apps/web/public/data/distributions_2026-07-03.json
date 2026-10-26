@@ -1,4 +1,22 @@
 {
+  "sample_provenance": {
+    "spec_version": "1.0.0",
+    "symbol": "BTCUSDT",
+    "date": "2026-07-03",
+    "selection_method": "SESSION_ACTIVE_WINDOW",
+    "total_input_rows": 2571531,
+    "duplicates_dropped": 0,
+    "invalid_rows_dropped": 0,
+    "total_valid_rows": 2571531,
+    "window_start_index": 642882,
+    "selected_row_count": 300000,
+    "start_trade_id": 6474640881,
+    "end_trade_id": 6474940880,
+    "start_time_utc": "2026-07-03T05:37:15.255456Z",
+    "end_time_utc": "2026-07-03T08:53:04.791810Z",
+    "trade_ids_sha256": "71c54b500e8329a471c54d271a77fcb014ccec832abffb508ad46a957b1576e9",
+    "content_sha256": "74aca94402ce05a7ea1c98b4a2e89d13566c9ba3c5928ffb7e9b08907ecb3ccf"
+  },
   "trade_size_distribution": {
     "total_trades": 300000,
     "mean_qty": 0.007642510766666668,

@@ -36,7 +36,7 @@ def get_git_commit() -> str:
             return res.stdout.strip()
     except Exception:
         pass
-    return "924af64"
+    return "HEAD"
 
 
 def compute_sha256(filepath: Path) -> str:

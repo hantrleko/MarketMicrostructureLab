@@ -8,14 +8,74 @@ const MarketImpactResearch = React.lazy(() => import('./pages/MarketImpactResear
 const DataIntegrityConsole = React.lazy(() => import('./pages/DataIntegrityConsole').then(m => ({ default: m.DataIntegrityConsole })));
 const OrderBookLab = React.lazy(() => import('./pages/OrderBookLab').then(m => ({ default: m.OrderBookLab })));
 
+interface UrlParams {
+  tab: string;
+  date: string;
+  session?: number;
+  k?: number;
+}
+
+function getUrlParams(): UrlParams {
+  if (typeof window === 'undefined') return { tab: 'replay', date: '2026-07-01' };
+  const params = new URLSearchParams(window.location.search);
+  const validTabs = ['replay', 'observatory', 'impact', 'integrity', 'orderbook'];
+  const tab = params.get('tab');
+  const date = params.get('date');
+  const sessionStr = params.get('session');
+  const kStr = params.get('k');
+
+  return {
+    tab: tab && validTabs.includes(tab) ? tab : 'replay',
+    date: date && ['2026-07-01', '2026-07-02', '2026-07-03'].includes(date) ? date : '2026-07-01',
+    session: sessionStr ? parseInt(sessionStr, 10) : undefined,
+    k: kStr ? parseInt(kStr, 10) : undefined
+  };
+}
+
 export function App() {
-  const [activeTab, setActiveTab] = useState<string>('replay');
-  const [selectedDate, setSelectedDate] = useState<string>('2026-07-01');
+  const initialParams = getUrlParams();
+  const [activeTab, setActiveTab] = useState<string>(initialParams.tab);
+  const [selectedDate, setSelectedDate] = useState<string>(initialParams.date);
+  const [replaySession, setReplaySession] = useState<number | undefined>(initialParams.session);
+  const [impactHorizon, setImpactHorizon] = useState<number | undefined>(initialParams.k);
   const [dataLayer, setDataLayer] = useState<DataLayerState>('STATIC');
   const availableDates = ['2026-07-01', '2026-07-02', '2026-07-03'];
 
   useEffect(() => {
     return subscribeDataLayerState(setDataLayer);
+  }, []);
+
+  // Synchronize state with URL search parameters (deep linking & bookmarking)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    params.set('tab', activeTab);
+    params.set('date', selectedDate);
+    if (activeTab === 'replay' && replaySession !== undefined) {
+      params.set('session', replaySession.toString());
+    } else if (activeTab !== 'replay') {
+      params.delete('session');
+    }
+    if (activeTab === 'impact' && impactHorizon !== undefined) {
+      params.set('k', impactHorizon.toString());
+    } else if (activeTab !== 'impact') {
+      params.delete('k');
+    }
+    const newUrl = `${window.location.pathname}?${params.toString()}`;
+    window.history.replaceState({}, '', newUrl);
+  }, [activeTab, selectedDate, replaySession, impactHorizon]);
+
+  // Handle browser back/forward buttons
+  useEffect(() => {
+    const handlePopState = () => {
+      const p = getUrlParams();
+      setActiveTab(p.tab);
+      setSelectedDate(p.date);
+      setReplaySession(p.session);
+      setImpactHorizon(p.k);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
   const getDataLayerBadge = () => {
@@ -65,9 +125,9 @@ export function App() {
             Loading research terminal module...
           </div>
         }>
-          {activeTab === 'replay' && <MarketReplay date={selectedDate} />}
+          {activeTab === 'replay' && <MarketReplay date={selectedDate} initialSession={replaySession} />}
           {activeTab === 'observatory' && <OrderFlowObservatory date={selectedDate} />}
-          {activeTab === 'impact' && <MarketImpactResearch date={selectedDate} />}
+          {activeTab === 'impact' && <MarketImpactResearch date={selectedDate} initialHorizon={impactHorizon} onHorizonChange={setImpactHorizon} />}
           {activeTab === 'integrity' && <DataIntegrityConsole currentDate={selectedDate} />}
           {activeTab === 'orderbook' && <OrderBookLab />}
         </Suspense>
@@ -86,7 +146,7 @@ export function App() {
         color: 'var(--text-dim)'
       }}>
         <div>
-          MARKET MICROSTRUCTURE LAB (MML) v1.1.2 &bull; QUANTITATIVE RESEARCH PLATFORM
+          MARKET MICROSTRUCTURE LAB (MML) v1.1.0 &bull; QUANTITATIVE RESEARCH PLATFORM
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'center' }}>
           <span>OFFICIAL SOURCE: BINANCE VISION SPOT (NON-COMMERCIAL RESEARCH LICENSE)</span>

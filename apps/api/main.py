@@ -17,6 +17,7 @@ from pydantic import BaseModel
 
 import polars as pl
 from packages.governance.manifest import DataManifestManager, ManifestEntry, APIError
+from packages.governance.sample_selector import SampleSelector, SampleSelectionSpec
 from packages.analytics.trade_flow import TradeFlowAnalytics
 from packages.analytics.volatility import VolatilityAnalytics
 from packages.analytics.hawkes import BivariateHawkesModel
@@ -30,6 +31,20 @@ PROJECT_ROOT = Path(__file__).parent.parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
 NORMALIZED_DIR = DATA_DIR / "normalized"
 METADATA_DIR = DATA_DIR / "metadata"
+
+
+def get_runtime_git_commit() -> str:
+    commit = os.environ.get("BUILD_COMMIT")
+    if commit and commit != "unknown":
+        return commit
+    try:
+        import subprocess
+        res = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=PROJECT_ROOT, capture_output=True, text=True)
+        if res.returncode == 0 and res.stdout.strip():
+            return res.stdout.strip()
+    except Exception:
+        pass
+    return "HEAD"
 
 
 def get_system_runtime_mode() -> Dict[str, Any]:
@@ -47,13 +62,13 @@ def get_system_runtime_mode() -> Dict[str, Any]:
         mode = "STATIC_ONLY"
         data_desc = "No local parquet datasets found; static API serving only"
 
-    commit = os.environ.get("BUILD_COMMIT", "6732ae9")
-    data_version = os.environ.get("DATA_VERSION", "V1.1.2 Institutional Rigor")
+    commit = get_runtime_git_commit()
+    data_version = os.environ.get("DATA_VERSION", "V1.1.0 Institutional Rigor")
 
     return {
         "status": "HEALTHY",
         "app_name": "Market Microstructure Lab",
-        "version": "1.1.2",
+        "version": "1.1.0",
         "build_commit": commit,
         "data_version": data_version,
         "runtime_mode": mode,
@@ -81,7 +96,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Market Microstructure Lab (MML) API",
     description="Professional Quantitative Microstructure Research Platform",
-    version="1.1.2",
+    version="1.1.0",
     lifespan=lifespan
 )
 
@@ -303,12 +318,19 @@ def get_signed_autocorrelation(
     date: str = "2026-07-01",
     max_lag: int = 50
 ):
-    """Calculates aggressive trade direction autocorrelation rho(k)."""
+    """Calculates aggressive trade direction autocorrelation rho(k) using unified SampleSelector."""
     df, entry = get_trades_df_and_entry(symbol, date)
-    # Use first 300,000 trades for fast sub-second calculation
-    sample_df = df.slice(0, 300_000)
+    spec = SampleSelectionSpec(
+        symbol=symbol,
+        date=date,
+        selection_method="SESSION_ACTIVE_WINDOW",
+        offset_ratio=0.25,
+        target_sample_size=300_000
+    )
+    sample_df, prov = SampleSelector.select_sample(df, spec)
     res = trade_analytics.compute_signed_autocorrelation(sample_df, max_lag=max_lag)
     res["identity"] = build_identity_block(entry)
+    res["sample_provenance"] = prov.to_dict()
     return res
 
 
@@ -317,13 +339,21 @@ def get_distributions(
     symbol: str = "BTCUSDT",
     date: str = "2026-07-01"
 ):
-    """Calculates trade size distribution and inter-trade arrival duration distribution."""
+    """Calculates trade size distribution and inter-trade arrival duration distribution using unified SampleSelector."""
     df, entry = get_trades_df_and_entry(symbol, date)
-    sample_df = df.slice(0, 300_000)
+    spec = SampleSelectionSpec(
+        symbol=symbol,
+        date=date,
+        selection_method="SESSION_ACTIVE_WINDOW",
+        offset_ratio=0.25,
+        target_sample_size=300_000
+    )
+    sample_df, prov = SampleSelector.select_sample(df, spec)
     size_dist = trade_analytics.compute_trade_size_distribution(sample_df, num_bins=35)
     dur_dist = trade_analytics.compute_duration_distribution(sample_df, max_ms_cutoff=1500.0, num_bins=40)
     return {
         "identity": build_identity_block(entry),
+        "sample_provenance": prov.to_dict(),
         "trade_size_distribution": size_dist,
         "duration_distribution": dur_dist
     }

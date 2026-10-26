@@ -14,7 +14,7 @@ WORKDIR /app
 
 # Build arguments for commit and data version
 ARG BUILD_COMMIT=unknown
-ARG DATA_VERSION="V1.1.2 Institutional Rigor"
+ARG DATA_VERSION="V1.1.0 Institutional Rigor"
 ENV BUILD_COMMIT=${BUILD_COMMIT}
 ENV DATA_VERSION=${DATA_VERSION}
 

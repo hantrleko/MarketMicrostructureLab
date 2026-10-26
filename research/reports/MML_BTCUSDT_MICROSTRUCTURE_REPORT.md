@@ -128,9 +128,9 @@ We model mutual excitation between aggressive buy and sell arrivals with exponen
 +-------------+-----------------------+-------------------+-------------------+--------------------+
 |    Date     | Spectral Radius rho   | Stability Status  | Buy-Buy Branching | Sell-Sell Branching|
 +-------------+-----------------------+-------------------+-------------------+--------------------+
-| 2026-07-01  |        1.0050         | SUPERCRITICAL_UNSTABLE |       0.9054      |       1.0050      |
-| 2026-07-02  |        1.0153         | SUPERCRITICAL_UNSTABLE |       1.0153      |       0.9450      |
-| 2026-07-03  |        0.9647         | SUBCRITICAL_STABLE |       0.9647      |       0.9280      |
+| 2026-07-01  |        0.8540         | SUBCRITICAL_STABLE |       0.8540      |       0.8533      |
+| 2026-07-02  |        1.0237         | SUPERCRITICAL_UNSTABLE |       0.8592      |       1.0237      |
+| 2026-07-03  |        0.9453         | SUBCRITICAL_STABLE |       0.9438      |       0.9453      |
 +-------------+-----------------------+-------------------+-------------------+--------------------+
 ```
 
@@ -140,9 +140,9 @@ We model mutual excitation between aggressive buy and sell arrivals with exponen
 
 #### Timestamp-Aggregated Sensitivity Check (对照分析)
 To evaluate how sensitive branching ratios are to time resolution and identical timestamp collisions (e.g. matching engine trade splits):
-- **Raw Trades Spectral Radius**: $\rho(\Gamma_{\text{raw}}) \approx 1.0050$
-- **Microsecond-Aggregated Spectral Radius**: $\rho(\Gamma_{\text{agg}}) \approx 0.5935$ (SUBCRITICAL_STABLE)
-- **Compression**: -88.9%
+- **Raw Trades Spectral Radius**: $\rho(\Gamma_{\text{raw}}) \approx 0.8540$
+- **Microsecond-Aggregated Spectral Radius**: $\rho(\Gamma_{\text{agg}}) \approx 0.2879$ (SUBCRITICAL_STABLE)
+- **Compression**: -78.2%
 - **Methodological Takeaway**: Branching ratios demonstrate extreme sensitivity to event definition and timestamp resolution. The drop in spectral radius under microsecond aggregation illustrates that high-frequency clustering parameters cannot be directly translated into trader behavioral dynamics without accounting for matching engine protocol artifacts.
 
 ---

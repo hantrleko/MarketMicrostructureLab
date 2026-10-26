@@ -14,6 +14,7 @@ export const OrderFlowObservatory: React.FC<OrderFlowObservatoryProps> = ({ date
   const [autocorr, setAutocorr] = useState<AutocorrResult | null>(null);
   const [sizeDist, setSizeDist] = useState<TradeSizeDistribution | null>(null);
   const [durDist, setDurDist] = useState<DurationDistribution | null>(null);
+  const [distProvenance, setDistProvenance] = useState<any>(null);
   const [hawkes, setHawkes] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -27,6 +28,7 @@ export const OrderFlowObservatory: React.FC<OrderFlowObservatoryProps> = ({ date
     setAutocorr(null);
     setSizeDist(null);
     setDurDist(null);
+    setDistProvenance(null);
     setHawkes(null);
 
     Promise.all([
@@ -41,6 +43,7 @@ export const OrderFlowObservatory: React.FC<OrderFlowObservatoryProps> = ({ date
           setAutocorr(aData);
           setSizeDist(dData.trade_size_distribution);
           setDurDist(dData.duration_distribution);
+          setDistProvenance(dData.sample_provenance || null);
           setHawkes(hData);
           setLoading(false);
         }
@@ -260,8 +263,29 @@ export const OrderFlowObservatory: React.FC<OrderFlowObservatoryProps> = ({ date
           ))}
         </div>
 
-        <div className="mono" style={{ fontSize: '0.8rem', color: 'var(--color-gold)' }}>
-          TOTAL BUCKETS: {buckets.length} | ZERO INTERPOLATION ENFORCED
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+          <a
+            href={`?tab=replay&date=${date}&session=20994`}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              background: 'rgba(56, 189, 248, 0.12)',
+              border: '1px solid rgba(56, 189, 248, 0.35)',
+              color: '#38bdf8',
+              padding: '5px 12px',
+              borderRadius: '4px',
+              fontSize: '0.74rem',
+              fontWeight: 600,
+              textDecoration: 'none'
+            }}
+            title="Jump to the 25% active session window onset in Market Replay"
+          >
+            &rarr; OPEN ACTIVE WINDOW (05:49 UTC) IN REPLAY
+          </a>
+          <div className="mono" style={{ fontSize: '0.8rem', color: 'var(--color-gold)' }}>
+            TOTAL BUCKETS: {buckets.length} | ZERO INTERPOLATION ENFORCED
+          </div>
         </div>
       </div>
 
@@ -300,6 +324,13 @@ export const OrderFlowObservatory: React.FC<OrderFlowObservatoryProps> = ({ date
               rho(1) = {autocorr?.autocorrelations?.[0]?.toFixed(4) || '---'}
             </span>
           </div>
+          {/* Sample Provenance Pill Badge */}
+          {autocorr?.sample_provenance && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.68rem', color: 'var(--text-dim)', background: 'var(--bg-dark)', padding: '4px 8px', borderRadius: '3px', marginBottom: '8px' }}>
+              <span>SAMPLE: <strong className="mono" style={{ color: '#fff' }}>{autocorr.sample_provenance.selected_row_count?.toLocaleString()}</strong> TRADES ({autocorr.sample_provenance.start_time_utc?.slice(11, 19)} &rarr; {autocorr.sample_provenance.end_time_utc?.slice(11, 19)} UTC)</span>
+              <span className="mono" style={{ color: 'var(--color-buy)' }}>SESSION OFFSET 25%</span>
+            </div>
+          )}
           <MMLChart option={autocorrOption} style={{ height: '280px', width: '100%' }} />
           <div style={{ fontSize: '0.74rem', color: 'var(--text-dim)', marginTop: '8px', lineHeight: '1.4' }}>
             <strong>Strong Trade-Sign Persistence:</strong> Confirms extreme intraday continuity (rho(1) &asymp; 0.93, rho(50) &asymp; 0.70).
@@ -315,6 +346,13 @@ export const OrderFlowObservatory: React.FC<OrderFlowObservatoryProps> = ({ date
               MEDIAN: {sizeDist?.median_qty ? sizeDist.median_qty.toFixed(4) : '---'} BTC
             </span>
           </div>
+          {/* Sample Provenance Pill Badge */}
+          {distProvenance && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.68rem', color: 'var(--text-dim)', background: 'var(--bg-dark)', padding: '4px 8px', borderRadius: '3px', marginBottom: '8px' }}>
+              <span>SAMPLE: <strong className="mono" style={{ color: '#fff' }}>{distProvenance.selected_row_count?.toLocaleString()}</strong> TRADES ({distProvenance.start_time_utc?.slice(11, 19)} &rarr; {distProvenance.end_time_utc?.slice(11, 19)} UTC)</span>
+              <span className="mono" style={{ color: 'var(--color-gold)' }}>SESSION OFFSET 25%</span>
+            </div>
+          )}
           <MMLChart option={sizeOption} style={{ height: '280px', width: '100%' }} />
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', marginTop: '8px', color: 'var(--text-muted)' }}>
             <span>P25: <strong className="mono">{sizeDist?.p25_qty?.toFixed(4) || '---'}</strong></span>
@@ -354,6 +392,19 @@ export const OrderFlowObservatory: React.FC<OrderFlowObservatoryProps> = ({ date
             </span>
           </div>
         </div>
+
+        {/* Hawkes Provenance Pill Badge */}
+        {hawkes?.sample_provenance && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', fontSize: '0.68rem', color: 'var(--text-dim)', background: 'var(--bg-dark)', padding: '4px 10px', borderRadius: '3px', marginBottom: '14px' }}>
+            <span>SAMPLE: <strong className="mono" style={{ color: '#fff' }}>{hawkes.sample_provenance.selected_row_count?.toLocaleString() || hawkes.sample_events?.toLocaleString() || '5,000'}</strong> TRADES ({hawkes.sample_provenance.start_time_utc?.slice(11, 19) || '05:49:54'} &rarr; {hawkes.sample_provenance.end_time_utc?.slice(11, 19) || '05:51:30'} UTC)</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span className="mono" style={{ color: 'var(--color-buy)' }}>SESSION OFFSET 25%</span>
+              <a href={`?tab=replay&date=${date}&session=20994`} style={{ color: '#38bdf8', textDecoration: 'none', fontWeight: 600 }}>
+                &rarr; Open in Market Replay
+              </a>
+            </div>
+          </div>
+        )}
 
         <div className="grid-4" style={{ marginBottom: '14px' }}>
           <div style={{ background: 'var(--bg-dark)', padding: '12px', borderRadius: '4px' }}>

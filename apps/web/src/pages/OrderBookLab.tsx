@@ -9,6 +9,7 @@ export const OrderBookLab: React.FC = () => {
   const [ladder, setLadder] = useState<OrderBookLadderResponse | null>(null);
   const [isLiveActive, setIsLiveActive] = useState<boolean>(false);
   const [isSimulatedActive, setIsSimulatedActive] = useState<boolean>(false);
+  const [liveSyncError, setLiveSyncError] = useState<string | null>(null);
   const pollTimerRef = useRef<any>(null);
 
   // Poll initial status
@@ -54,6 +55,7 @@ export const OrderBookLab: React.FC = () => {
 
   const handleToggleLiveSync = async () => {
     try {
+      setLiveSyncError(null);
       if (isLiveActive) {
         await controlOrderBook('stop');
         setIsLiveActive(false);
@@ -61,18 +63,24 @@ export const OrderBookLab: React.FC = () => {
         setIsSimulatedActive(false);
         const res = await controlOrderBook('start');
         if (res.status === 'SIMULATED_DEMO') {
-          // Backend not reachable, fall back to simulated demonstration
-          setIsSimulatedActive(true);
+          // Backend not reachable: DO NOT silently fall back to simulated mode!
+          setIsLiveActive(false);
+          setIsSimulatedActive(false);
+          setLiveSyncError('Local Python API service is offline or unreachable (expected at http://localhost:8000/api/v1). Live L2 WebSocket stream requires "uvicorn apps.api.main:app". Automatic silent fallback to simulated mode is disabled to uphold institutional data honesty. If you wish to preview the interactive interface using an isolated in-memory simulator, please click "SIMULATE PREVIEW (DEMO)".');
         } else {
           setIsLiveActive(true);
         }
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      setIsLiveActive(false);
+      setIsSimulatedActive(false);
+      setLiveSyncError(e?.message || 'Failed to connect to local API server.');
     }
   };
 
   const handleToggleSimulatedDemo = () => {
+    setLiveSyncError(null);
     if (isSimulatedActive) {
       setIsSimulatedActive(false);
       setLadder(null);
@@ -190,6 +198,45 @@ export const OrderBookLab: React.FC = () => {
               This L2 order book is generated locally for interactive terminal UI demonstration. Per MML research integrity rules, simulated order book data is <strong>NEVER mixed with empirical research statistics</strong> or stored in historical research layers.
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Live Sync Offline Alert (Honest Fail-Closed State) */}
+      {liveSyncError && (
+        <div
+          style={{
+            background: 'rgba(239, 68, 68, 0.1)',
+            border: '1px solid rgba(239, 68, 68, 0.4)',
+            borderRadius: '6px',
+            padding: '12px 16px',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '12px',
+            color: '#fca5a5',
+            fontSize: '0.8rem'
+          }}
+        >
+          <ShieldAlert size={20} style={{ flexShrink: 0, marginTop: '2px', color: 'var(--color-sell)' }} />
+          <div style={{ flex: 1, lineHeight: '1.5' }}>
+            <div style={{ fontWeight: 700, color: '#fff', marginBottom: '4px' }}>
+              LIVE L2 CONNECTION UNAVAILABLE &bull; LOCAL BACKEND OFFLINE
+            </div>
+            {liveSyncError}
+          </div>
+          <button
+            onClick={() => setLiveSyncError(null)}
+            style={{
+              background: 'transparent',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              color: '#fca5a5',
+              padding: '2px 8px',
+              borderRadius: '3px',
+              cursor: 'pointer',
+              fontSize: '0.74rem'
+            }}
+          >
+            DISMISS
+          </button>
         </div>
       )}
 

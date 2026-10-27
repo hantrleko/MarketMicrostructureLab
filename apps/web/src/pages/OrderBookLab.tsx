@@ -1,8 +1,43 @@
 import { useState, useEffect, useRef } from 'react';
 import { fetchOrderBookStatus, controlOrderBook, fetchLiveOrderBook } from '../api/client';
 import { OrderBookStatusResponse, OrderBookLadderResponse, DataSourceStatus } from '../types';
-import { AlertCircle, Wifi, Cpu, Database, Play, Square, Activity, Layers, ShieldAlert } from 'lucide-react';
+import { Wifi, Cpu, Database, Play, Square, Activity, Layers, ShieldAlert, Zap, RotateCcw } from 'lucide-react';
 import { MMLChart } from '../components/MMLChart';
+
+interface SandboxLevel {
+  price: number;
+  qty: number;
+}
+
+const DEFAULT_SANDBOX_ASKS: SandboxLevel[] = [
+  { price: 68500.10, qty: 2.45 },
+  { price: 68500.20, qty: 4.80 },
+  { price: 68500.35, qty: 7.15 },
+  { price: 68500.60, qty: 11.40 },
+  { price: 68501.00, qty: 16.50 },
+  { price: 68501.50, qty: 22.10 },
+  { price: 68502.20, qty: 28.75 },
+  { price: 68503.00, qty: 35.40 },
+  { price: 68504.00, qty: 42.00 },
+  { price: 68505.50, qty: 50.20 },
+  { price: 68507.00, qty: 58.60 },
+  { price: 68509.00, qty: 68.00 }
+];
+
+const DEFAULT_SANDBOX_BIDS: SandboxLevel[] = [
+  { price: 68499.90, qty: 2.60 },
+  { price: 68499.80, qty: 5.10 },
+  { price: 68499.65, qty: 7.40 },
+  { price: 68499.40, qty: 11.20 },
+  { price: 68499.00, qty: 15.80 },
+  { price: 68498.50, qty: 21.60 },
+  { price: 68497.80, qty: 29.10 },
+  { price: 68497.00, qty: 36.50 },
+  { price: 68496.00, qty: 41.80 },
+  { price: 68494.50, qty: 49.50 },
+  { price: 68493.00, qty: 57.20 },
+  { price: 68491.00, qty: 66.80 }
+];
 
 export const OrderBookLab: React.FC = () => {
   const [obStatus, setObStatus] = useState<OrderBookStatusResponse | null>(null);
@@ -11,6 +46,22 @@ export const OrderBookLab: React.FC = () => {
   const [isSimulatedActive, setIsSimulatedActive] = useState<boolean>(false);
   const [liveSyncError, setLiveSyncError] = useState<string | null>(null);
   const pollTimerRef = useRef<any>(null);
+
+  // Counterfactual Sandbox State
+  const [sandboxAsks, setSandboxAsks] = useState<SandboxLevel[]>(DEFAULT_SANDBOX_ASKS);
+  const [sandboxBids, setSandboxBids] = useState<SandboxLevel[]>(DEFAULT_SANDBOX_BIDS);
+  const [sandboxImpactSize, setSandboxImpactSize] = useState<number>(25);
+  const [sandboxDirection, setSandboxDirection] = useState<'BUY' | 'SELL'>('BUY');
+  const [sandboxResult, setSandboxResult] = useState<{
+    direction: 'BUY' | 'SELL';
+    size: number;
+    vwap: number;
+    slippageBps: number;
+    levelsCleared: number;
+    spread: number;
+    recoveringPct: number;
+  } | null>(null);
+  const recoveryTimerRef = useRef<any>(null);
 
   // Poll initial status
   useEffect(() => {
@@ -90,15 +141,127 @@ export const OrderBookLab: React.FC = () => {
     }
   };
 
-  const dataStatus: DataSourceStatus = ladder?.data_status || obStatus?.data_status || 'UNAVAILABLE';
-  const metrics = ladder?.metrics;
-  const bids = ladder?.bids || [];
-  const asks = ladder?.asks || [];
-  const maxQty = Math.max(
-    1,
-    ...bids.map((b) => b.qty),
-    ...asks.map((a) => a.qty)
-  );
+  const fireSandboxImpact = () => {
+    if (recoveryTimerRef.current) clearInterval(recoveryTimerRef.current);
+
+    let remainingQty = sandboxImpactSize;
+    let filledValue = 0;
+    let levelsCleared = 0;
+    const isBuy = sandboxDirection === 'BUY';
+
+    if (isBuy) {
+      const newAsks = sandboxAsks.map((a) => ({ ...a }));
+      const bestAsk = newAsks[0]?.price || 68500.10;
+
+      for (let i = 0; i < newAsks.length && remainingQty > 0; i++) {
+        const take = Math.min(newAsks[i].qty, remainingQty);
+        filledValue += take * newAsks[i].price;
+        newAsks[i].qty -= take;
+        remainingQty -= take;
+        if (newAsks[i].qty <= 0.001) levelsCleared++;
+      }
+
+      const activeAsks = newAsks.filter((a) => a.qty > 0.001);
+      const newBestAsk = activeAsks[0]?.price || bestAsk + 5;
+      const vwap = filledValue / (sandboxImpactSize - remainingQty || 1);
+      const slippageBps = ((vwap - bestAsk) / bestAsk) * 10000;
+      const bestBid = sandboxBids[0]?.price || 68499.90;
+      const spread = newBestAsk - bestBid;
+
+      setSandboxAsks(activeAsks);
+      setSandboxResult({
+        direction: 'BUY',
+        size: sandboxImpactSize,
+        vwap,
+        slippageBps,
+        levelsCleared,
+        spread,
+        recoveringPct: 20
+      });
+    } else {
+      const newBids = sandboxBids.map((b) => ({ ...b }));
+      const bestBid = newBids[0]?.price || 68499.90;
+
+      for (let i = 0; i < newBids.length && remainingQty > 0; i++) {
+        const take = Math.min(newBids[i].qty, remainingQty);
+        filledValue += take * newBids[i].price;
+        newBids[i].qty -= take;
+        remainingQty -= take;
+        if (newBids[i].qty <= 0.001) levelsCleared++;
+      }
+
+      const activeBids = newBids.filter((b) => b.qty > 0.001);
+      const newBestBid = activeBids[0]?.price || bestBid - 5;
+      const vwap = filledValue / (sandboxImpactSize - remainingQty || 1);
+      const slippageBps = ((bestBid - vwap) / bestBid) * 10000;
+      const bestAsk = sandboxAsks[0]?.price || 68500.10;
+      const spread = bestAsk - newBestBid;
+
+      setSandboxBids(activeBids);
+      setSandboxResult({
+        direction: 'SELL',
+        size: sandboxImpactSize,
+        vwap,
+        slippageBps,
+        levelsCleared,
+        spread,
+        recoveringPct: 20
+      });
+    }
+
+    // Exponential liquidity recovery simulation (Hawkes decay)
+    let step = 1;
+    recoveryTimerRef.current = setInterval(() => {
+      step++;
+      const pct = Math.min(100, 20 + step * 14);
+      setSandboxResult((prev) => prev ? { ...prev, recoveringPct: pct } : null);
+
+      if (step >= 6) {
+        clearInterval(recoveryTimerRef.current);
+        setSandboxAsks(DEFAULT_SANDBOX_ASKS);
+        setSandboxBids(DEFAULT_SANDBOX_BIDS);
+        setSandboxResult((prev) => prev ? { ...prev, recoveringPct: 100 } : null);
+      }
+    }, 280);
+  };
+
+  const resetSandbox = () => {
+    if (recoveryTimerRef.current) clearInterval(recoveryTimerRef.current);
+    setSandboxAsks(DEFAULT_SANDBOX_ASKS);
+    setSandboxBids(DEFAULT_SANDBOX_BIDS);
+    setSandboxResult(null);
+  };
+
+  const isStreaming = isLiveActive || isSimulatedActive;
+  const bids = isStreaming ? (ladder?.bids || []) : sandboxBids;
+  const asks = isStreaming ? (ladder?.asks || []) : sandboxAsks;
+  const maxQty = Math.max(1, ...bids.map((b) => b.qty), ...asks.map((a) => a.qty));
+
+  const sandboxBestBid = sandboxBids[0]?.price || 68499.90;
+  const sandboxBestAsk = sandboxAsks[0]?.price || 68500.10;
+  const sandboxSpread = sandboxBestAsk - sandboxBestBid;
+  const sandboxSpreadBps = (sandboxSpread / sandboxBestAsk) * 10000;
+  const sandboxMid = (sandboxBestBid + sandboxBestAsk) / 2;
+  const sandboxMicroprice = (sandboxBestBid * (sandboxAsks[0]?.qty || 1) + sandboxBestAsk * (sandboxBids[0]?.qty || 1)) / ((sandboxAsks[0]?.qty || 1) + (sandboxBids[0]?.qty || 1));
+  const sandboxTop5BidDepth = sandboxBids.slice(0, 5).reduce((a, b) => a + b.qty, 0);
+  const sandboxTop5AskDepth = sandboxAsks.slice(0, 5).reduce((a, b) => a + b.qty, 0);
+  const sandboxImbalance = (sandboxTop5BidDepth - sandboxTop5AskDepth) / (sandboxTop5BidDepth + sandboxTop5AskDepth || 1);
+
+  const metrics = isStreaming ? ladder?.metrics : {
+    is_valid: true,
+    best_bid: sandboxBestBid,
+    best_ask: sandboxBestAsk,
+    spread: sandboxSpread,
+    spread_bps: sandboxSpreadBps,
+    mid_price: sandboxMid,
+    microprice: sandboxMicroprice,
+    book_imbalance: sandboxImbalance,
+    depth_imbalance: sandboxImbalance
+  };
+
+  const dataStatus: DataSourceStatus = isStreaming 
+    ? (ladder?.data_status || obStatus?.data_status || 'UNAVAILABLE') 
+    : 'SIMULATED';
 
   // History for streaming OFI & Spread chart
   const history = ladder?.history || [];
@@ -395,16 +558,111 @@ export const OrderBookLab: React.FC = () => {
             </span>
           </div>
 
-          {!isLiveActive && !isSimulatedActive ? (
-            <div style={{ height: '420px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', color: 'var(--text-dim)', textAlign: 'center', padding: '20px' }}>
-              <AlertCircle size={32} color="var(--color-gold)" />
-              <div>Live WebSocket stream is currently in STANDBY.</div>
-              <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', maxWidth: '340px' }}>
-                For authentic live L2 book synchronization, run the local Python FastAPI collector with <code>uvicorn apps.api.main:app</code>. Or click <strong>"SIMULATE PREVIEW"</strong> to inspect ladder rendering behavior.
+          {!isStreaming && (
+            <div style={{ background: 'var(--bg-dark)', border: '1px solid var(--border-highlight)', borderRadius: '6px', padding: '10px 12px', marginBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ fontSize: '0.74rem', fontWeight: 700, color: '#00e5ff', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <Zap size={13} /> COUNTERFACTUAL IMPACT SANDBOX (盘口冲击沙盒)
+                </span>
+                <button
+                  onClick={resetSandbox}
+                  style={{ background: 'transparent', color: 'var(--text-dim)', fontSize: '0.68rem', display: 'flex', alignItems: 'center', gap: '3px', cursor: 'pointer' }}
+                >
+                  <RotateCcw size={11} /> Reset Book
+                </button>
               </div>
+
+              {/* Fire Controls */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: '2px' }}>
+                  <button
+                    onClick={() => setSandboxDirection('BUY')}
+                    style={{
+                      background: sandboxDirection === 'BUY' ? 'rgba(0, 229, 255, 0.25)' : 'var(--bg-card)',
+                      color: sandboxDirection === 'BUY' ? '#00e5ff' : 'var(--text-dim)',
+                      border: `1px solid ${sandboxDirection === 'BUY' ? '#00e5ff' : 'var(--border-color)'}`,
+                      padding: '4px 8px',
+                      borderRadius: '3px 0 0 3px',
+                      fontSize: '0.72rem',
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    BUY (+)
+                  </button>
+                  <button
+                    onClick={() => setSandboxDirection('SELL')}
+                    style={{
+                      background: sandboxDirection === 'SELL' ? 'rgba(255, 145, 0, 0.25)' : 'var(--bg-card)',
+                      color: sandboxDirection === 'SELL' ? '#ff9100' : 'var(--text-dim)',
+                      border: `1px solid ${sandboxDirection === 'SELL' ? '#ff9100' : 'var(--border-color)'}`,
+                      padding: '4px 8px',
+                      borderRadius: '0 3px 3px 0',
+                      fontSize: '0.72rem',
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    SELL (-)
+                  </button>
+                </div>
+
+                <div style={{ display: 'flex', gap: '4px' }}>
+                  {[5, 15, 25, 50].map((sz) => (
+                    <button
+                      key={sz}
+                      onClick={() => setSandboxImpactSize(sz)}
+                      style={{
+                        background: sandboxImpactSize === sz ? 'rgba(255, 215, 0, 0.2)' : 'var(--bg-card)',
+                        border: `1px solid ${sandboxImpactSize === sz ? 'var(--color-gold)' : 'var(--border-color)'}`,
+                        color: sandboxImpactSize === sz ? 'var(--color-gold)' : 'var(--text-dim)',
+                        padding: '4px 7px',
+                        borderRadius: '3px',
+                        fontSize: '0.70rem',
+                        fontWeight: 600,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {sz} BTC
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  onClick={fireSandboxImpact}
+                  style={{
+                    marginLeft: 'auto',
+                    background: sandboxDirection === 'BUY' ? '#00e5ff' : '#ff9100',
+                    color: '#080b10',
+                    padding: '4px 12px',
+                    borderRadius: '4px',
+                    fontSize: '0.74rem',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}
+                >
+                  <Play size={12} fill="#080b10" /> FIRE IMPACT
+                </button>
+              </div>
+
+              {/* Dynamic Impact Readout Banner */}
+              {sandboxResult && (
+                <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid rgba(255,255,255,0.06)', fontSize: '0.72rem', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
+                  <div>
+                    Filled: <strong style={{ color: sandboxResult.direction === 'BUY' ? '#00e5ff' : '#ff9100' }}>{sandboxResult.size} BTC @ ${sandboxResult.vwap.toFixed(2)}</strong> &bull; Slippage: <strong>+{sandboxResult.slippageBps.toFixed(2)} bps</strong> &bull; Cleared: <strong>{sandboxResult.levelsCleared} levels</strong>
+                  </div>
+                  <div style={{ color: 'var(--color-gold)', fontWeight: 600 }}>
+                    {sandboxResult.recoveringPct < 100 ? `⚡ Resiliency Recovery: ${sandboxResult.recoveringPct}%` : `✓ Fully Restored`}
+                  </div>
+                </div>
+              )}
             </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', fontSize: '0.78rem' }}>
+          )}
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', fontSize: '0.78rem' }}>
               {/* ASKS (Reversed so lowest ask is at bottom near spread) */}
               <div style={{ display: 'flex', flexDirection: 'column-reverse', gap: '2px' }}>
                 {asks.map((ask, idx) => {
@@ -508,7 +766,6 @@ export const OrderBookLab: React.FC = () => {
                 })}
               </div>
             </div>
-          )}
         </div>
 
         {/* Real-Time Spread & OFI Streaming Chart */}

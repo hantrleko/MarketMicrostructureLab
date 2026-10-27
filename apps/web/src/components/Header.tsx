@@ -1,5 +1,5 @@
 import React from 'react';
-import { Activity, LineChart, PlayCircle, Layers, ShieldCheck, ChevronRight } from 'lucide-react';
+import { Activity, LineChart, PlayCircle, Layers, ShieldCheck, ChevronRight, Zap } from 'lucide-react';
 
 interface HeaderProps {
   activeTab: string;
@@ -7,6 +7,7 @@ interface HeaderProps {
   selectedDate: string;
   setSelectedDate: (date: string) => void;
   availableDates: string[];
+  onOpenByod?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -14,7 +15,8 @@ export const Header: React.FC<HeaderProps> = ({
   setActiveTab,
   selectedDate,
   setSelectedDate,
-  availableDates
+  availableDates,
+  onOpenByod
 }) => {
   const tabs = [
     { id: 'replay', label: 'Market Replay', icon: PlayCircle },
@@ -28,22 +30,40 @@ export const Header: React.FC<HeaderProps> = ({
     <header className="app-header">
       {/* Row 1: Brand, Symbol/Date, Historical Status (Target: ~38px) */}
       <div className="header-top-bar">
-        {/* Brand & Market Identification */}
+        {/* Brand & Market Identification with Eugene Finance Logo */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-          <div style={{
-            width: '10px',
-            height: '10px',
-            borderRadius: '2px',
-            background: 'var(--color-gold)',
-            boxShadow: '0 0 8px rgba(255, 215, 0, 0.4)',
-            flexShrink: 0
-          }} />
+          <img
+            src="./eugene_finance_logo.png"
+            alt="Eugene Finance"
+            style={{
+              width: '26px',
+              height: '26px',
+              borderRadius: '4px',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              objectFit: 'contain',
+              background: '#0d121c',
+              flexShrink: 0
+            }}
+          />
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', whiteSpace: 'nowrap', overflow: 'hidden' }}>
-            <span style={{ fontWeight: 800, letterSpacing: '0.06em', fontSize: '0.98rem', color: '#fff' }}>
-              MML
+            <span style={{ fontWeight: 800, letterSpacing: '0.08em', fontSize: '0.98rem', color: '#fff' }}>
+              EUGENE FINANCE
             </span>
             <span style={{ color: 'var(--color-buy)', fontSize: '0.78rem', fontWeight: 600 }}>
               BTC/USDT Spot
+            </span>
+            <span
+              style={{
+                fontSize: '0.64rem',
+                fontWeight: 700,
+                color: 'var(--color-primary, #60a5fa)',
+                background: 'rgba(96, 165, 250, 0.1)',
+                padding: '1px 5px',
+                borderRadius: '3px',
+                letterSpacing: '0.04em'
+              }}
+            >
+              MML v1.2
             </span>
           </div>
 
@@ -95,8 +115,32 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </div>
 
-        {/* Status Badge (Contextual: Archive vs L2 Live) */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+        {/* Action & Status Badges */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+          {onOpenByod && (
+            <button
+              onClick={onOpenByod}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                background: 'rgba(0, 229, 255, 0.1)',
+                border: '1px solid rgba(0, 229, 255, 0.35)',
+                color: '#00e5ff',
+                padding: '3px 10px',
+                borderRadius: '12px',
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+              title="Drag and drop your own trade CSV for client-side zero-backend diagnostic"
+            >
+              <Zap size={12} />
+              <span>BYOD DIAGNOSTIC</span>
+            </button>
+          )}
+
           <div style={{
             display: 'inline-flex',
             alignItems: 'center',

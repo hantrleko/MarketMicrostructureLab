@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Play, Pause, SkipForward, RotateCcw, FastForward, Clock, Zap, Timer, AlertTriangle } from 'lucide-react';
+import { Play, Pause, SkipForward, RotateCcw, FastForward, Clock, Zap, Timer, AlertTriangle, Compass, Sparkles } from 'lucide-react';
 import { fetchReplayWindow } from '../api/client';
 import { ReplayTrade } from '../types';
 import { MMLChart } from '../components/MMLChart';
@@ -8,6 +8,42 @@ interface MarketReplayProps {
   date: string;
   initialSession?: number;
 }
+
+interface CuratedScenario {
+  id: string;
+  title: string;
+  badge: string;
+  offset: number;
+  description: string;
+  narration: string;
+}
+
+const curatedScenarios: CuratedScenario[] = [
+  {
+    id: 'whale-dump',
+    title: '🐋 巨鲸砸盘与流动性缺口 (Whale Dump & Impact)',
+    badge: 'WHALE SELL & RECOVERY',
+    offset: 20994,
+    description: '单笔大额卖单连续下击引发买方档位被击穿，瞬态流动性空洞显现，做市商在 5 笔交易内快速回补价差。',
+    narration: '【观察看点】点击播放后注意观察图表大尺寸橙色卖单击穿均价线，随后 CVD 快速下坠，小单紧接着出现均值回归回补。'
+  },
+  {
+    id: 'hawkes-cluster',
+    title: '⚡ 订单流自激雪崩 (Hawkes Supercritical Burst)',
+    badge: 'CLUSTER CASCADE (rho >= 1.0)',
+    offset: 28800,
+    description: '伦敦开盘量能激增，买卖自激强度 rho 突破临界状态（rho >= 1.0），羊群效应引发高频密集同向吃单。',
+    narration: '【观察看点】订单密集到达，间隔时间压缩至几毫秒，单向吃单引发价格梯级单边推进，长记忆性特征显著。'
+  },
+  {
+    id: 'vacuum-bounce',
+    title: '🛡️ 深厚挂单吸收与双向均衡 (Market Making Resilience)',
+    badge: 'HIGH RESILIENCY ABSORPTION',
+    offset: 50400,
+    description: '美洲早盘深厚双向挂单形成流动性吸收带，大额成交被挂单完全消化，瞬态冲击半衰期降至 <2 笔。',
+    narration: '【观察看点】高额买卖双向交织，价格在狭窄通道内震荡，盘口具有极高弹性（Resiliency），冲击难以形成趋势。'
+  }
+];
 
 export const MarketReplay: React.FC<MarketReplayProps> = ({ date, initialSession }) => {
   const [startSecond, setStartSecond] = useState<number>(initialSession !== undefined ? initialSession : 0);
@@ -23,6 +59,7 @@ export const MarketReplay: React.FC<MarketReplayProps> = ({ date, initialSession
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1);
   const [playbackMode, setPlaybackMode] = useState<'EVENT_INDEX' | 'REAL_CLOCK'>('EVENT_INDEX');
+  const [activeScenario, setActiveScenario] = useState<CuratedScenario | null>(null);
   const timerRef = useRef<any>(null);
   const activeQueryIdRef = useRef<number>(0);
 
@@ -315,6 +352,79 @@ export const MarketReplay: React.FC<MarketReplayProps> = ({ date, initialSession
 
       {/* Consolidated Compact Replay Toolbar (~85px, 2 rows) */}
       <div className="mml-card" style={{ padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        {/* Curated Scenarios Bookmark Bar */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', paddingBottom: '8px', borderBottom: '1px solid rgba(255, 255, 255, 0.06)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
+            <span style={{ fontSize: '0.74rem', fontWeight: 700, color: '#00e5ff', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <Compass size={13} /> CURATED SCENARIOS (高光剧本):
+            </span>
+            {curatedScenarios.map((sc) => {
+              const isSelected = activeScenario?.id === sc.id;
+              return (
+                <button
+                  key={sc.id}
+                  onClick={() => {
+                    setActiveScenario(sc);
+                    setStartSecond(sc.offset);
+                    setPlaybackSpeed(2);
+                    setIsPlaying(true);
+                  }}
+                  style={{
+                    background: isSelected ? 'rgba(0, 229, 255, 0.2)' : 'var(--bg-dark)',
+                    border: `1px solid ${isSelected ? '#00e5ff' : 'var(--border-highlight)'}`,
+                    color: isSelected ? '#00e5ff' : 'var(--text-main)',
+                    fontWeight: isSelected ? 700 : 500,
+                    padding: '3px 8px',
+                    borderRadius: '4px',
+                    fontSize: '0.72rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}
+                  title={sc.description}
+                >
+                  <Sparkles size={11} color={isSelected ? '#00e5ff' : 'var(--color-primary, #60a5fa)'} />
+                  <span>{sc.title.split(' ')[0]} {sc.badge}</span>
+                </button>
+              );
+            })}
+          </div>
+          {activeScenario && (
+            <button
+              onClick={() => setActiveScenario(null)}
+              style={{ background: 'transparent', color: 'var(--text-dim)', fontSize: '0.68rem', cursor: 'pointer' }}
+            >
+              Clear Scenario Filter
+            </button>
+          )}
+        </div>
+
+        {/* Active Scenario Narration Banner */}
+        {activeScenario && (
+          <div style={{
+            background: 'linear-gradient(90deg, rgba(0, 229, 255, 0.08), rgba(96, 165, 250, 0.04))',
+            border: '1px solid rgba(0, 229, 255, 0.3)',
+            borderRadius: '4px',
+            padding: '8px 12px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '10px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Sparkles size={15} color="#00e5ff" style={{ flexShrink: 0 }} />
+              <div style={{ fontSize: '0.75rem', color: '#f1f5f9' }}>
+                <strong style={{ color: '#00e5ff', marginRight: '6px' }}>{activeScenario.title}:</strong>
+                {activeScenario.narration}
+              </div>
+            </div>
+            <span className="mono" style={{ fontSize: '0.68rem', color: '#00e5ff', whiteSpace: 'nowrap', fontWeight: 600 }}>
+              AUTO-PLAY 2x ACTIVE
+            </span>
+          </div>
+        )}
+
         {/* Row 1: Session Jumpers & Playback Mode & Window Counts */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
           <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>

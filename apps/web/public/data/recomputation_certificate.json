@@ -1,10 +1,10 @@
 {
   "schema_version": "1.1.0",
-  "certificate_id": "run-certified-1",
-  "certification_timestamp_utc": "2026-10-23T12:00:00Z",
+  "certificate_id": "b03e7e0b-960e-47e8-ad16-f1d79edc8733",
+  "certification_timestamp_utc": "2026-10-27T14:24:14.227943+00:00",
   "target_date": "2026-07-01",
   "target_horizon_lag": 20,
-  "git_commit": "88da0c2",
+  "git_commit": "6992f8f",
   "audit_scope": {
     "coverage_level": "SAMPLE_LEVEL_250K_TRADES",
     "sample_description": "Authoritative session-active 250,000 tick window for econometric parameter recomputation",
@@ -21,42 +21,154 @@
   },
   "raw_archive_provenance": {
     "file_name": "BTCUSDT-trades-2026-07-01.zip",
-    "file_sha256": "ziphash789",
+    "file_sha256": "c1366b2200130527cdd87da1c5b1a012ac31de00db93b3db2a13281187bb8653",
     "official_checksum_file": "BTCUSDT-trades-2026-07-01.zip.CHECKSUM",
-    "official_checksum_file_sha256": "chkhash456",
+    "official_checksum_file_sha256": "d14299ed8ce88ddfd44f540a6f7301001da8a90a3ae1528bf7d5040def06465b",
     "official_checksum_url": "https://data.binance.vision/data/spot/daily/trades/BTCUSDT/BTCUSDT-trades-2026-07-01.zip.CHECKSUM",
-    "checksum_expected_sha256": "ziphash789",
+    "checksum_expected_sha256": "c1366b2200130527cdd87da1c5b1a012ac31de00db93b3db2a13281187bb8653",
     "checksum_verified": true,
     "verification_method": "BINANCE_VISION_OFFICIAL_SHA256_DIGEST"
   },
   "sample_identity": {
+    "spec_version": "1.0.0",
     "symbol": "BTCUSDT",
+    "date": "2026-07-01",
+    "selection_method": "SESSION_ACTIVE_WINDOW",
+    "total_input_rows": 4166849,
+    "duplicates_dropped": 0,
+    "invalid_rows_dropped": 0,
+    "total_valid_rows": 4166849,
+    "window_start_index": 1041712,
     "selected_row_count": 250000,
-    "window_start_index": 1041712
+    "start_trade_id": 6466989766,
+    "end_trade_id": 6467239765,
+    "start_time_utc": "2026-07-01T05:49:54.563429Z",
+    "end_time_utc": "2026-07-01T07:48:27.491649Z",
+    "trade_ids_sha256": "335ac15eac80922b831b294068bc3e0d713f639621e6ca9ec486c2ec1ea43fda",
+    "content_sha256": "0b32921af7de8137833595efee553321f3165e151ba7ac3dc194188dbd61c4b4"
   },
   "numerical_parity": {
-    "overall_classification": "WITHIN_NUMERICAL_TOLERANCE",
-    "classification_label": "\u5bb9\u5dee\u5185\u4e00\u81f4",
+    "overall_classification": "NUMERICAL_EXACT_MATCH",
+    "classification_label": "\u6570\u503c\u5b8c\u5168\u4e00\u81f4",
     "tolerance_threshold": 1e-06,
-    "max_absolute_delta": 4.0000000001150227e-07,
-    "evaluated_metrics_count": 2,
+    "max_absolute_delta": 0.0,
+    "evaluated_metrics_count": 13,
     "metrics_breakdown": [
       {
         "metric_name": "Linear Beta",
-        "live_recomputed": 0.02100811,
-        "static_fixture": 0.02100811,
+        "live_recomputed": -0.06782275520236695,
+        "static_fixture": -0.06782275520236695,
         "absolute_delta": 0.0,
         "tolerance_threshold": 1e-06,
         "parity_classification": "NUMERICAL_EXACT_MATCH",
         "status": "MATCH"
       },
       {
-        "metric_name": "Power Gamma",
-        "live_recomputed": 0.5,
-        "static_fixture": 0.5000004,
-        "absolute_delta": 4.0000000001150227e-07,
+        "metric_name": "Linear R^2",
+        "live_recomputed": 0.0006876094126229138,
+        "static_fixture": 0.0006876094126229138,
+        "absolute_delta": 0.0,
         "tolerance_threshold": 1e-06,
-        "parity_classification": "WITHIN_NUMERICAL_TOLERANCE",
+        "parity_classification": "NUMERICAL_EXACT_MATCH",
+        "status": "MATCH"
+      },
+      {
+        "metric_name": "Logarithmic Beta",
+        "live_recomputed": -0.005801612880140896,
+        "static_fixture": -0.005801612880140896,
+        "absolute_delta": 0.0,
+        "tolerance_threshold": 1e-06,
+        "parity_classification": "NUMERICAL_EXACT_MATCH",
+        "status": "MATCH"
+      },
+      {
+        "metric_name": "Logarithmic R^2",
+        "live_recomputed": 0.004685190821658081,
+        "static_fixture": 0.004685190821658081,
+        "absolute_delta": 0.0,
+        "tolerance_threshold": 1e-06,
+        "parity_classification": "NUMERICAL_EXACT_MATCH",
+        "status": "MATCH"
+      },
+      {
+        "metric_name": "Power-Law OLS Gamma",
+        "live_recomputed": -0.030475110722505194,
+        "static_fixture": -0.030475110722505194,
+        "absolute_delta": 0.0,
+        "tolerance_threshold": 1e-06,
+        "parity_classification": "NUMERICAL_EXACT_MATCH",
+        "status": "MATCH"
+      },
+      {
+        "metric_name": "Power-Law WLS Gamma",
+        "live_recomputed": -0.07385671841890035,
+        "static_fixture": -0.07385671841890035,
+        "absolute_delta": 0.0,
+        "tolerance_threshold": 1e-06,
+        "parity_classification": "NUMERICAL_EXACT_MATCH",
+        "status": "MATCH"
+      },
+      {
+        "metric_name": "Power-Law WLS R^2",
+        "live_recomputed": 0.2810005939964677,
+        "static_fixture": 0.2810005939964677,
+        "absolute_delta": 0.0,
+        "tolerance_threshold": 1e-06,
+        "parity_classification": "NUMERICAL_EXACT_MATCH",
+        "status": "MATCH"
+      },
+      {
+        "metric_name": "Trade-Level Gamma",
+        "live_recomputed": 0.1272080005353448,
+        "static_fixture": 0.1272080005353448,
+        "absolute_delta": 0.0,
+        "tolerance_threshold": 1e-06,
+        "parity_classification": "NUMERICAL_EXACT_MATCH",
+        "status": "MATCH"
+      },
+      {
+        "metric_name": "Trade-Level HAC SE",
+        "live_recomputed": 0.006836565817115261,
+        "static_fixture": 0.006836565817115261,
+        "absolute_delta": 0.0,
+        "tolerance_threshold": 1e-06,
+        "parity_classification": "NUMERICAL_EXACT_MATCH",
+        "status": "MATCH"
+      },
+      {
+        "metric_name": "Trade-Level t-stat",
+        "live_recomputed": 18.607002980484896,
+        "static_fixture": 18.607002980484896,
+        "absolute_delta": 0.0,
+        "tolerance_threshold": 1e-06,
+        "parity_classification": "NUMERICAL_EXACT_MATCH",
+        "status": "MATCH"
+      },
+      {
+        "metric_name": "Trade-Level p-value",
+        "live_recomputed": 2.8195437146926294e-77,
+        "static_fixture": 2.8195437146926294e-77,
+        "absolute_delta": 0.0,
+        "tolerance_threshold": 1e-06,
+        "parity_classification": "NUMERICAL_EXACT_MATCH",
+        "status": "MATCH"
+      },
+      {
+        "metric_name": "Regression Obs Count",
+        "live_recomputed": 59802,
+        "static_fixture": 59802,
+        "absolute_delta": 0.0,
+        "tolerance_threshold": 1e-06,
+        "parity_classification": "NUMERICAL_EXACT_MATCH",
+        "status": "MATCH"
+      },
+      {
+        "metric_name": "Positive Trades Count",
+        "live_recomputed": 179406,
+        "static_fixture": 179406,
+        "absolute_delta": 0.0,
+        "tolerance_threshold": 1e-06,
+        "parity_classification": "NUMERICAL_EXACT_MATCH",
         "status": "MATCH"
       }
     ]

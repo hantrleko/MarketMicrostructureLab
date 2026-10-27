@@ -1,5 +1,6 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { Header } from './components/Header';
+import { BYODModal } from './components/BYODModal';
 import { subscribeDataLayerState, DataLayerState } from './api/client';
 
 const MarketReplay = React.lazy(() => import('./pages/MarketReplay').then(m => ({ default: m.MarketReplay })));
@@ -38,6 +39,7 @@ export function App() {
   const [selectedDate, setSelectedDate] = useState<string>(initialParams.date);
   const [replaySession, setReplaySession] = useState<number | undefined>(initialParams.session);
   const [impactHorizon, setImpactHorizon] = useState<number | undefined>(initialParams.k);
+  const [isByodOpen, setIsByodOpen] = useState<boolean>(false);
   const [dataLayer, setDataLayer] = useState<DataLayerState>('STATIC');
   const availableDates = ['2026-07-01', '2026-07-02', '2026-07-03'];
 
@@ -117,6 +119,7 @@ export function App() {
         selectedDate={selectedDate}
         setSelectedDate={setSelectedDate}
         availableDates={availableDates}
+        onOpenByod={() => setIsByodOpen(true)}
       />
 
       <main className="main-content">
@@ -133,6 +136,8 @@ export function App() {
         </Suspense>
       </main>
 
+      <BYODModal isOpen={isByodOpen} onClose={() => setIsByodOpen(false)} />
+
       <footer style={{
         borderTop: '1px solid var(--border-color)',
         padding: '14px 28px',
@@ -145,8 +150,9 @@ export function App() {
         fontSize: '0.75rem',
         color: 'var(--text-dim)'
       }}>
-        <div>
-          MARKET MICROSTRUCTURE LAB (MML) v1.1.0 &bull; QUANTITATIVE RESEARCH PLATFORM
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <img src="./eugene_finance_logo.png" alt="Logo" style={{ width: '16px', height: '16px', borderRadius: '2px' }} />
+          <span>EUGENE FINANCE &bull; MARKET MICROSTRUCTURE LAB (MML) v1.2.0 &bull; INSTITUTIONAL RESEARCH WORKBENCH</span>
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'center' }}>
           <span>OFFICIAL SOURCE: BINANCE VISION SPOT (NON-COMMERCIAL RESEARCH LICENSE)</span>

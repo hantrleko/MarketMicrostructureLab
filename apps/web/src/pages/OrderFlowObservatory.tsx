@@ -397,10 +397,13 @@ export const OrderFlowObservatory: React.FC<OrderFlowObservatoryProps> = ({ date
         {hawkes?.sample_provenance && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', fontSize: '0.68rem', color: 'var(--text-dim)', background: 'var(--bg-dark)', padding: '4px 10px', borderRadius: '3px', marginBottom: '14px' }}>
             <span>SAMPLE: <strong className="mono" style={{ color: '#fff' }}>{hawkes.sample_provenance.selected_row_count?.toLocaleString() || hawkes.sample_events?.toLocaleString() || '5,000'}</strong> TRADES ({hawkes.sample_provenance.start_time_utc?.slice(11, 19) || '05:49:54'} &rarr; {hawkes.sample_provenance.end_time_utc?.slice(11, 19) || '05:51:30'} UTC)</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <span className="mono" style={{ color: 'var(--color-buy)' }}>SESSION OFFSET 25%</span>
               <a href={`?tab=replay&date=${date}&session=20994`} style={{ color: '#38bdf8', textDecoration: 'none', fontWeight: 600 }}>
                 &rarr; Open in Market Replay
+              </a>
+              <a href="?tab=orderbook" style={{ color: '#00e5ff', textDecoration: 'none', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'rgba(0, 229, 255, 0.1)', padding: '2px 8px', borderRadius: '3px', border: '1px solid rgba(0, 229, 255, 0.3)' }}>
+                ⚡ 启动直连币安实时自激雷达 (Live Hawkes Weapon) &rarr;
               </a>
             </div>
           </div>

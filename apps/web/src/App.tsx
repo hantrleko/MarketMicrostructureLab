@@ -170,7 +170,7 @@ export function App() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <img src="./eugene_finance_logo.png" alt="Logo" style={{ width: '16px', height: '16px', borderRadius: '2px' }} />
-          <span>EUGENE FINANCE &bull; MARKET MICROSTRUCTURE LAB (MML) v1.3.0 &bull; INSTITUTIONAL RESEARCH WORKBENCH</span>
+          <span>EUGENE FINANCE &bull; MARKET MICROSTRUCTURE LAB (MML) v1.4.0 &bull; INSTITUTIONAL RESEARCH WORKBENCH</span>
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'center' }}>
           <span>OFFICIAL SOURCE: BINANCE VISION SPOT (NON-COMMERCIAL RESEARCH LICENSE)</span>

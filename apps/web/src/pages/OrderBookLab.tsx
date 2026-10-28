@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { fetchOrderBookStatus, controlOrderBook, fetchLiveOrderBook } from '../api/client';
 import { OrderBookStatusResponse, OrderBookLadderResponse, DataSourceStatus } from '../types';
-import { Wifi, Cpu, Database, Play, Square, Activity, Layers, ShieldAlert, Zap, RotateCcw, Globe, Radio } from 'lucide-react';
+import { Wifi, Cpu, Database, Play, Square, Activity, Layers, ShieldAlert, Zap, RotateCcw, Globe, Radio, Flame } from 'lucide-react';
 import { MMLChart } from '../components/MMLChart';
+import { RealtimeHawkesEngine, HawkesSnapshot } from '../utils/hawkesEngine';
+import { RealtimeHawkesWeapon } from '../components/RealtimeHawkesWeapon';
 
 interface SandboxLevel {
   price: number;
@@ -51,6 +53,9 @@ export const OrderBookLab: React.FC = () => {
   const pollTimerRef = useRef<any>(null);
 
   // Direct Browser Binance WebSocket State (Zero Backend)
+  const [directSymbol, setDirectSymbol] = useState<'BTCUSDT' | 'ETHUSDT' | 'SOLUSDT'>('BTCUSDT');
+  const hawkesEngineRef = useRef<RealtimeHawkesEngine>(new RealtimeHawkesEngine());
+  const [hawkesSnapshot, setHawkesSnapshot] = useState<HawkesSnapshot>(hawkesEngineRef.current.getSnapshot());
   const [directWssStatus, setDirectWssStatus] = useState<'CONNECTING' | 'CONNECTED' | 'DISCONNECTED' | 'ERROR'>('CONNECTING');
   const [directAsks, setDirectAsks] = useState<SandboxLevel[]>(DEFAULT_SANDBOX_ASKS);
   const [directBids, setDirectBids] = useState<SandboxLevel[]>(DEFAULT_SANDBOX_BIDS);
@@ -75,6 +80,15 @@ export const OrderBookLab: React.FC = () => {
   } | null>(null);
   const recoveryTimerRef = useRef<any>(null);
 
+  // High-frequency 4Hz snapshot pull for real-time Hawkes indicators and charts
+  useEffect(() => {
+    if (operatingMode !== 'DIRECT_BINANCE_WSS') return;
+    const interval = setInterval(() => {
+      setHawkesSnapshot(hawkesEngineRef.current.getSnapshot());
+    }, 250);
+    return () => clearInterval(interval);
+  }, [operatingMode]);
+
   // Direct Binance Public WebSocket Connection (Zero Backend Required)
   useEffect(() => {
     if (operatingMode !== 'DIRECT_BINANCE_WSS') {
@@ -91,9 +105,16 @@ export const OrderBookLab: React.FC = () => {
     }
 
     setDirectWssStatus('CONNECTING');
+    hawkesEngineRef.current.reset();
+    setDirectBids([]);
+    setDirectAsks([]);
+    setDirectHistory([]);
+    directCumOfiRef.current = 0;
+
+    const streamSym = directSymbol.toLowerCase();
 
     // 1. Binance Spot Depth20 @ 100ms
-    const depthWs = new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@depth20@100ms');
+    const depthWs = new WebSocket(`wss://stream.binance.com:9443/ws/${streamSym}@depth20@100ms`);
     directWssRef.current = depthWs;
 
     depthWs.onopen = () => {
@@ -139,16 +160,19 @@ export const OrderBookLab: React.FC = () => {
       }
     };
 
-    // 2. Binance Spot aggTrade for real-time OFI delta
-    const tradeWs = new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@aggTrade');
+    // 2. Binance Spot aggTrade for real-time OFI delta & Hawkes cascade engine
+    const tradeWs = new WebSocket(`wss://stream.binance.com:9443/ws/${streamSym}@aggTrade`);
     directTradeWssRef.current = tradeWs;
 
     tradeWs.onmessage = (event) => {
       try {
         const t = JSON.parse(event.data);
+        const price = parseFloat(t.p);
         const qty = parseFloat(t.q);
         const isBuyerMaker = t.m;
+        const timeMs = t.T || t.E || Date.now();
         directCumOfiRef.current += isBuyerMaker ? -qty : qty;
+        hawkesEngineRef.current.processTrade({ timeMs, price, qty, isBuyerMaker });
       } catch {}
     };
 
@@ -156,7 +180,7 @@ export const OrderBookLab: React.FC = () => {
       if (depthWs) depthWs.close();
       if (tradeWs) tradeWs.close();
     };
-  }, [operatingMode]);
+  }, [operatingMode, directSymbol]);
 
   // Poll initial status for local backend if mode is LOCAL_BACKEND
   useEffect(() => {
@@ -346,11 +370,11 @@ export const OrderBookLab: React.FC = () => {
   const sandboxImbalance = (sandboxTop5BidDepth - sandboxTop5AskDepth) / (sandboxTop5BidDepth + sandboxTop5AskDepth || 1);
 
   if (operatingMode === 'DIRECT_BINANCE_WSS') {
-    bids = directBids.length > 0 ? directBids : DEFAULT_SANDBOX_ASKS;
-    asks = directAsks.length > 0 ? directAsks : DEFAULT_SANDBOX_BIDS;
+    bids = directBids.length > 0 ? directBids : (directSymbol === 'ETHUSDT' ? [{ price: 3500.00, qty: 5.0 }] : directSymbol === 'SOLUSDT' ? [{ price: 180.00, qty: 15.0 }] : DEFAULT_SANDBOX_BIDS);
+    asks = directAsks.length > 0 ? directAsks : (directSymbol === 'ETHUSDT' ? [{ price: 3500.10, qty: 4.8 }] : directSymbol === 'SOLUSDT' ? [{ price: 180.05, qty: 14.5 }] : DEFAULT_SANDBOX_ASKS);
     history = directHistory;
-    const bestBid = bids[0]?.price || 68499.90;
-    const bestAsk = asks[0]?.price || 68500.10;
+    const bestBid = bids[0]?.price || (directSymbol === 'ETHUSDT' ? 3500.00 : directSymbol === 'SOLUSDT' ? 180.00 : 68499.90);
+    const bestAsk = asks[0]?.price || (directSymbol === 'ETHUSDT' ? 3500.10 : directSymbol === 'SOLUSDT' ? 180.05 : 68500.10);
     const spread = Math.max(0.01, bestAsk - bestBid);
     const spreadBps = bestAsk > 0 ? (spread / bestAsk) * 10000 : 0;
     const mid = (bestBid + bestAsk) / 2;
@@ -670,19 +694,58 @@ export const OrderBookLab: React.FC = () => {
         {/* Dynamic Contextual Toolbar by Operating Mode */}
         {operatingMode === 'DIRECT_BINANCE_WSS' && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(0, 229, 255, 0.08)', padding: '6px 12px', borderRadius: '4px', border: '1px solid rgba(0, 229, 255, 0.2)' }}>
-                <Radio size={14} className="animate-pulse" style={{ color: directWssStatus === 'CONNECTED' ? 'var(--color-buy)' : 'var(--color-gold)' }} />
-                <span className="mono" style={{ fontSize: '0.78rem', color: '#fff', fontWeight: 600 }}>
-                  wss://stream.binance.com:9443/ws/btcusdt@depth20@100ms
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+              {/* Symbol Switcher */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'var(--bg-dark)', padding: '3px 6px', borderRadius: '4px', border: '1px solid var(--border-color)' }}>
+                <span style={{ fontSize: '0.70rem', color: 'var(--text-dim)', fontWeight: 700, paddingRight: '4px' }}>TICKER:</span>
+                {(['BTCUSDT', 'ETHUSDT', 'SOLUSDT'] as const).map((sym) => (
+                  <button
+                    key={sym}
+                    onClick={() => setDirectSymbol(sym)}
+                    style={{
+                      background: directSymbol === sym ? 'rgba(0, 229, 255, 0.2)' : 'transparent',
+                      border: `1px solid ${directSymbol === sym ? '#00e5ff' : 'transparent'}`,
+                      color: directSymbol === sym ? '#00e5ff' : 'var(--text-dim)',
+                      padding: '2px 8px',
+                      borderRadius: '3px',
+                      fontSize: '0.72rem',
+                      fontWeight: directSymbol === sym ? 700 : 500,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {sym.replace('USDT', '/USDT')}
+                  </button>
+                ))}
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(0, 229, 255, 0.08)', padding: '5px 10px', borderRadius: '4px', border: '1px solid rgba(0, 229, 255, 0.2)' }}>
+                <Radio size={13} className="animate-pulse" style={{ color: directWssStatus === 'CONNECTED' ? 'var(--color-buy)' : 'var(--color-gold)' }} />
+                <span className="mono" style={{ fontSize: '0.74rem', color: '#fff', fontWeight: 600 }}>
+                  wss://stream.binance.com:9443/ws/{directSymbol.toLowerCase()}@depth20@100ms + aggTrade
                 </span>
               </div>
-              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                浏览器直连 Binance Spot 官方公开数据流 &bull; 包含聚合逐笔 (<span className="mono">btcusdt@aggTrade</span>) 流动性与微观价格计算
-              </div>
             </div>
-            <div className="badge-buy" style={{ fontSize: '0.72rem', letterSpacing: '0.04em' }}>
-              ZERO-CONFIG CLOUD DEMO • NO BACKEND REQUIRED
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{
+                fontSize: '0.70rem',
+                fontWeight: 700,
+                color: hawkesSnapshot.isSupercritical ? '#ef4444' : hawkesSnapshot.regime === 'NEAR_CRITICAL' ? '#f59e0b' : '#10b981',
+                background: hawkesSnapshot.isSupercritical ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.12)',
+                border: `1px solid ${hawkesSnapshot.isSupercritical ? '#ef4444' : '#10b981'}40`,
+                padding: '3px 8px',
+                borderRadius: '3px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}>
+                <Flame size={12} />
+                <span>HAWKES &rho;: {hawkesSnapshot.branchingRatio.toFixed(3)} ({hawkesSnapshot.regime === 'SUPERCRITICAL_CASCADE' ? 'CASCADE' : hawkesSnapshot.regime === 'NEAR_CRITICAL' ? 'WARMING' : 'STABLE'})</span>
+              </div>
+
+              <div className="badge-buy" style={{ fontSize: '0.68rem', letterSpacing: '0.04em' }}>
+                ZERO-CONFIG REALTIME WEAPON
+              </div>
             </div>
           </div>
         )}
@@ -781,6 +844,11 @@ export const OrderBookLab: React.FC = () => {
         )}
       </div>
 
+      {/* V1.4 Real-Time Hawkes Weapon & Cascade Detector Deck (Zero Backend) */}
+      {operatingMode === 'DIRECT_BINANCE_WSS' && (
+        <RealtimeHawkesWeapon snapshot={hawkesSnapshot} symbol={directSymbol === 'BTCUSDT' ? 'BTC/USDT' : directSymbol === 'ETHUSDT' ? 'ETH/USDT' : 'SOL/USDT'} />
+      )}
+
       {/* Real-Time Metrics 4-Grid */}
       <div className="grid-4">
         <div className="mml-card">
@@ -816,7 +884,7 @@ export const OrderBookLab: React.FC = () => {
         <div className="mml-card">
           <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>CUMULATIVE OFI</div>
           <div className="mono" style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--color-gold)', marginTop: '4px' }}>
-            {(metrics?.is_valid || isSimulatedActive) && history.length > 0 ? `${history[history.length - 1].cumulative_ofi.toFixed(2)} BTC` : '---'}
+            {(metrics?.is_valid || isSimulatedActive) && history.length > 0 ? `${history[history.length - 1].cumulative_ofi.toFixed(2)} ${directSymbol.replace('USDT', '')}` : '---'}
           </div>
           <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '4px' }}>
             Quote-based Flow Imbalance

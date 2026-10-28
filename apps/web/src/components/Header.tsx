@@ -64,7 +64,7 @@ export const Header: React.FC<HeaderProps> = ({
                 letterSpacing: '0.04em'
               }}
             >
-              MML v1.3
+              MML v1.4
             </span>
           </div>
 

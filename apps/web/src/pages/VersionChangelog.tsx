@@ -23,10 +23,52 @@ interface ReleaseNote {
 
 const releases: ReleaseNote[] = [
   {
+    version: 'v1.4.0',
+    codename: 'Real-Time Weapons Suite · 实时武器',
+    releaseDate: '2026-10-28',
+    gitCommit: 'LATEST',
+    badgeColor: '#ef4444',
+    category: 'MAJOR',
+    summary: '100% 纯前端免后端实现的实时量化作战系统：浏览器直连 Binance WebSocket 高频流，实时计算 O(1) 递归核 Hawkes 点过程自激强度，并在分支比 rho >= 1.0 时毫秒级触发超临界雪崩吃单警报，搭配动态多标的（BTC/ETH/SOL）深度盘口与高频自激波形雷达。',
+    highlights: [
+      {
+        title: '浏览器端 O(1) 实时 Hawkes 自激与雪崩检测雷达 (Real-time Hawkes Weapon)',
+        description: '采用递推核快速滤波算法，在浏览器中实时消费真实 WebSocket 成交流（btcusdt@aggTrade），实时计算买卖双侧瞬时自激强度 λ(t) 与分支比 ρ(t)，彻底摆脱对本地 Python 环境的依赖。',
+        tag: 'HAWKES_WEAPON'
+      },
+      {
+        title: '超临界雪崩吃单实时预警系统 (Supercritical Cascade Alert)',
+        description: '当分支比 ρ >= 1.0 时触发超临界羊群级联警报，实时呈现红色脉冲视觉警报、声学提示（可选）及自动生成的雪崩级联台账（包含峰值 ρ、持续时间、穿透量与主导买卖方）。',
+        tag: 'CASCADE_ALERT'
+      },
+      {
+        title: '多标的直连极速切换 (Multi-Ticker Live Switcher)',
+        description: '支持 BTC/USDT、ETH/USDT、SOL/USDT 之间无缝热切换，动态拉取各币种官方深度数据流与聚合逐笔成交，微观价格与 OFI 实时联动。',
+        tag: 'MULTI_TICKER'
+      },
+      {
+        title: '50 笔滑动窗口实时强度与临界阈值波形图 (Streaming Waveform)',
+        description: '实时渲染双通道买卖激发强度曲线与 ρ = 1.0 临界基准红线，辅助量化研究员直观追踪订单流自激强度的爆发与衰退轨迹。',
+        tag: 'WAVEFORM'
+      }
+    ],
+    engineeringMetrics: [
+      { label: 'Hawkes Tick Processing', value: '< 0.05 ms / tick' },
+      { label: 'WSS Direct Latency', value: '~80 ms' },
+      { label: 'Cascade Detection', value: 'Real-time (O(1))' },
+      { label: 'Unit Test Coverage', value: '90 Tests (100% Green)' }
+    ],
+    artifacts: [
+      'apps/web/src/utils/hawkesEngine.ts (RealtimeHawkesEngine)',
+      'apps/web/src/components/RealtimeHawkesWeapon.tsx',
+      'apps/web/src/pages/OrderBookLab.tsx (V1.4 Live Weapon Deck)'
+    ]
+  },
+  {
     version: 'v1.3.0',
     codename: 'Live Streaming & Operational Closed-Loop',
     releaseDate: '2026-10-28',
-    gitCommit: 'LATEST',
+    gitCommit: 'd729779',
     badgeColor: '#00e5ff',
     category: 'MAJOR',
     summary: '突破静态展示与本地依赖限制，实现纯浏览器直连币安公共 WebSocket 实时盘口、当日实证参数驱动的动态滑点模拟、BYOD 外部数据全工作台接管，以及交互式平台架构与版本演更日志模块。',

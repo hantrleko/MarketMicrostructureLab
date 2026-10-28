@@ -26,6 +26,13 @@ def _generate_synthetic_trade_flow(n: int = 1000, seed: int = 42) -> pl.DataFram
     })
 
 
+def _assert_approx_equal(actual, expected, rel=1e-9):
+    if expected is None:
+        assert actual is None
+    else:
+        assert actual == pytest.approx(expected, rel=rel)
+
+
 def test_oos_leakage_invariance_on_test_y_mutation():
     """
     Modifying test set returns (y) must leave all training-fitted parameters
@@ -56,12 +63,12 @@ def test_oos_leakage_invariance_on_test_y_mutation():
     wf_mut = fit_mut["walk_forward_validation"]
 
     # Assert training-fitted parameters are 100% invariant
-    assert oos_mut["power_law_train_fit"]["gamma_train"] == pytest.approx(base_oos_gamma, rel=1e-9)
-    assert oos_mut["power_law_train_fit"]["alpha_train"] == pytest.approx(base_oos_alpha, rel=1e-9)
+    _assert_approx_equal(oos_mut["power_law_train_fit"]["gamma_train"], base_oos_gamma)
+    _assert_approx_equal(oos_mut["power_law_train_fit"]["alpha_train"], base_oos_alpha)
 
     # For walk-forward fold 1 (train ends at 396 - 10 = 386), mutating index >= 550 cannot affect fold 1
-    assert wf_mut["folds"][0]["log_model"]["beta"] == pytest.approx(base_wf_folds[0]["log_model"]["beta"], rel=1e-9)
-    assert wf_mut["folds"][0]["power_law_model"]["gamma"] == pytest.approx(base_wf_folds[0]["power_law_model"]["gamma"], rel=1e-9)
+    _assert_approx_equal(wf_mut["folds"][0]["log_model"]["beta"], base_wf_folds[0]["log_model"]["beta"])
+    _assert_approx_equal(wf_mut["folds"][0]["power_law_model"]["gamma"], base_wf_folds[0]["power_law_model"]["gamma"])
 
     # Test metrics evaluate on modified y and thus differ
     assert oos_mut["log_model_oos_r2"] != oos_base["log_model_oos_r2"]
@@ -93,12 +100,12 @@ def test_oos_leakage_invariance_on_test_x_mutation():
     wf_mut = fit_mut["walk_forward_validation"]
 
     # Assert training-fitted parameters are strictly invariant
-    assert oos_mut["power_law_train_fit"]["gamma_train"] == pytest.approx(base_oos_gamma, rel=1e-9)
-    assert oos_mut["power_law_train_fit"]["alpha_train"] == pytest.approx(base_oos_alpha, rel=1e-9)
+    _assert_approx_equal(oos_mut["power_law_train_fit"]["gamma_train"], base_oos_gamma)
+    _assert_approx_equal(oos_mut["power_law_train_fit"]["alpha_train"], base_oos_alpha)
 
     # Fold 1 train parameters invariant
-    assert wf_mut["folds"][0]["log_model"]["beta"] == pytest.approx(wf_base["folds"][0]["log_model"]["beta"], rel=1e-9)
-    assert wf_mut["folds"][0]["power_law_model"]["gamma"] == pytest.approx(wf_base["folds"][0]["power_law_model"]["gamma"], rel=1e-9)
+    _assert_approx_equal(wf_mut["folds"][0]["log_model"]["beta"], wf_base["folds"][0]["log_model"]["beta"])
+    _assert_approx_equal(wf_mut["folds"][0]["power_law_model"]["gamma"], wf_base["folds"][0]["power_law_model"]["gamma"])
 
 
 def test_purge_and_label_coverage_separation():

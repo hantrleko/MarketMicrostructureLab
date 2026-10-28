@@ -1,5 +1,5 @@
 import React from 'react';
-import { Activity, LineChart, PlayCircle, Layers, ShieldCheck, ChevronRight, Zap } from 'lucide-react';
+import { Activity, LineChart, PlayCircle, Layers, ShieldCheck, ChevronRight, Zap, History } from 'lucide-react';
 
 interface HeaderProps {
   activeTab: string;
@@ -24,6 +24,7 @@ export const Header: React.FC<HeaderProps> = ({
     { id: 'impact', label: 'Impact Research', icon: LineChart },
     { id: 'integrity', label: 'Data Integrity', icon: ShieldCheck },
     { id: 'orderbook', label: 'Order Book (L2)', icon: Layers },
+    { id: 'changelog', label: 'Changelog', icon: History },
   ];
 
   return (
@@ -63,7 +64,7 @@ export const Header: React.FC<HeaderProps> = ({
                 letterSpacing: '0.04em'
               }}
             >
-              MML v1.2
+              MML v1.3
             </span>
           </div>
 
@@ -85,6 +86,24 @@ export const Header: React.FC<HeaderProps> = ({
                 title="Order Book module operates in live WebSocket synchronization or simulated local demo, independent of historical archives."
               >
                 L2 REAL-TIME / SIMULATED ENGINE
+              </span>
+            </div>
+          ) : activeTab === 'changelog' ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: '8px' }}>
+              <span
+                className="mono"
+                style={{
+                  fontSize: '0.72rem',
+                  fontWeight: 600,
+                  color: 'var(--color-gold)',
+                  background: 'rgba(255, 145, 0, 0.1)',
+                  border: '1px solid rgba(255, 145, 0, 0.3)',
+                  padding: '2px 8px',
+                  borderRadius: '3px',
+                  letterSpacing: '0.02em'
+                }}
+              >
+                PLATFORM EVOLUTION & AUDIT LEDGER
               </span>
             </div>
           ) : (

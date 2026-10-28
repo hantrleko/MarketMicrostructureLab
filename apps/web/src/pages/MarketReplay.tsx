@@ -7,6 +7,8 @@ import { MMLChart } from '../components/MMLChart';
 interface MarketReplayProps {
   date: string;
   initialSession?: number;
+  customTrades?: ReplayTrade[] | null;
+  onClearCustomTrades?: () => void;
 }
 
 interface CuratedScenario {
@@ -45,7 +47,7 @@ const curatedScenarios: CuratedScenario[] = [
   }
 ];
 
-export const MarketReplay: React.FC<MarketReplayProps> = ({ date, initialSession }) => {
+export const MarketReplay: React.FC<MarketReplayProps> = ({ date, initialSession, customTrades, onClearCustomTrades }) => {
   const [startSecond, setStartSecond] = useState<number>(initialSession !== undefined ? initialSession : 0);
   const [durationSeconds] = useState<number>(60);
   const [trades, setTrades] = useState<ReplayTrade[]>([]);
@@ -80,6 +82,17 @@ export const MarketReplay: React.FC<MarketReplayProps> = ({ date, initialSession
 
   // Load trade window
   useEffect(() => {
+    if (customTrades && customTrades.length > 0) {
+      setTrades(customTrades);
+      setTotalInWindow(customTrades.length);
+      setIsTruncated(false);
+      setLoading(false);
+      setError(null);
+      setCurrentIndex(0);
+      setIsPlaying(false);
+      return;
+    }
+
     const currentQueryId = ++activeQueryIdRef.current;
     setLoading(true);
     setError(null);
@@ -108,7 +121,7 @@ export const MarketReplay: React.FC<MarketReplayProps> = ({ date, initialSession
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [date, startSecond, durationSeconds]);
+  }, [date, startSecond, durationSeconds, customTrades]);
 
   // Playback loop with true monotonic wall-clock proportional pacing
   useEffect(() => {
@@ -305,6 +318,43 @@ export const MarketReplay: React.FC<MarketReplayProps> = ({ date, initialSession
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      {/* BYOD Custom Injected Trade Banner */}
+      {customTrades && customTrades.length > 0 && (
+        <div style={{
+          background: 'rgba(0, 229, 255, 0.08)',
+          border: '1px solid rgba(0, 229, 255, 0.4)',
+          padding: '8px 14px',
+          borderRadius: '6px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '8px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', color: '#00e5ff', fontWeight: 600 }}>
+            <Zap size={15} />
+            <span>BYOD 客户端自定义逐笔交易回放已就绪：共 {customTrades.length.toLocaleString()} 笔成交记录</span>
+          </div>
+          {onClearCustomTrades && (
+            <button
+              onClick={onClearCustomTrades}
+              style={{
+                background: 'rgba(0, 229, 255, 0.2)',
+                border: '1px solid #00e5ff',
+                color: '#fff',
+                padding: '4px 10px',
+                borderRadius: '4px',
+                fontSize: '0.72rem',
+                cursor: 'pointer',
+                fontWeight: 600
+              }}
+            >
+              清除自定义数据，恢复官方 {date} 归档
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Historical Event Replay Disclosure Strip */}
       <div style={{
         display: 'flex',

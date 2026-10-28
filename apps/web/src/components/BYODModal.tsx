@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { X, UploadCloud, CheckCircle2, AlertCircle, Zap, RefreshCw, Download } from 'lucide-react';
+import { ReplayTrade } from '../types';
 
 interface BYODModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onInjectTrades?: (trades: ReplayTrade[]) => void;
 }
 
 interface DiagnosticResults {
@@ -21,11 +23,12 @@ interface DiagnosticResults {
   status: 'HEALTHY_LIQUID' | 'HIGH_IMPACT' | 'ILLIQUID_CONCENTRATED';
 }
 
-export const BYODModal: React.FC<BYODModalProps> = ({ isOpen, onClose }) => {
+export const BYODModal: React.FC<BYODModalProps> = ({ isOpen, onClose, onInjectTrades }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<DiagnosticResults | null>(null);
+  const [parsedTrades, setParsedTrades] = useState<ReplayTrade[] | null>(null);
 
   if (!isOpen) return null;
 
@@ -163,6 +166,25 @@ export const BYODModal: React.FC<BYODModalProps> = ({ isOpen, onClose }) => {
       } else if (hawkesRhoEst > 0.9) {
         status = 'HIGH_IMPACT';
       }
+
+      const rawTrades: ReplayTrade[] = [];
+      for (let i = 0; i < N; i++) {
+        const d = new Date(timestamps[i]);
+        const timeIso = !isNaN(d.getTime()) ? d.toISOString() : new Date().toISOString();
+        const dir = signs[i];
+        rawTrades.push({
+          trade_id: String(i + 1),
+          event_time_utc: timeIso,
+          event_timestamp_ns: String(timestamps[i] * 1000000),
+          price: prices[i],
+          base_quantity: qtys[i],
+          quote_quantity: prices[i] * qtys[i],
+          is_buyer_maker: dir === -1,
+          aggressor_side: dir === 1 ? 'BUY' : 'SELL',
+          direction: dir
+        });
+      }
+      setParsedTrades(rawTrades);
 
       setResults({
         fileName,
@@ -458,24 +480,54 @@ export const BYODModal: React.FC<BYODModalProps> = ({ isOpen, onClose }) => {
                   </div>
                 </div>
 
-                <button
-                  onClick={downloadReport}
-                  style={{
-                    background: '#10b981',
-                    color: '#000',
-                    border: 'none',
-                    borderRadius: '4px',
-                    padding: '6px 12px',
-                    fontSize: '0.74rem',
-                    fontWeight: 700,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '5px'
-                  }}
-                >
-                  <Download size={14} />
-                  Export JSON
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {onInjectTrades && (
+                    <button
+                      onClick={() => {
+                        if (parsedTrades) {
+                          onInjectTrades(parsedTrades);
+                          onClose();
+                        }
+                      }}
+                      style={{
+                        background: 'rgba(0, 229, 255, 0.15)',
+                        border: '1px solid #00e5ff',
+                        color: '#00e5ff',
+                        borderRadius: '4px',
+                        padding: '6px 12px',
+                        fontSize: '0.74rem',
+                        fontWeight: 700,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                        cursor: 'pointer'
+                      }}
+                      title="Load this trade log into the main Market Replay workbench for interactive playback"
+                    >
+                      <Zap size={14} />
+                      载入回放工作台 (INJECT REPLAY)
+                    </button>
+                  )}
+                  <button
+                    onClick={downloadReport}
+                    style={{
+                      background: '#10b981',
+                      color: '#000',
+                      border: 'none',
+                      borderRadius: '4px',
+                      padding: '6px 12px',
+                      fontSize: '0.74rem',
+                      fontWeight: 700,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <Download size={14} />
+                    Export JSON
+                  </button>
+                </div>
               </div>
 
               {/* 4 Stat Cards */}

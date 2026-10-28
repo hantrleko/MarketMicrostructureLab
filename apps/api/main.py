@@ -63,12 +63,12 @@ def get_system_runtime_mode() -> Dict[str, Any]:
         data_desc = "No local parquet datasets found; static API serving only"
 
     commit = get_runtime_git_commit()
-    data_version = os.environ.get("DATA_VERSION", "V1.2.0 Eugene Finance Workbench")
+    data_version = os.environ.get("DATA_VERSION", "V1.3.0 Eugene Finance Workbench")
 
     return {
         "status": "HEALTHY",
         "app_name": "Market Microstructure Lab",
-        "version": "1.2.0",
+        "version": "1.3.0",
         "build_commit": commit,
         "data_version": data_version,
         "runtime_mode": mode,

@@ -8,6 +8,7 @@ const OrderFlowObservatory = React.lazy(() => import('./pages/OrderFlowObservato
 const MarketImpactResearch = React.lazy(() => import('./pages/MarketImpactResearch').then(m => ({ default: m.MarketImpactResearch })));
 const DataIntegrityConsole = React.lazy(() => import('./pages/DataIntegrityConsole').then(m => ({ default: m.DataIntegrityConsole })));
 const OrderBookLab = React.lazy(() => import('./pages/OrderBookLab').then(m => ({ default: m.OrderBookLab })));
+const VersionChangelog = React.lazy(() => import('./pages/VersionChangelog').then(m => ({ default: m.VersionChangelog })));
 
 interface UrlParams {
   tab: string;
@@ -19,7 +20,7 @@ interface UrlParams {
 function getUrlParams(): UrlParams {
   if (typeof window === 'undefined') return { tab: 'replay', date: '2026-07-01' };
   const params = new URLSearchParams(window.location.search);
-  const validTabs = ['replay', 'observatory', 'impact', 'integrity', 'orderbook'];
+  const validTabs = ['replay', 'observatory', 'impact', 'integrity', 'orderbook', 'changelog'];
   const tab = params.get('tab');
   const date = params.get('date');
   const sessionStr = params.get('session');
@@ -39,6 +40,7 @@ export function App() {
   const [selectedDate, setSelectedDate] = useState<string>(initialParams.date);
   const [replaySession, setReplaySession] = useState<number | undefined>(initialParams.session);
   const [impactHorizon, setImpactHorizon] = useState<number | undefined>(initialParams.k);
+  const [customTrades, setCustomTrades] = useState<any[] | null>(null);
   const [isByodOpen, setIsByodOpen] = useState<boolean>(false);
   const [dataLayer, setDataLayer] = useState<DataLayerState>('STATIC');
   const availableDates = ['2026-07-01', '2026-07-02', '2026-07-03'];
@@ -128,15 +130,31 @@ export function App() {
             Loading research terminal module...
           </div>
         }>
-          {activeTab === 'replay' && <MarketReplay date={selectedDate} initialSession={replaySession} />}
+          {activeTab === 'replay' && (
+            <MarketReplay
+              date={selectedDate}
+              initialSession={replaySession}
+              customTrades={customTrades}
+              onClearCustomTrades={() => setCustomTrades(null)}
+            />
+          )}
           {activeTab === 'observatory' && <OrderFlowObservatory date={selectedDate} />}
           {activeTab === 'impact' && <MarketImpactResearch date={selectedDate} initialHorizon={impactHorizon} onHorizonChange={setImpactHorizon} />}
           {activeTab === 'integrity' && <DataIntegrityConsole currentDate={selectedDate} />}
           {activeTab === 'orderbook' && <OrderBookLab />}
+          {activeTab === 'changelog' && <VersionChangelog />}
         </Suspense>
       </main>
 
-      <BYODModal isOpen={isByodOpen} onClose={() => setIsByodOpen(false)} />
+      <BYODModal
+        isOpen={isByodOpen}
+        onClose={() => setIsByodOpen(false)}
+        onInjectTrades={(trades) => {
+          setCustomTrades(trades);
+          setActiveTab('replay');
+          setIsByodOpen(false);
+        }}
+      />
 
       <footer style={{
         borderTop: '1px solid var(--border-color)',
@@ -152,7 +170,7 @@ export function App() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <img src="./eugene_finance_logo.png" alt="Logo" style={{ width: '16px', height: '16px', borderRadius: '2px' }} />
-          <span>EUGENE FINANCE &bull; MARKET MICROSTRUCTURE LAB (MML) v1.2.0 &bull; INSTITUTIONAL RESEARCH WORKBENCH</span>
+          <span>EUGENE FINANCE &bull; MARKET MICROSTRUCTURE LAB (MML) v1.3.0 &bull; INSTITUTIONAL RESEARCH WORKBENCH</span>
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'center' }}>
           <span>OFFICIAL SOURCE: BINANCE VISION SPOT (NON-COMMERCIAL RESEARCH LICENSE)</span>

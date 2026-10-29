@@ -26,6 +26,7 @@ from packages.impact_models.nonlinear_impact import NonlinearImpactModel
 from packages.reporting.quality_audit import DataQualityAuditor
 from packages.orderbook.book_builder import LocalOrderBook
 from packages.orderbook.collector import LiveOrderBookCollector
+from packages.analytics.toxicity import VPINCalculator, MarketMakerPnLDecomposer, CrossMarketLeadLagAnalyzer
 
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
@@ -63,12 +64,12 @@ def get_system_runtime_mode() -> Dict[str, Any]:
         data_desc = "No local parquet datasets found; static API serving only"
 
     commit = get_runtime_git_commit()
-    data_version = os.environ.get("DATA_VERSION", "V1.4.0 Eugene Finance Workbench")
+    data_version = os.environ.get("DATA_VERSION", "V2.0.0 Eugene Finance Deep Water Workbench")
 
     return {
         "status": "HEALTHY",
         "app_name": "Market Microstructure Lab",
-        "version": "1.4.0",
+        "version": "2.0.0",
         "build_commit": commit,
         "data_version": data_version,
         "runtime_mode": mode,
@@ -96,7 +97,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Market Microstructure Lab (MML) API",
     description="Professional Quantitative Microstructure Research Platform",
-    version="1.1.0",
+    version="2.0.0",
     lifespan=lifespan
 )
 
@@ -162,6 +163,9 @@ auditor = DataQualityAuditor(normalized_dir=NORMALIZED_DIR, metadata_dir=METADAT
 local_orderbook = LocalOrderBook("BTCUSDT")
 hawkes_model = BivariateHawkesModel(beta=10.0)
 live_collector = LiveOrderBookCollector("BTCUSDT")
+vpin_calculator = VPINCalculator(bucket_size_btc=5.0, window_buckets=25)
+mm_pnl_decomposer = MarketMakerPnLDecomposer()
+lead_lag_analyzer = CrossMarketLeadLagAnalyzer()
 
 # Cache precomputed bucketed datasets to avoid reloading Parquet repeatedly
 _BUCKET_CACHE: Dict[str, pl.DataFrame] = {}
@@ -497,6 +501,86 @@ def get_hawkes_estimation(
     df, entry = get_trades_df_and_entry(symbol, date)
     model = BivariateHawkesModel(beta=beta)
     res = model.fit_trades(df, sample_size=sample_size)
+    res["identity"] = build_identity_block(entry)
+    return res
+
+
+@app.get("/api/v1/analytics/vpin")
+@app.get("/api/analytics/vpin")
+def get_vpin_analysis(
+    symbol: str = "BTCUSDT",
+    date: str = "2026-07-01",
+    bucket_size_btc: float = Query(default=5.0, ge=0.5, le=100.0),
+    window_buckets: int = Query(default=25, ge=5, le=100)
+):
+    """
+    Computes Volume-Synchronized Probability of Toxicity (VPIN) based on Easley, Lopez de Prado & O'Hara (2012).
+    Evaluates rolling volume bucket imbalances, intraday trajectory, and CDF toxicity regimes.
+    """
+    artifact_path = PROJECT_ROOT / "apps" / "web" / "public" / "data" / f"vpin_{date}.json"
+    if artifact_path.exists() and bucket_size_btc == 5.0 and window_buckets == 25:
+        with open(artifact_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+
+    df, entry = get_trades_df_and_entry(symbol, date)
+    sample_size = min(len(df), 200000)
+    df_sample = df.slice(0, sample_size)
+    res = vpin_calculator.compute_vpin(df_sample, bucket_size_btc=bucket_size_btc, window_buckets=window_buckets)
+    res["date"] = date
+    res["symbol"] = symbol
+    res["identity"] = build_identity_block(entry)
+    return res
+
+
+@app.get("/api/v1/analytics/adverse_selection")
+@app.get("/api/analytics/adverse_selection")
+def get_adverse_selection_analysis(
+    symbol: str = "BTCUSDT",
+    date: str = "2026-07-01",
+    horizons: Optional[str] = Query(default="1,5,10,30,60,300")
+):
+    """
+    Computes Market Maker Adverse Selection & Realized Spread PnL Decomposition
+    following Glosten-Milgrom / Hasbrouck identity: Effective Spread = Realized Spread_k + Adverse Selection_k
+    """
+    artifact_path = PROJECT_ROOT / "apps" / "web" / "public" / "data" / f"adverse_selection_{date}.json"
+    if artifact_path.exists() and horizons == "1,5,10,30,60,300":
+        with open(artifact_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+
+    df, entry = get_trades_df_and_entry(symbol, date)
+    sample_size = min(len(df), 200000)
+    df_sample = df.slice(0, sample_size)
+    h_list = [int(h.strip()) for h in horizons.split(",") if h.strip().isdigit()]
+    res = mm_pnl_decomposer.decompose(df_sample, horizons_sec=h_list)
+    res["date"] = date
+    res["symbol"] = symbol
+    res["identity"] = build_identity_block(entry)
+    return res
+
+
+@app.get("/api/v1/analytics/lead_lag")
+@app.get("/api/analytics/lead_lag")
+def get_lead_lag_analysis(
+    symbol: str = "BTCUSDT",
+    date: str = "2026-07-01",
+    futures_lead_ms: int = Query(default=180, ge=0, le=1000)
+):
+    """
+    Analyzes high-frequency lead-lag relationship and Hasbrouck (1995)
+    Information Share bounds between Binance Spot and Perpetual Futures.
+    """
+    artifact_path = PROJECT_ROOT / "apps" / "web" / "public" / "data" / f"lead_lag_{date}.json"
+    if artifact_path.exists() and futures_lead_ms == 180:
+        with open(artifact_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+
+    df, entry = get_trades_df_and_entry(symbol, date)
+    sample_size = min(len(df), 200000)
+    df_sample = df.slice(0, sample_size)
+    res = lead_lag_analyzer.analyze(df_sample, futures_lead_ms=futures_lead_ms)
+    res["date"] = date
+    res["symbol"] = symbol
     res["identity"] = build_identity_block(entry)
     return res
 

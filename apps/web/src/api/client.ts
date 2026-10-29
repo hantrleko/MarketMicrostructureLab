@@ -9,7 +9,10 @@ import {
   ImpactModelsData,
   QualityAuditReport,
   OrderBookStatusResponse,
-  OrderBookLadderResponse
+  OrderBookLadderResponse,
+  VPINResponse,
+  AdverseSelectionResponse,
+  LeadLagResponse
 } from '../types';
 
 const API_BASE = '/api/v1';
@@ -361,4 +364,28 @@ export async function fetchLiveOrderBook(depth: number = 15, allowSimulation: bo
       cumulative_ofi: Number((simulatedOfi - (25 - i) * 0.1).toFixed(2))
     }))
   };
+}
+
+export async function fetchVpin(symbol: string = 'BTCUSDT', date: string = '2026-07-01'): Promise<VPINResponse> {
+  return safeFetch<VPINResponse>(
+    `v1/analytics/vpin?symbol=${symbol}&date=${date}`,
+    `vpin_${date}.json`,
+    { symbol, date }
+  );
+}
+
+export async function fetchAdverseSelection(symbol: string = 'BTCUSDT', date: string = '2026-07-01'): Promise<AdverseSelectionResponse> {
+  return safeFetch<AdverseSelectionResponse>(
+    `v1/analytics/adverse_selection?symbol=${symbol}&date=${date}`,
+    `adverse_selection_${date}.json`,
+    { symbol, date }
+  );
+}
+
+export async function fetchLeadLag(symbol: string = 'BTCUSDT', date: string = '2026-07-01'): Promise<LeadLagResponse> {
+  return safeFetch<LeadLagResponse>(
+    `v1/analytics/lead_lag?symbol=${symbol}&date=${date}`,
+    `lead_lag_${date}.json`,
+    { symbol, date }
+  );
 }

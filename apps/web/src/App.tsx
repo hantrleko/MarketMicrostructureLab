@@ -8,6 +8,7 @@ const OrderFlowObservatory = React.lazy(() => import('./pages/OrderFlowObservato
 const MarketImpactResearch = React.lazy(() => import('./pages/MarketImpactResearch').then(m => ({ default: m.MarketImpactResearch })));
 const DataIntegrityConsole = React.lazy(() => import('./pages/DataIntegrityConsole').then(m => ({ default: m.DataIntegrityConsole })));
 const OrderBookLab = React.lazy(() => import('./pages/OrderBookLab').then(m => ({ default: m.OrderBookLab })));
+const ToxicityAndMMLab = React.lazy(() => import('./pages/ToxicityAndMMLab').then(m => ({ default: m.ToxicityAndMMLab })));
 const VersionChangelog = React.lazy(() => import('./pages/VersionChangelog').then(m => ({ default: m.VersionChangelog })));
 
 interface UrlParams {
@@ -20,7 +21,7 @@ interface UrlParams {
 function getUrlParams(): UrlParams {
   if (typeof window === 'undefined') return { tab: 'replay', date: '2026-07-01' };
   const params = new URLSearchParams(window.location.search);
-  const validTabs = ['replay', 'observatory', 'impact', 'integrity', 'orderbook', 'changelog'];
+  const validTabs = ['replay', 'observatory', 'impact', 'toxicity', 'orderbook', 'integrity', 'changelog'];
   const tab = params.get('tab');
   const date = params.get('date');
   const sessionStr = params.get('session');
@@ -140,6 +141,7 @@ export function App() {
           )}
           {activeTab === 'observatory' && <OrderFlowObservatory date={selectedDate} />}
           {activeTab === 'impact' && <MarketImpactResearch date={selectedDate} initialHorizon={impactHorizon} onHorizonChange={setImpactHorizon} />}
+          {activeTab === 'toxicity' && <ToxicityAndMMLab date={selectedDate} />}
           {activeTab === 'integrity' && <DataIntegrityConsole currentDate={selectedDate} />}
           {activeTab === 'orderbook' && <OrderBookLab />}
           {activeTab === 'changelog' && <VersionChangelog />}
@@ -170,7 +172,7 @@ export function App() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <img src="./eugene_finance_logo.png" alt="Logo" style={{ width: '16px', height: '16px', borderRadius: '2px' }} />
-          <span>EUGENE FINANCE &bull; MARKET MICROSTRUCTURE LAB (MML) v1.4.0 &bull; INSTITUTIONAL RESEARCH WORKBENCH</span>
+          <span>EUGENE FINANCE &bull; MARKET MICROSTRUCTURE LAB (MML) v2.0.0 &bull; INSTITUTIONAL RESEARCH WORKBENCH</span>
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'center' }}>
           <span>OFFICIAL SOURCE: BINANCE VISION SPOT (NON-COMMERCIAL RESEARCH LICENSE)</span>

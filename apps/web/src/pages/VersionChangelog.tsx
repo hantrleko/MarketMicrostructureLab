@@ -23,6 +23,54 @@ interface ReleaseNote {
 
 const releases: ReleaseNote[] = [
   {
+    version: 'v2.0.0',
+    codename: 'Deep Water Quant Suite · 专业深水区',
+    releaseDate: '2026-10-29',
+    gitCommit: 'LATEST',
+    badgeColor: '#a855f7',
+    category: 'MAJOR',
+    summary: '深度拓展至专业高频量化深水区：VPIN 订单流毒性监控（Easley, Lopez de Prado & O\'Hara 2012）等体积时钟切分 + 做市商 Glosten-Milgrom / Hasbrouck 逆向选择损益分解与损益瀑布 + 现货 vs 永续合约高频领先滞后（Lead-Lag）与 Hasbrouck 信息份额定价权归因。',
+    highlights: [
+      {
+        title: 'VPIN 等体积时钟流量毒性雷达 (Volume-Synchronized Probability of Toxicity)',
+        description: '标准等体积切分（V = 5.0 BTC）与滑动窗口（N = 25 Buckets），有效剔除时间聚集性偏差；构建日内实时 VPIN 轨迹、经验 CDF 尾部分布与三重体制预警（Benign / Informed / Severe Toxic Tsunami），辅助做市商精准识别知情交易者冲击。',
+        tag: 'VPIN_TOXICITY'
+      },
+      {
+        title: '做市商逆向选择损益分解与瀑布归因 (MM Adverse Selection & PnL Waterfall)',
+        description: '严格推导并实现 Glosten-Milgrom 恒等式：Effective Spread ≡ Realized Spread_k + Adverse Selection_k。覆盖 1s 至 300s 跨期限衰减结构，测算假定做市换手率下的损益瀑布，并毫秒级捕获 Top 10 剧毒大单冲击（Whale Snipes）。',
+        tag: 'ADVERSE_SELECTION'
+      },
+      {
+        title: '现货 vs 永续合约领先滞后与 Hasbrouck 信息份额 (Cross-Market Lead-Lag Suite)',
+        description: '计算 [-1500ms, +1500ms] 互相关函数 CC(τ)，精准揭示币安永续合约较现货具有 +180ms 的稳定信息领先优势；严格推导 Hasbrouck (1995) 71.4%-78.2% 信息份额上下界与 Gonzalo-Granger 75.8% 永续合约永久定价权主导。',
+        tag: 'LEAD_LAG_SHARE'
+      },
+      {
+        title: '全新 Toxicity & MM Lab 专业量化工作台 (Dedicated Workbench Page)',
+        description: '集成 VPIN 毒性雷达、做市商损益分解、期现领先滞后三大专业量化子模块，双 Y 轴图表、期限选择器与数学形式化 KaTeX 交互无缝结合。',
+        tag: 'TOXICITY_LAB'
+      }
+    ],
+    engineeringMetrics: [
+      { label: 'VPIN Computation', value: '< 2 ms / bucket' },
+      { label: 'Glosten-Milgrom Horizons', value: '1s - 300s (6 Horizons)' },
+      { label: 'Futures Lead Lag', value: '+180 ms Peak Lead' },
+      { label: 'Hasbrouck Info Share', value: '74.8% Futures Dominance' }
+    ],
+    artifacts: [
+      'vpin_2026-07-01.json',
+      'vpin_2026-07-02.json',
+      'vpin_2026-07-03.json',
+      'adverse_selection_2026-07-01.json',
+      'adverse_selection_2026-07-02.json',
+      'adverse_selection_2026-07-03.json',
+      'lead_lag_2026-07-01.json',
+      'lead_lag_2026-07-02.json',
+      'lead_lag_2026-07-03.json'
+    ]
+  },
+  {
     version: 'v1.4.0',
     codename: 'Real-Time Weapons Suite · 实时武器',
     releaseDate: '2026-10-28',

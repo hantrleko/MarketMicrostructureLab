@@ -1,5 +1,5 @@
 import React from 'react';
-import { Activity, LineChart, PlayCircle, Layers, ShieldCheck, ChevronRight, Zap, History } from 'lucide-react';
+import { Activity, LineChart, PlayCircle, Layers, ShieldCheck, ChevronRight, Zap, History, ShieldAlert } from 'lucide-react';
 
 interface HeaderProps {
   activeTab: string;
@@ -22,8 +22,9 @@ export const Header: React.FC<HeaderProps> = ({
     { id: 'replay', label: 'Market Replay', icon: PlayCircle },
     { id: 'observatory', label: 'Order Flow', icon: Activity },
     { id: 'impact', label: 'Impact Research', icon: LineChart },
-    { id: 'integrity', label: 'Data Integrity', icon: ShieldCheck },
+    { id: 'toxicity', label: 'Toxicity & MM', icon: ShieldAlert },
     { id: 'orderbook', label: 'Order Book (L2)', icon: Layers },
+    { id: 'integrity', label: 'Data Integrity', icon: ShieldCheck },
     { id: 'changelog', label: 'Changelog', icon: History },
   ];
 
@@ -64,7 +65,7 @@ export const Header: React.FC<HeaderProps> = ({
                 letterSpacing: '0.04em'
               }}
             >
-              MML v1.4
+              MML v2.0
             </span>
           </div>
 

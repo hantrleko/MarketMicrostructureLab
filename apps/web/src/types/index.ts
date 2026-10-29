@@ -709,3 +709,120 @@ export interface OrderBookLadderResponse {
     cumulative_ofi: number;
   }>;
 }
+
+// ---------------------------------------------------------------------------
+// V2.0 Deep Water Quant Analytics: VPIN, Adverse Selection, Lead-Lag
+// ---------------------------------------------------------------------------
+
+export type ToxicityRegime = 'LOW_TOXICITY_HOMOGENEOUS' | 'MODERATE_INFORMED' | 'SEVERE_TOXIC_TSUNAMI';
+
+export interface VPINBucket {
+  bucket_idx: number;
+  start_time_utc?: string;
+  end_time_utc?: string;
+  time_utc: string;
+  timestamp_ns: number;
+  vwap: number;
+  volume_btc?: number;
+  buy_volume: number;
+  sell_volume: number;
+  imbalance: number;
+  vpin: number | null;
+}
+
+export interface VPINSummary {
+  mean_vpin: number;
+  median_vpin: number;
+  p90_vpin: number;
+  p95_vpin: number;
+  p99_vpin: number;
+  max_vpin: number;
+  min_vpin: number;
+  regime: ToxicityRegime;
+  toxic_bucket_count: number;
+  total_valid_buckets: number;
+  cdf_distribution: Array<{ percentile: number; vpin_threshold: number }>;
+}
+
+export interface VPINResponse {
+  status: string;
+  bucket_size_btc: number;
+  window_buckets: number;
+  total_buckets: number;
+  vpin_series: VPINBucket[];
+  summary: VPINSummary;
+  date?: string;
+  symbol?: string;
+}
+
+export interface AdverseSelectionHorizon {
+  horizon_sec: number;
+  effective_spread_bps: number;
+  adverse_selection_bps: number;
+  realized_spread_bps: number;
+  adverse_selection_ratio: number;
+  is_mm_profitable: boolean;
+}
+
+export interface TopToxicTrade {
+  trade_id: number;
+  time_utc: string;
+  price: number;
+  size_btc: number;
+  direction: 'BUY' | 'SELL';
+  adverse_selection_bps: number;
+  dollar_impact_usd: number;
+}
+
+export interface WaterfallAttribution {
+  hypothetical_turnover_btc: number;
+  gross_spread_captured_usd: number;
+  toxic_flow_adverse_selection_loss_usd: number;
+  net_market_making_pnl_usd: number;
+  net_profit_margin_bps: number;
+}
+
+export interface AdverseSelectionResponse {
+  status: string;
+  effective_half_spread_bps: number;
+  horizons: AdverseSelectionHorizon[];
+  top_toxic_trades: TopToxicTrade[];
+  waterfall_attribution: WaterfallAttribution;
+  date?: string;
+  symbol?: string;
+}
+
+export interface LeadLagPoint {
+  lag_ms: number;
+  cross_correlation: number;
+  is_peak: boolean;
+}
+
+export interface HasbrouckBounds {
+  futures_lower_bound_pct: number;
+  futures_upper_bound_pct: number;
+  spot_lower_bound_pct: number;
+  spot_upper_bound_pct: number;
+  verdict: string;
+}
+
+export interface GonzaloGrangerShare {
+  futures_component_share_pct: number;
+  spot_component_share_pct: number;
+  arbitrage_friction_bps: number;
+}
+
+export interface LeadLagResponse {
+  status: string;
+  spot_symbol: string;
+  futures_symbol: string;
+  peak_lead_ms: number;
+  peak_cross_correlation: number;
+  leader_market: string;
+  cross_correlation_curve: LeadLagPoint[];
+  hasbrouck_information_share: HasbrouckBounds;
+  gonzalo_granger_component_share: GonzaloGrangerShare;
+  empirical_verdict: string;
+  date?: string;
+  symbol?: string;
+}

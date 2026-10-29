@@ -1,5 +1,6 @@
 import React from 'react';
-import { Activity, LineChart, PlayCircle, Layers, ShieldCheck, ChevronRight, Zap, History, ShieldAlert } from 'lucide-react';
+import { Activity, LineChart, PlayCircle, Layers, ShieldCheck, ChevronRight, Zap, History, ShieldAlert, Sparkles } from 'lucide-react';
+import { useExploration } from '../context/ExplorationContext';
 
 interface HeaderProps {
   activeTab: string;
@@ -18,14 +19,16 @@ export const Header: React.FC<HeaderProps> = ({
   availableDates,
   onOpenByod
 }) => {
+  const { userMode, setUserMode } = useExploration();
+
   const tabs = [
-    { id: 'replay', label: 'Market Replay', icon: PlayCircle },
-    { id: 'observatory', label: 'Order Flow', icon: Activity },
-    { id: 'impact', label: 'Impact Research', icon: LineChart },
-    { id: 'toxicity', label: 'Toxicity & MM', icon: ShieldAlert },
-    { id: 'orderbook', label: 'Order Book (L2)', icon: Layers },
-    { id: 'integrity', label: 'Data Integrity', icon: ShieldCheck },
-    { id: 'changelog', label: 'Changelog', icon: History },
+    { id: 'replay', label: '① 逐笔回放 · 看现场', icon: PlayCircle },
+    { id: 'observatory', label: '② 订单流 · 探规律', icon: Activity },
+    { id: 'impact', label: '③ 价格冲击 · 算击穿', icon: LineChart },
+    { id: 'toxicity', label: '④ 毒性做市 · 识庄家', icon: ShieldAlert },
+    { id: 'orderbook', label: '⚡ 实时盘口 · 战实盘', icon: Layers },
+    { id: 'integrity', label: '🛡️ 数据防伪', icon: ShieldCheck },
+    { id: 'changelog', label: '📜 版本日志', icon: History },
   ];
 
   return (
@@ -65,7 +68,7 @@ export const Header: React.FC<HeaderProps> = ({
                 letterSpacing: '0.04em'
               }}
             >
-              MML v2.0
+              MML v2.1
             </span>
           </div>
 
@@ -136,7 +139,30 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Action & Status Badges */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+          {/* User Mode Lens Switcher */}
+          <button
+            onClick={() => setUserMode(userMode === 'guided' ? 'expert' : 'guided')}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '5px',
+              background: userMode === 'guided' ? 'rgba(56, 189, 248, 0.15)' : 'rgba(168, 85, 247, 0.15)',
+              border: `1px solid ${userMode === 'guided' ? 'rgba(56, 189, 248, 0.4)' : 'rgba(168, 85, 247, 0.4)'}`,
+              color: userMode === 'guided' ? '#38bdf8' : '#d8b4fe',
+              padding: '3px 10px',
+              borderRadius: '12px',
+              fontSize: '0.72rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
+            title={userMode === 'guided' ? '当前为新手导读模式：自动展示白话解读与生活比喻。点击切换为专业量化极客模式。' : '当前为专业量化模式：紧凑高密度终端视图。点击切换为新手导读模式。'}
+          >
+            <Sparkles size={12} />
+            <span>{userMode === 'guided' ? '💡 新手白话' : '🔬 专业量化'}</span>
+          </button>
+
           {onOpenByod && (
             <button
               onClick={onOpenByod}
@@ -154,10 +180,10 @@ export const Header: React.FC<HeaderProps> = ({
                 cursor: 'pointer',
                 transition: 'all 0.2s ease'
               }}
-              title="Drag and drop your own trade CSV for client-side zero-backend diagnostic"
+              title="拖拽你的交易所成交 CSV，在纯前端安全诊断"
             >
               <Zap size={12} />
-              <span>BYOD DIAGNOSTIC</span>
+              <span>📂 导入自有成交 CSV</span>
             </button>
           )}
 

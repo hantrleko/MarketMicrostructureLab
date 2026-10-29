@@ -5,11 +5,13 @@ import { CheckCircle, Scale, Layers, AlertTriangle, ShieldCheck, Database, Hash,
 import { MathFormula } from '../components/MathFormula';
 import { MMLChart } from '../components/MMLChart';
 import { ShareResearchCardModal } from '../components/ShareResearchCardModal';
+import { StoryBridge } from '../components/StoryBridge';
 
 interface MarketImpactResearchProps {
   date: string;
   initialHorizon?: number;
   onHorizonChange?: (k: number) => void;
+  onNavigateTab?: (tab: string) => void;
 }
 
 interface PinnedExperiment {
@@ -48,7 +50,8 @@ function formatPValLabel(p: number | undefined | null): string {
 export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({
   date,
   initialHorizon,
-  onHorizonChange
+  onHorizonChange,
+  onNavigateTab
 }) => {
   const [horizon, setHorizon] = useState<number>(initialHorizon || 20);
   const [compHorizon, setCompHorizon] = useState<number>(20);
@@ -2159,6 +2162,18 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({
         rSquared={modelsData?.walk_forward_validation?.mean_log_oos_r2 ?? 0.001}
         obsCount={modelsData?.observations ?? 250000}
         certHash={certificate?.recomputed_sample_identities?.[date]?.content_sha256}
+      />
+
+      {/* Story Bridge to Act 4 */}
+      <StoryBridge
+        currentAct={3}
+        currentActTitle="算冲击 · 单笔价格响应与母单非线性冲击"
+        takeaway="通过严谨的 WLS/OLS 与 Walk-Forward 零泄漏交叉检验，量化了单笔买卖对价格造成的即时基点冲击与回补半衰期。"
+        nextAct="toxicity"
+        nextActNumber={4}
+        nextActTitle="识庄家 · 毒性流量监控与做市损益分解"
+        nextQuestion="既然大单冲击造成了不可磨灭的价格位移，对手方的做市商在这波冲击中到底赚了还是赔了？谁在提前180ms剧透价格？"
+        onNavigate={(tab) => onNavigateTab ? onNavigateTab(tab) : undefined}
       />
     </div>
   );

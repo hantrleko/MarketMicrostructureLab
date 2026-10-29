@@ -23,6 +23,51 @@ interface ReleaseNote {
 
 const releases: ReleaseNote[] = [
   {
+    version: 'v2.1.0',
+    codename: 'Newcomer Onboarding & Cohesive Storytelling · 破冰叙事与直观微件',
+    releaseDate: '2026-10-29',
+    gitCommit: 'LATEST',
+    badgeColor: '#06b6d4',
+    category: 'FEATURE',
+    summary: '全面降低准入门槛，大幅提升新手友好度与视觉直观性：全局首屏「30秒破冰指挥舱」+「新手白话 💡 / 专业量化 🔬」双模式透镜 + 全局核心黑话「微词典悬浮胶囊」+ 五幕式因果剧情接力桥 + VPIN 动态注水桶 / 做市商多空拔河条 / 期现 180ms 赛道三大直觉可视化微件。',
+    highlights: [
+      {
+        title: '首屏 30 秒破冰指挥舱与三条极速上手通道 (Mission Control Banner)',
+        description: '一句话讲清平台定位与微观流动性黑盒价值，提供「🌱 3分钟微观破案故事」、「⚡ 币安实时盘口警报」、「🔬 量化计量模型与防伪审计」三条快速通道。',
+        tag: 'ONBOARDING'
+      },
+      {
+        title: '全局白话微词典与三段式 KPI 定性解读 (Glossary Term & Plain-Language Lens)',
+        description: '实现 <GlossaryTerm /> 悬浮微词典（人话定义 + 生活比喻 + 实战信号），覆盖 VPIN、CVD、OFI、Hawkes ρ、逆向选择等核心黑话；支持一键切换「新手白话」与「专业量化」模式。',
+        tag: 'GLOSSARY_LENS'
+      },
+      {
+        title: '五幕式微观因果接力导航 (5-Act Storyline & Story Bridges)',
+        description: '将平铺 Tab 编排为「① 看现场 (逐笔回放) → ② 探规律 (订单流自激) → ③ 算冲击 (价格响应) → ④ 识庄家 (毒性做市) → ⑤ 战实盘 (币安实时)」，每页底部配备剧情接力桥。',
+        tag: 'STORY_BRIDGES'
+      },
+      {
+        title: '三大核心模型物理直觉可视化微件 (Intuitive Visual Metaphors)',
+        description: '实现 VPIN 等体积时钟动态注水桶、做市商点差 vs 逆向选择多空拔河天平条、期现 +180ms 双轨赛道图，并在 ECharts 图表内嵌红黄绿安全/警报语义色带。',
+        tag: 'VISUAL_METAPHORS'
+      }
+    ],
+    engineeringMetrics: [
+      { label: 'Glossary Terms Covered', value: '12 Microstructure Terms' },
+      { label: 'Narrative Story Acts', value: '5-Act Causal Pipeline' },
+      { label: 'Visual Metaphor Widgets', value: '3 Interactive Components' },
+      { label: 'Dual User Mode', value: 'Guided & Expert Switchable' }
+    ],
+    artifacts: [
+      'WelcomeMissionBanner.tsx',
+      'GlossaryTerm.tsx',
+      'StoryBridge.tsx',
+      'VolumeBucketVisualizer.tsx',
+      'AdverseSelectionTugOfWar.tsx',
+      'LeadLagRaceway.tsx'
+    ]
+  },
+  {
     version: 'v2.0.0',
     codename: 'Deep Water Quant Suite · 专业深水区',
     releaseDate: '2026-10-29',

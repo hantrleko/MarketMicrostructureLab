@@ -1,0 +1,221 @@
+import React, { useState, useRef } from 'react';
+import { HelpCircle, Sparkles } from 'lucide-react';
+
+export interface GlossaryDefinition {
+  title: string;
+  enName: string;
+  plainDefinition: string;
+  analogy: string;
+  signalMeaning: string;
+}
+
+export const GLOSSARY_TERMS: Record<string, GlossaryDefinition> = {
+  vpin: {
+    title: 'VPIN (成交量同步知情交易毒性)',
+    enName: 'Volume-Synchronized Probability of Toxicity',
+    plainDefinition: '把每达到 5 BTC 当作 1 个量桶，测算里面主动买单和主动卖单的失衡比例。失衡越大，说明有掌握内幕或坚决方向的知情大资金在单边扫货。',
+    analogy: '【生活比喻】就像高速收费站每进 100 辆车算一批：如果平时红蓝车各半，突然有一批全是一模一样的黑色防弹装甲车呼啸而过，意味着有大事发生。',
+    signalMeaning: '【实战警报】<20% 安全做市；20%~35% 知情警戒；>=35% 海啸级毒性，散户不要挂限价单接飞刀，做市商需立即撤单防冲。'
+  },
+  cvd: {
+    title: 'CVD (累积成交量差额)',
+    enName: 'Cumulative Volume Delta',
+    plainDefinition: '统计从开盘到现在，所有主动买入量减去主动卖出量的净累计值。它衡量的是不计代价直接吃单的激进力量是买方更急还是卖方更急。',
+    analogy: '【生活比喻】拔河比赛双方队员脚下被拖动的净位移米数。',
+    signalMeaning: '【实战信号】若价格在涨但 CVD 快速下坠，说明是诱多顶背离，主力在暗中出货；反之是主力水下吸筹。'
+  },
+  ofi: {
+    title: 'OFI (订单流失衡量 / 盘口冲击力)',
+    enName: 'Order Flow Imbalance',
+    plainDefinition: '综合考虑最佳买一价和卖一价的档位增减与成交消耗，刻画当前瞬间买卖盘口向哪个方向施加了净压力。',
+    analogy: '【生活比喻】像大坝两侧的水位压力差，压力差一旦倒向一边，水就会往那边冲。',
+    signalMeaning: '【实战信号】OFI 显著为正时，买方盘口正在迅速加厚推升，未来数秒价格上涨概率极高。'
+  },
+  hawkes: {
+    title: 'Hawkes 自激点过程与分支比 (ρ)',
+    enName: 'Self-Exciting Point Process & Branching Ratio',
+    plainDefinition: '描述一笔大单成交后，像地震余震一样激发后续连锁跟风吃单的羊群效应。分支比 ρ 衡量 1 笔交易平均能诱发多少笔后继交易。',
+    analogy: '【生活比喻】雪山上的滚雪球。ρ < 1 时滚一会儿就停了；ρ >= 1 时进入超临界状态，引发不可逆的雪崩。',
+    signalMeaning: '【实战警报】当 ρ >= 1.0 时，触发超临界雪崩吃单警报，多空双方进入疯狂连环击穿，切勿逆势挂单。'
+  },
+  adverse_selection: {
+    title: '逆向选择损失 (做市商被套牢成本)',
+    enName: 'Adverse Selection Cost',
+    plainDefinition: '做市商挂限价单被别人吃掉后，价格不仅没反弹，反而顺着对手方的方向继续剧烈单边狂奔，导致做市商手里刚接到的筹码瞬间浮亏。',
+    analogy: '【生活比喻】你在路边摆摊低价收购二手手机赚 50 块差价，突然来个大汉全按原价卖给你，两分钟后新闻播报“该机型全线芯片自燃召回”，你赚了小差价却砸在手里巨亏。',
+    signalMeaning: '【实战警报】逆向选择成本长期高于做市商点差时，做市商账面必然流血，必须扩大挂单点差来对冲。'
+  },
+  realized_spread: {
+    title: 'Realized Spread (做市商真实实现净利差)',
+    enName: 'Market Maker Realized Spread',
+    plainDefinition: '做市商成交后，扣除了未来 k 秒内对手方带来的价格反向漂移（逆向选择）之后，真正装进兜里的净利润。',
+    analogy: '【生活比喻】餐厅的客单价毛收入扣除食材变质损耗后的真实净利润。',
+    signalMeaning: '【实战信号】若实现利差为负，说明做市商在给知情大单送钱，处于“压路机前捡硬币”的亏损惨境。'
+  },
+  effective_spread: {
+    title: 'Effective Spread (有效半利差)',
+    enName: 'Effective Half-Spread',
+    plainDefinition: '交易者实际成交价偏离当前盘口中间价的真实距离。反映市场流动性提供者名义上收取的毛服务费。',
+    analogy: '【生活比喻】高速公路收费站竖牌公示的名义通行过路费。',
+    signalMeaning: '【实战信号】有效利差越窄，说明市场深度越好，散户吃单摩擦成本越低。'
+  },
+  bps: {
+    title: 'bps (基点)',
+    enName: 'Basis Point (1 bps = 0.01% = 万分之一)',
+    plainDefinition: '金融市场衡量微小价格波动的标准度量单位。1 个基点等于万分之一（0.01%）。',
+    analogy: '【生活比喻】当 BTC 为 60,000 美元时，1 bps 对应 6 美元的微观价格变动；10 bps 对应 60 美元。',
+    signalMeaning: '【实战理解】高频做市商每一笔赚的就是 0.5~2 bps 的微利，因此几个 bps 的逆向选择就会击穿利润。'
+  },
+  information_share: {
+    title: 'Hasbrouck (1995) 信息份额与定价权',
+    enName: 'Hasbrouck Information Share',
+    plainDefinition: '当同一个资产在现货和永续合约两个市场同时交易时，通过向量误差修正模型测算哪一个市场最先接收真实增量信息并主导真实公允价格的形成。',
+    analogy: '【生活比喻】大人（合约）牵着小狗（现货）散步：虽然两者绳子拉着距离不远，但总是大人先迈步，小狗滞后跟上。',
+    signalMeaning: '【实战结论】币安永续合约拥有 75% 的信息份额并领先现货 180ms，因此盯盘做现货必须先看合约信号。'
+  },
+  byod: {
+    title: 'BYOD (导入自有成交数据诊断)',
+    enName: 'Bring Your Own Data',
+    plainDefinition: '直接将你从交易所导出的真实逐笔成交 CSV 文件拖入浏览器，完全在本地前端进行冲击回放与质量体检，零数据泄露。',
+    analogy: '【生活比喻】把自己的体检报告单插进医用自助分析仪，3 秒出诊断指标。',
+    signalMeaning: '【使用场景】验证自己的回测订单簿或测试外部交易所的数据质量。'
+  },
+  vwap: {
+    title: 'VWAP (成交量加权平均价)',
+    enName: 'Volume Weighted Average Price',
+    plainDefinition: '每一笔成交的价格乘以其数量相加，再除以总成交量。比普通的收盘价更能反映真实的大资金建仓综合成本线。',
+    analogy: '【生活比喻】班级所有学生的加权平均分（大个子占更大权重）。',
+    signalMeaning: '【实战信号】价格在 VWAP 上方运行代表日内多头强劲，回踩 VWAP 往往是机构算法的吸筹支撑点。'
+  },
+  microprice: {
+    title: 'Microprice (微观价格 / 盘口隐含公允价)',
+    enName: 'Order Book Microprice',
+    plainDefinition: '考虑了买一和卖一的挂单数量厚度后计算的中间价。如果买一挂了 100 个 BTC，卖一只有 1 个 BTC，真实微观价格会极其靠近卖一。',
+    analogy: '【生活比喻】跷跷板的重心，哪边坐的人重，重心就大幅向哪边偏移。',
+    signalMeaning: '【实战信号】Microprice 比普通买卖中间价快几毫秒预知下一次价格跳动方向。'
+  }
+};
+
+interface GlossaryTermProps {
+  term: keyof typeof GLOSSARY_TERMS;
+  children?: React.ReactNode;
+  inline?: boolean;
+}
+
+export const GlossaryTerm: React.FC<GlossaryTermProps> = ({ term, children, inline = false }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const def = GLOSSARY_TERMS[term];
+  const timerRef = useRef<any>(null);
+
+  if (!def) {
+    return <span>{children}</span>;
+  }
+
+  const handleMouseEnter = () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setIsOpen(true);
+  };
+
+  const handleMouseLeave = () => {
+    timerRef.current = setTimeout(() => {
+      setIsOpen(false);
+    }, 200);
+  };
+
+  return (
+    <span
+      style={{
+        position: 'relative',
+        display: inline ? 'inline' : 'inline-flex',
+        alignItems: 'center',
+        gap: '3px',
+        cursor: 'help'
+      }}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      onClick={() => setIsOpen(!isOpen)}
+    >
+      <span
+        style={{
+          borderBottom: '1px dashed rgba(56, 189, 248, 0.65)',
+          color: 'inherit',
+          transition: 'all 0.15s ease'
+        }}
+      >
+        {children || def.title.split(' ')[0]}
+      </span>
+      <HelpCircle size={11} style={{ color: '#38bdf8', opacity: 0.8, flexShrink: 0 }} />
+
+      {isOpen && (
+        <div
+          style={{
+            position: 'absolute',
+            bottom: '100%',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            marginBottom: '8px',
+            width: '320px',
+            maxWidth: '85vw',
+            background: 'linear-gradient(145deg, #0f172a 0%, #1e293b 100%)',
+            border: '1px solid rgba(56, 189, 248, 0.4)',
+            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.7), 0 0 15px rgba(56, 189, 248, 0.15)',
+            borderRadius: '8px',
+            padding: '12px 14px',
+            zIndex: 1000,
+            fontSize: '0.74rem',
+            lineHeight: 1.5,
+            color: '#f1f5f9',
+            textAlign: 'left',
+            pointerEvents: 'auto',
+            animation: 'fadeIn 0.15s ease-out'
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(51, 65, 85, 0.6)', paddingBottom: '6px', marginBottom: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Sparkles size={14} style={{ color: '#38bdf8' }} />
+              <span style={{ fontWeight: 800, color: '#38bdf8', fontSize: '0.78rem' }}>{def.title}</span>
+            </div>
+            <span style={{ fontSize: '0.64rem', color: '#64748b', fontStyle: 'italic' }}>3秒大白话</span>
+          </div>
+
+          {/* English Full Name */}
+          <div style={{ fontSize: '0.66rem', color: '#94a3b8', marginBottom: '6px', fontFamily: 'var(--font-mono)' }}>
+            {def.enName}
+          </div>
+
+          {/* Plain definition */}
+          <div style={{ marginBottom: '8px', color: '#e2e8f0' }}>
+            {def.plainDefinition}
+          </div>
+
+          {/* Analogy */}
+          <div style={{
+            background: 'rgba(56, 189, 248, 0.08)',
+            borderLeft: '2px solid #38bdf8',
+            padding: '6px 8px',
+            borderRadius: '0 4px 4px 0',
+            color: '#93c5fd',
+            fontSize: '0.70rem',
+            marginBottom: '8px'
+          }}>
+            {def.analogy}
+          </div>
+
+          {/* Practical Signal */}
+          <div style={{
+            background: 'rgba(245, 158, 11, 0.08)',
+            borderLeft: '2px solid #f59e0b',
+            padding: '6px 8px',
+            borderRadius: '0 4px 4px 0',
+            color: '#fcd34d',
+            fontSize: '0.70rem'
+          }}>
+            {def.signalMeaning}
+          </div>
+        </div>
+      )}
+    </span>
+  );
+};

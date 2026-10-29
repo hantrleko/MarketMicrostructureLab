@@ -3,12 +3,14 @@ import { fetchFlowBuckets, fetchAutocorrelation, fetchDistributions, fetchHawkes
 import { FlowBucket, AutocorrResult, TradeSizeDistribution, DurationDistribution } from '../types';
 import { ShieldCheck, Info, AlertTriangle, Scale } from 'lucide-react';
 import { MMLChart } from '../components/MMLChart';
+import { StoryBridge } from '../components/StoryBridge';
 
 interface OrderFlowObservatoryProps {
   date: string;
+  onNavigateTab?: (tab: string) => void;
 }
 
-export const OrderFlowObservatory: React.FC<OrderFlowObservatoryProps> = ({ date }) => {
+export const OrderFlowObservatory: React.FC<OrderFlowObservatoryProps> = ({ date, onNavigateTab }) => {
   const [interval, setInterval] = useState<string>('1m');
   const [buckets, setBuckets] = useState<FlowBucket[]>([]);
   const [autocorr, setAutocorr] = useState<AutocorrResult | null>(null);
@@ -610,6 +612,18 @@ export const OrderFlowObservatory: React.FC<OrderFlowObservatoryProps> = ({ date
           <strong style={{ color: '#fff' }}>Cross-Asset Microstructure Rule:</strong> As asset liquidity scales down from BTC to high-beta altcoins, order book depth shrinks exponentially while trade arrival self-excitation ($\rho$) rises toward critical levels ($0.94+$). Consequently, meta-order algorithms calibrated on BTC cannot be naively deployed to altcoins without widening execution intervals by 4–6x.
         </div>
       </div>
+
+      {/* Story Bridge to Act 3 */}
+      <StoryBridge
+        currentAct={2}
+        currentActTitle="探规律 · 订单流与羊群自激"
+        takeaway="实证揭示了高频订单流具有强长记忆性（自相关显著滞后达 50 笔以上）与临界自激（Hawkes ρ = 0.854），大单进场必然诱发密集同向羊群吃单潮。"
+        nextAct="impact"
+        nextActNumber={3}
+        nextActTitle="算冲击 · 单笔价格响应与母单非线性冲击"
+        nextQuestion="既然羊群跟风吃单停不下来，这一连串密集吃单究竟把市场价格推高或砸低了多少个基点？多久能自愈回补？"
+        onNavigate={(tab) => onNavigateTab ? onNavigateTab(tab) : undefined}
+      />
     </div>
   );
 };

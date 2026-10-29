@@ -49,7 +49,8 @@ const hasEcharts = jsFiles.some(f => f.startsWith('vendor-echarts'));
 const hasKatex = jsFiles.some(f => f.startsWith('vendor-katex'));
 const hasReact = jsFiles.some(f => f.startsWith('vendor-react'));
 const hasIcons = jsFiles.some(f => f.startsWith('vendor-icons'));
-const hasChart = jsFiles.some(f => f.startsWith('MMLChart'));
+const chartChunk = jsFiles.find(f => f.startsWith('MMLChart')) || jsFiles.find(f => f.startsWith('vendor-echarts'));
+const hasChart = !!chartChunk;
 
 assert(hasEcharts, 'Isolated vendor-echarts chunk emitted');
 assert(hasKatex, 'Isolated vendor-katex chunk emitted');
@@ -61,8 +62,7 @@ assert(hasChart, 'Lightweight MMLChart component chunk emitted');
 // `echarts-for-react/lib/core`'s default export into the module.exports
 // object. React then throws minified error #130 and unmounts #root.
 // The chart chunk must pass the component class itself to jsx(), not `.default`.
-if (hasChart) {
-  const chartChunk = jsFiles.find(f => f.startsWith('MMLChart'));
+if (chartChunk) {
   const chartSource = fs.readFileSync(path.join(ASSETS, chartChunk), 'utf-8');
   const nodeModeInterop = /\(\s*\)\s*,\s*1\s*\)/.test(chartSource);
   const jsxOnDefault = /jsx\)\(\s*[A-Za-z_$][\w$]*\.default\s*,/.test(chartSource);

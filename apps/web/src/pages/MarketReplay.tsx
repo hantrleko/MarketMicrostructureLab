@@ -3,12 +3,14 @@ import { Play, Pause, SkipForward, RotateCcw, FastForward, Clock, Zap, Timer, Al
 import { fetchReplayWindow } from '../api/client';
 import { ReplayTrade } from '../types';
 import { MMLChart } from '../components/MMLChart';
+import { StoryBridge } from '../components/StoryBridge';
 
 interface MarketReplayProps {
   date: string;
   initialSession?: number;
   customTrades?: ReplayTrade[] | null;
   onClearCustomTrades?: () => void;
+  onNavigateTab?: (tab: string) => void;
 }
 
 interface CuratedScenario {
@@ -47,7 +49,7 @@ const curatedScenarios: CuratedScenario[] = [
   }
 ];
 
-export const MarketReplay: React.FC<MarketReplayProps> = ({ date, initialSession, customTrades, onClearCustomTrades }) => {
+export const MarketReplay: React.FC<MarketReplayProps> = ({ date, initialSession, customTrades, onClearCustomTrades, onNavigateTab }) => {
   const [startSecond, setStartSecond] = useState<number>(initialSession !== undefined ? initialSession : 0);
   const [durationSeconds] = useState<number>(60);
   const [trades, setTrades] = useState<ReplayTrade[]>([]);
@@ -739,6 +741,18 @@ export const MarketReplay: React.FC<MarketReplayProps> = ({ date, initialSession
           </div>
         </div>
       </div>
+
+      {/* Story Bridge to Act 2 */}
+      <StoryBridge
+        currentAct={1}
+        currentActTitle="看现场 · 逐笔回放"
+        takeaway="亲眼见证了单笔大卖单如何瞬间击穿买一档位，并在微观秒级引发瞬态流动性空洞与做市商价差回补。"
+        nextAct="observatory"
+        nextActNumber={2}
+        nextActTitle="探规律 · 订单流与羊群自激"
+        nextQuestion="为什么一笔大单砸下来之后，后续几十毫秒往往跟着一长串连续同向吃单？羊群传染效应有多强？"
+        onNavigate={(tab) => onNavigateTab ? onNavigateTab(tab) : undefined}
+      />
     </div>
   );
 };

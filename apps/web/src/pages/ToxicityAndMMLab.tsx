@@ -19,14 +19,21 @@ import {
 } from 'lucide-react';
 import { MathFormula } from '../components/MathFormula';
 import { MMLChart } from '../components/MMLChart';
+import { VolumeBucketVisualizer } from '../components/VolumeBucketVisualizer';
+import { AdverseSelectionTugOfWar } from '../components/AdverseSelectionTugOfWar';
+import { LeadLagRaceway } from '../components/LeadLagRaceway';
+import { StoryBridge } from '../components/StoryBridge';
+import { useExploration } from '../context/ExplorationContext';
 
 interface ToxicityAndMMLabProps {
   date: string;
+  onNavigateTab?: (tab: string) => void;
 }
 
 type TabType = 'vpin' | 'adverse_selection' | 'lead_lag';
 
-export const ToxicityAndMMLab: React.FC<ToxicityAndMMLabProps> = ({ date }) => {
+export const ToxicityAndMMLab: React.FC<ToxicityAndMMLabProps> = ({ date, onNavigateTab }) => {
+  const { userMode } = useExploration();
   const [activeTab, setActiveTab] = useState<TabType>('vpin');
   const [loading, setLoading] = useState<boolean>(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -187,13 +194,30 @@ export const ToxicityAndMMLab: React.FC<ToxicityAndMMLabProps> = ({ date }) => {
               {
                 yAxis: 0.35,
                 lineStyle: { color: '#e11d48', type: 'dashed', width: 1.5 },
-                label: { formatter: 'Severe Toxic Alert (0.35)', position: 'insideEndTop', color: '#fda4af' }
+                label: { formatter: '🔴 剧毒海啸警戒线 (0.35)', position: 'insideEndTop', color: '#fda4af' }
               },
               {
                 yAxis: 0.20,
                 lineStyle: { color: '#fbbf24', type: 'dotted', width: 1.2 },
-                label: { formatter: 'Informed Threshold (0.20)', position: 'insideEndTop', color: '#fde68a' }
+                label: { formatter: '🟡 知情单分水岭 (0.20)', position: 'insideEndTop', color: '#fde68a' }
               }
+            ]
+          },
+          markArea: {
+            silent: true,
+            data: [
+              [
+                { yAxis: 0.0, itemStyle: { color: 'rgba(16, 185, 129, 0.04)' } },
+                { yAxis: 0.20 }
+              ],
+              [
+                { yAxis: 0.20, itemStyle: { color: 'rgba(251, 191, 36, 0.05)' } },
+                { yAxis: 0.35 }
+              ],
+              [
+                { yAxis: 0.35, itemStyle: { color: 'rgba(244, 63, 94, 0.08)' } },
+                { yAxis: 1.0 }
+              ]
             ]
           }
         },
@@ -482,14 +506,14 @@ export const ToxicityAndMMLab: React.FC<ToxicityAndMMLabProps> = ({ date }) => {
               style={{
                 fontSize: '0.68rem',
                 fontWeight: 700,
-                color: '#38bdf8',
-                background: 'rgba(56, 189, 248, 0.12)',
+                color: userMode === 'guided' ? '#38bdf8' : '#a855f7',
+                background: userMode === 'guided' ? 'rgba(56, 189, 248, 0.12)' : 'rgba(168, 85, 247, 0.12)',
                 padding: '2px 8px',
                 borderRadius: '4px',
-                border: '1px solid rgba(56, 189, 248, 0.3)'
+                border: userMode === 'guided' ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid rgba(168, 85, 247, 0.3)'
               }}
             >
-              PROFESSIONAL DEEP WATER QUANT
+              {userMode === 'guided' ? '💡 通俗导引视角' : '🔬 专业量化视角'}
             </span>
           </div>
           <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted, #94a3b8)' }}>
@@ -687,6 +711,19 @@ export const ToxicityAndMMLab: React.FC<ToxicityAndMMLabProps> = ({ date }) => {
                 </div>
               </div>
 
+              {/* Volume Bucket Visualizer */}
+              {vpinData.vpin_series && vpinData.vpin_series.length > 0 && (
+                <VolumeBucketVisualizer
+                  bucketSizeBtc={vpinData.bucket_size_btc}
+                  buyVolume={vpinData.vpin_series[vpinData.vpin_series.length - 1].buy_volume}
+                  sellVolume={vpinData.vpin_series[vpinData.vpin_series.length - 1].sell_volume}
+                  imbalance={vpinData.vpin_series[vpinData.vpin_series.length - 1].imbalance}
+                  vpinValue={vpinData.vpin_series[vpinData.vpin_series.length - 1].vpin}
+                  vwap={vpinData.vpin_series[vpinData.vpin_series.length - 1].vwap}
+                  bucketIdx={vpinData.vpin_series[vpinData.vpin_series.length - 1].bucket_idx}
+                />
+              )}
+
               {/* Primary VPIN Trajectory Chart */}
               <div className="mml-card" style={{ padding: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
@@ -873,6 +910,19 @@ export const ToxicityAndMMLab: React.FC<ToxicityAndMMLabProps> = ({ date }) => {
                     </div>
                   </div>
                 </div>
+              )}
+
+              {/* Visual Tug-of-War Bar */}
+              {currentHorizonInfo && asData.waterfall_attribution && (
+                <AdverseSelectionTugOfWar
+                  grossSpreadCapturedUsd={asData.waterfall_attribution.gross_spread_captured_usd}
+                  toxicFlowLossUsd={asData.waterfall_attribution.toxic_flow_adverse_selection_loss_usd}
+                  netPnlUsd={asData.waterfall_attribution.net_market_making_pnl_usd}
+                  effectiveSpreadBps={currentHorizonInfo.effective_spread_bps}
+                  adverseSelectionBps={currentHorizonInfo.adverse_selection_bps}
+                  realizedSpreadBps={currentHorizonInfo.realized_spread_bps}
+                  horizonSec={selectedHorizonSec}
+                />
               )}
 
               {/* Multi-Horizon Term Structure Decay Chart */}
@@ -1080,6 +1130,14 @@ export const ToxicityAndMMLab: React.FC<ToxicityAndMMLabProps> = ({ date }) => {
                 </div>
               </div>
 
+              {/* Visual Lead-Lag Dual-Track Raceway */}
+              <LeadLagRaceway
+                peakLeadMs={leadLagData.peak_lead_ms}
+                peakCrossCorrelation={leadLagData.peak_cross_correlation}
+                futuresSharePct={leadLagData.gonzalo_granger_component_share?.futures_component_share_pct ?? 75.8}
+                spotSharePct={leadLagData.gonzalo_granger_component_share?.spot_component_share_pct ?? 24.2}
+              />
+
               {/* Cross-Correlation Curve Chart */}
               <div className="mml-card" style={{ padding: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
@@ -1175,6 +1233,18 @@ export const ToxicityAndMMLab: React.FC<ToxicityAndMMLabProps> = ({ date }) => {
           )}
         </>
       )}
+
+      {/* Story Bridge to Act 5 */}
+      <StoryBridge
+        currentAct={4}
+        currentActTitle="识庄家 · 毒性做市与期现定价权"
+        takeaway="通过 VPIN 毒性雷达捕捉了知情巨鲸单边扫货时刻，测算了做市商逆向亏损瀑布，并实证了币安永续合约提前 180ms 剧透现货价格。"
+        nextAct="orderbook"
+        nextActNumber={5}
+        nextActTitle="战实盘 · 币安直连实时盘口与自激雪崩警报"
+        nextQuestion="掌握了全部历史规律，此时此刻币安真实的 L2 盘口与实时 Hawkes 自激雪崩处于什么状态？"
+        onNavigate={(tab) => onNavigateTab ? onNavigateTab(tab) : undefined}
+      />
     </div>
   );
 };

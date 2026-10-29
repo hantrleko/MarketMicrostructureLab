@@ -1,6 +1,8 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { Header } from './components/Header';
 import { BYODModal } from './components/BYODModal';
+import { WelcomeMissionBanner } from './components/WelcomeMissionBanner';
+import { ExplorationProvider } from './context/ExplorationContext';
 import { subscribeDataLayerState, DataLayerState } from './api/client';
 
 const MarketReplay = React.lazy(() => import('./pages/MarketReplay').then(m => ({ default: m.MarketReplay })));
@@ -35,7 +37,7 @@ function getUrlParams(): UrlParams {
   };
 }
 
-export function App() {
+export function AppContent() {
   const initialParams = getUrlParams();
   const [activeTab, setActiveTab] = useState<string>(initialParams.tab);
   const [selectedDate, setSelectedDate] = useState<string>(initialParams.date);
@@ -126,6 +128,7 @@ export function App() {
       />
 
       <main className="main-content">
+        <WelcomeMissionBanner onNavigateTab={setActiveTab} />
         <Suspense fallback={
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh', color: 'var(--text-dim)' }}>
             Loading research terminal module...
@@ -137,13 +140,14 @@ export function App() {
               initialSession={replaySession}
               customTrades={customTrades}
               onClearCustomTrades={() => setCustomTrades(null)}
+              onNavigateTab={setActiveTab}
             />
           )}
-          {activeTab === 'observatory' && <OrderFlowObservatory date={selectedDate} />}
-          {activeTab === 'impact' && <MarketImpactResearch date={selectedDate} initialHorizon={impactHorizon} onHorizonChange={setImpactHorizon} />}
-          {activeTab === 'toxicity' && <ToxicityAndMMLab date={selectedDate} />}
+          {activeTab === 'observatory' && <OrderFlowObservatory date={selectedDate} onNavigateTab={setActiveTab} />}
+          {activeTab === 'impact' && <MarketImpactResearch date={selectedDate} initialHorizon={impactHorizon} onHorizonChange={setImpactHorizon} onNavigateTab={setActiveTab} />}
+          {activeTab === 'toxicity' && <ToxicityAndMMLab date={selectedDate} onNavigateTab={setActiveTab} />}
           {activeTab === 'integrity' && <DataIntegrityConsole currentDate={selectedDate} />}
-          {activeTab === 'orderbook' && <OrderBookLab />}
+          {activeTab === 'orderbook' && <OrderBookLab onNavigateTab={setActiveTab} />}
           {activeTab === 'changelog' && <VersionChangelog />}
         </Suspense>
       </main>
@@ -172,7 +176,7 @@ export function App() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <img src="./eugene_finance_logo.png" alt="Logo" style={{ width: '16px', height: '16px', borderRadius: '2px' }} />
-          <span>EUGENE FINANCE &bull; MARKET MICROSTRUCTURE LAB (MML) v2.0.0 &bull; INSTITUTIONAL RESEARCH WORKBENCH</span>
+          <span>EUGENE FINANCE &bull; MARKET MICROSTRUCTURE LAB (MML) v2.1.0 &bull; INSTITUTIONAL RESEARCH WORKBENCH</span>
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'center' }}>
           <span>OFFICIAL SOURCE: BINANCE VISION SPOT (NON-COMMERCIAL RESEARCH LICENSE)</span>
@@ -190,6 +194,14 @@ export function App() {
         </div>
       </footer>
     </div>
+  );
+}
+
+export function App() {
+  return (
+    <ExplorationProvider>
+      <AppContent />
+    </ExplorationProvider>
   );
 }
 

@@ -10,16 +10,17 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
-          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
+          const nid = id.replace(/\\/g, '/');
+          if (nid.includes('node_modules/react') || nid.includes('node_modules/react-dom')) {
             return 'vendor-react';
           }
-          if (id.includes('node_modules/katex')) {
+          if (nid.includes('node_modules/katex')) {
             return 'vendor-katex';
           }
-          if (id.includes('node_modules/lucide-react')) {
+          if (nid.includes('node_modules/lucide-react')) {
             return 'vendor-icons';
           }
-          if (id.includes('node_modules/echarts') || id.includes('node_modules/echarts-for-react') || id.includes('node_modules/zrender')) {
+          if (nid.includes('node_modules/echarts') || nid.includes('node_modules/echarts-for-react') || nid.includes('node_modules/zrender')) {
             return 'vendor-echarts';
           }
         }

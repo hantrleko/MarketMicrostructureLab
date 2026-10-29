@@ -5,6 +5,11 @@ import { Wifi, Cpu, Database, Play, Square, Activity, Layers, ShieldAlert, Zap, 
 import { MMLChart } from '../components/MMLChart';
 import { RealtimeHawkesEngine, HawkesSnapshot } from '../utils/hawkesEngine';
 import { RealtimeHawkesWeapon } from '../components/RealtimeHawkesWeapon';
+import { StoryBridge } from '../components/StoryBridge';
+
+interface OrderBookLabProps {
+  onNavigateTab?: (tab: string) => void;
+}
 
 interface SandboxLevel {
   price: number;
@@ -43,7 +48,7 @@ const DEFAULT_SANDBOX_BIDS: SandboxLevel[] = [
 
 export type LabMode = 'DIRECT_BINANCE_WSS' | 'IMPACT_SANDBOX' | 'LOCAL_BACKEND';
 
-export const OrderBookLab: React.FC = () => {
+export const OrderBookLab: React.FC<OrderBookLabProps> = ({ onNavigateTab }) => {
   const [operatingMode, setOperatingMode] = useState<LabMode>('DIRECT_BINANCE_WSS');
   const [obStatus, setObStatus] = useState<OrderBookStatusResponse | null>(null);
   const [ladder, setLadder] = useState<OrderBookLadderResponse | null>(null);
@@ -1159,6 +1164,18 @@ export const OrderBookLab: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {/* Story Bridge to Integrity Audit */}
+          <StoryBridge
+            currentAct={5}
+            currentActTitle="战实盘 · 币安直连实时盘口与自激雪崩警报"
+            takeaway="通过纯前端浏览器直连币安 WebSocket，实时运行了 O(1) 递推核 Hawkes 点过程，并在分支比 ρ >= 1.0 时实时捕获了超临界雪崩吃单异动。"
+            nextAct="integrity"
+            nextActNumber={6}
+            nextActTitle="数据防伪 · 1062万笔官方签名与样本防泄审计"
+            nextQuestion="实盘武器与历史模型如此精准，底层数据链是否真正防篡改？如何验证官方 SHA-256 与零前瞻偏差？"
+            onNavigate={(tab) => onNavigateTab ? onNavigateTab(tab) : undefined}
+          />
         </div>
       </div>
     </div>

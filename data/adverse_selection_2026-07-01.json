@@ -1,0 +1,155 @@
+{
+  "status": "COMPUTED",
+  "effective_half_spread_bps": 0.1,
+  "horizons": [
+    {
+      "horizon_sec": 1,
+      "effective_spread_bps": 0.1,
+      "adverse_selection_bps": 1.064,
+      "realized_spread_bps": -0.963,
+      "adverse_selection_ratio": 1.0,
+      "is_mm_profitable": false
+    },
+    {
+      "horizon_sec": 5,
+      "effective_spread_bps": 0.1,
+      "adverse_selection_bps": 1.37,
+      "realized_spread_bps": -1.27,
+      "adverse_selection_ratio": 1.0,
+      "is_mm_profitable": false
+    },
+    {
+      "horizon_sec": 10,
+      "effective_spread_bps": 0.1,
+      "adverse_selection_bps": 1.591,
+      "realized_spread_bps": -1.491,
+      "adverse_selection_ratio": 1.0,
+      "is_mm_profitable": false
+    },
+    {
+      "horizon_sec": 30,
+      "effective_spread_bps": 0.1,
+      "adverse_selection_bps": 2.012,
+      "realized_spread_bps": -1.912,
+      "adverse_selection_ratio": 1.0,
+      "is_mm_profitable": false
+    },
+    {
+      "horizon_sec": 60,
+      "effective_spread_bps": 0.1,
+      "adverse_selection_bps": 1.917,
+      "realized_spread_bps": -1.816,
+      "adverse_selection_ratio": 1.0,
+      "is_mm_profitable": false
+    },
+    {
+      "horizon_sec": 300,
+      "effective_spread_bps": 0.1,
+      "adverse_selection_bps": 4.464,
+      "realized_spread_bps": -4.364,
+      "adverse_selection_ratio": 1.0,
+      "is_mm_profitable": false
+    }
+  ],
+  "top_toxic_trades": [
+    {
+      "trade_id": 6466132670,
+      "time_utc": "2026-07-01T01:12:36.085893Z",
+      "price": 58109.25,
+      "size_btc": 0.0001,
+      "direction": "SELL",
+      "adverse_selection_bps": 18.8,
+      "dollar_impact_usd": 0.01
+    },
+    {
+      "trade_id": 6466132692,
+      "time_utc": "2026-07-01T01:12:36.085893Z",
+      "price": 58109.25,
+      "size_btc": 0.0001,
+      "direction": "SELL",
+      "adverse_selection_bps": 18.8,
+      "dollar_impact_usd": 0.01
+    },
+    {
+      "trade_id": 6466132690,
+      "time_utc": "2026-07-01T01:12:36.085893Z",
+      "price": 58109.25,
+      "size_btc": 0.0001,
+      "direction": "SELL",
+      "adverse_selection_bps": 18.8,
+      "dollar_impact_usd": 0.01
+    },
+    {
+      "trade_id": 6466132689,
+      "time_utc": "2026-07-01T01:12:36.085893Z",
+      "price": 58109.25,
+      "size_btc": 0.0001,
+      "direction": "SELL",
+      "adverse_selection_bps": 18.8,
+      "dollar_impact_usd": 0.01
+    },
+    {
+      "trade_id": 6466132691,
+      "time_utc": "2026-07-01T01:12:36.085893Z",
+      "price": 58109.25,
+      "size_btc": 0.0001,
+      "direction": "SELL",
+      "adverse_selection_bps": 18.8,
+      "dollar_impact_usd": 0.01
+    },
+    {
+      "trade_id": 6466132694,
+      "time_utc": "2026-07-01T01:12:36.085893Z",
+      "price": 58109.25,
+      "size_btc": 0.0001,
+      "direction": "SELL",
+      "adverse_selection_bps": 18.8,
+      "dollar_impact_usd": 0.01
+    },
+    {
+      "trade_id": 6466132695,
+      "time_utc": "2026-07-01T01:12:36.085893Z",
+      "price": 58109.25,
+      "size_btc": 0.0001,
+      "direction": "SELL",
+      "adverse_selection_bps": 18.8,
+      "dollar_impact_usd": 0.01
+    },
+    {
+      "trade_id": 6466132696,
+      "time_utc": "2026-07-01T01:12:36.085893Z",
+      "price": 58109.25,
+      "size_btc": 0.0001,
+      "direction": "SELL",
+      "adverse_selection_bps": 18.8,
+      "dollar_impact_usd": 0.01
+    },
+    {
+      "trade_id": 6466132685,
+      "time_utc": "2026-07-01T01:12:36.085893Z",
+      "price": 58109.25,
+      "size_btc": 0.0001,
+      "direction": "SELL",
+      "adverse_selection_bps": 18.8,
+      "dollar_impact_usd": 0.01
+    },
+    {
+      "trade_id": 6466132683,
+      "time_utc": "2026-07-01T01:12:36.085893Z",
+      "price": 58109.25,
+      "size_btc": 0.0001,
+      "direction": "SELL",
+      "adverse_selection_bps": 18.8,
+      "dollar_impact_usd": 0.01
+    }
+  ],
+  "waterfall_attribution": {
+    "hypothetical_turnover_btc": 1000.0,
+    "gross_spread_captured_usd": 586.09,
+    "toxic_flow_adverse_selection_loss_usd": 8004.6,
+    "net_market_making_pnl_usd": -7418.51,
+    "net_profit_margin_bps": -1.27
+  },
+  "date": "2026-07-01",
+  "symbol": "BTCUSDT"
+}

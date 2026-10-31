@@ -1,0 +1,96 @@
+{
+  "sample_events": 5000,
+  "sample_provenance": {
+    "spec_version": "1.0.0",
+    "symbol": "BTCUSDT",
+    "date": "2026-07-01",
+    "selection_method": "SESSION_ACTIVE_WINDOW",
+    "total_input_rows": 4166849,
+    "duplicates_dropped": 0,
+    "invalid_rows_dropped": 0,
+    "total_valid_rows": 4166849,
+    "window_start_index": 1041712,
+    "selected_row_count": 5000,
+    "start_trade_id": 6466989766,
+    "end_trade_id": 6466994765,
+    "start_time_utc": "2026-07-01T05:49:54.563429Z",
+    "end_time_utc": "2026-07-01T05:58:01.234101Z",
+    "trade_ids_sha256": "f4f8a9329f31989dc648edffb8c2e06139effa790d41dff7158768a96b5e20a9",
+    "content_sha256": "4bce0be8c3a7325e83fbbcff1bed61a29033848ae0bb785d8fc7381a15a98378"
+  },
+  "observation_window_seconds": 486.67067413984984,
+  "decay_beta": 10.0,
+  "buy_events_count": 1932,
+  "sell_events_count": 3068,
+  "optimizer_convergence": {
+    "buy_dimension_converged": true,
+    "sell_dimension_converged": true,
+    "buy_message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+    "sell_message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH"
+  },
+  "parameters": {
+    "mu_buy": 0.614660619116828,
+    "mu_sell": 0.924878702851369,
+    "alpha_buy_buy_self": 8.539799914916363,
+    "alpha_sell_buy_cross": 0.018692569635602403,
+    "alpha_buy_sell_cross": 0.0,
+    "alpha_sell_sell_self": 8.532879593863811
+  },
+  "branching_ratios": {
+    "buy_to_buy": 0.8539799914916364,
+    "sell_to_buy": 0.0018692569635602404,
+    "buy_to_sell": 0.0,
+    "sell_to_sell": 0.8532879593863811,
+    "spectral_radius": 0.8539799914916364,
+    "is_subcritical_stable": true
+  },
+  "stability_status": "SUBCRITICAL_STABLE",
+  "residual_diagnostics": {
+    "method": "Random Time Change Theorem (Compensator Transformation)",
+    "buy_ks_statistic": 0.7478751948619861,
+    "buy_ks_p_value": 0.0,
+    "buy_residual_autocorr_lag1": 0.04736576213430222,
+    "sell_ks_statistic": 0.8067299141458995,
+    "sell_ks_p_value": 0.0,
+    "sell_residual_autocorr_lag1": 0.02414162014684283,
+    "interpretation": "Residual compensator increments tested against Exp(1) distribution. Non-rejection indicates empirical consistency with Hawkes intensity dynamics, but does not constitute mathematical proof of the underlying data generating mechanism."
+  },
+  "fitting_warnings": [
+    "Residual misspecification: Compensator residual KS test rejects Exp(1) (buy p=0.0000, sell p=0.0000); empirical trade arrivals exhibit higher-order clustering beyond standard exponential decay."
+  ],
+  "jitter_sensitivity": {
+    "jitter_1e-06": {
+      "spectral_radius": 0.8539786921721186,
+      "buy_to_buy": 0.8539786921721186,
+      "sell_to_sell": 0.8532819880367055
+    },
+    "jitter_1e-07": {
+      "spectral_radius": 0.8539799914916364,
+      "buy_to_buy": 0.8539799914916364,
+      "sell_to_sell": 0.8532879593863811
+    },
+    "jitter_1e-08": {
+      "spectral_radius": 0.853980654830735,
+      "buy_to_buy": 0.853980654830735,
+      "sell_to_sell": 0.8532883139108673
+    }
+  },
+  "control_model_microsecond_aggregated": {
+    "raw_events_count": 5000,
+    "aggregated_events_count": 1092,
+    "compression_ratio_pct": 78.16,
+    "spectral_radius": 0.28789484451519265,
+    "stability_status": "SUBCRITICAL_STABLE",
+    "branching_ratios": {
+      "buy_to_buy": 0.28789484451519265,
+      "sell_to_buy": 0.018389983510141476,
+      "buy_to_sell": 0.0,
+      "sell_to_sell": 0.1759429721031837,
+      "spectral_radius": 0.28789484451519265,
+      "is_subcritical_stable": true
+    },
+    "buy_ks_statistic": 0.06519295438106873,
+    "interpretation": "Microsecond aggregation compresses 5000 raw fills into 1092 unique timestamp matching events (-78.2%). Aggregated spectral radius drops to 0.2879 (SUBCRITICAL_STABLE). This empirical comparison demonstrates that measured point-process self-excitation is highly sensitive to the definition of the event unit (individual child execution vs. matching engine time slice), rather than establishing definitive causal attribution of trader behavior."
+  },
+  "statistical_interpretation": "Spectral radius rho(Gamma) = 0.8540 (SUBCRITICAL_STABLE). Process is sub-critical and stationary. Self-excitation (0.854 buy, 0.853 sell) vs cross-excitation (0.002 / 0.000)."
+}

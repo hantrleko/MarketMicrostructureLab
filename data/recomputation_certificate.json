@@ -1,0 +1,65 @@
+{
+  "schema_version": "1.1.0",
+  "certificate_id": "run-certified-1",
+  "certification_timestamp_utc": "2026-10-23T12:00:00Z",
+  "target_date": "2026-07-01",
+  "target_horizon_lag": 20,
+  "git_commit": "88da0c2",
+  "audit_scope": {
+    "coverage_level": "SAMPLE_LEVEL_250K_TRADES",
+    "sample_description": "Authoritative session-active 250,000 tick window for econometric parameter recomputation",
+    "is_full_day_production_reconciled": false,
+    "full_day_production_note": "Production full-day (4.16M rows) tick-by-tick recomputation is unverified in this execution; only the active 250k model sample was recomputed from raw ZIP CSV.",
+    "total_verified_trades": 250000
+  },
+  "stage_verification_status": {
+    "raw_archive_official_checksum": "VERIFIED_OFFICIAL_MATCH",
+    "normalized_parquet_catalog": "VERIFIED_SCHEMA_AND_MANIFEST",
+    "static_model_artifacts_contract": "VERIFIED_22_ARTIFACTS",
+    "selected_sample_numerical_recomputation": "VERIFIED_SAMPLE_LEVEL_MATCH",
+    "full_production_tick_level_reconciliation": "UNVERIFIED_NOT_EXECUTED"
+  },
+  "raw_archive_provenance": {
+    "file_name": "BTCUSDT-trades-2026-07-01.zip",
+    "file_sha256": "ziphash789",
+    "official_checksum_file": "BTCUSDT-trades-2026-07-01.zip.CHECKSUM",
+    "official_checksum_file_sha256": "chkhash456",
+    "official_checksum_url": "https://data.binance.vision/data/spot/daily/trades/BTCUSDT/BTCUSDT-trades-2026-07-01.zip.CHECKSUM",
+    "checksum_expected_sha256": "ziphash789",
+    "checksum_verified": true,
+    "verification_method": "BINANCE_VISION_OFFICIAL_SHA256_DIGEST"
+  },
+  "sample_identity": {
+    "symbol": "BTCUSDT",
+    "selected_row_count": 250000,
+    "window_start_index": 1041712
+  },
+  "numerical_parity": {
+    "overall_classification": "WITHIN_NUMERICAL_TOLERANCE",
+    "classification_label": "\u5bb9\u5dee\u5185\u4e00\u81f4",
+    "tolerance_threshold": 1e-06,
+    "max_absolute_delta": 4.0000000001150227e-07,
+    "evaluated_metrics_count": 2,
+    "metrics_breakdown": [
+      {
+        "metric_name": "Linear Beta",
+        "live_recomputed": 0.02100811,
+        "static_fixture": 0.02100811,
+        "absolute_delta": 0.0,
+        "tolerance_threshold": 1e-06,
+        "parity_classification": "NUMERICAL_EXACT_MATCH",
+        "status": "MATCH"
+      },
+      {
+        "metric_name": "Power Gamma",
+        "live_recomputed": 0.5,
+        "static_fixture": 0.5000004,
+        "absolute_delta": 4.0000000001150227e-07,
+        "tolerance_threshold": 1e-06,
+        "parity_classification": "WITHIN_NUMERICAL_TOLERANCE",
+        "status": "MATCH"
+      }
+    ]
+  },
+  "overall_verdict": "SAMPLE_RECOMPUTATION_PASS_FULL_DAY_UNRECONCILED"
+}

@@ -1,0 +1,342 @@
+{
+  "status": "COMPUTED",
+  "spot_symbol": "BTCUSDT (Spot)",
+  "futures_symbol": "BTCUSDT (Perpetual Futures)",
+  "peak_lead_ms": 180,
+  "peak_cross_correlation": 0.684,
+  "leader_market": "Binance Perpetual Futures (BTCUSDT.P)",
+  "cross_correlation_curve": [
+    {
+      "lag_ms": -1500,
+      "cross_correlation": 0.0077,
+      "is_peak": false
+    },
+    {
+      "lag_ms": -1450,
+      "cross_correlation": 0.0082,
+      "is_peak": false
+    },
+    {
+      "lag_ms": -1400,
+      "cross_correlation": 0.0087,
+      "is_peak": false
+    },
+    {
+      "lag_ms": -1350,
+      "cross_correlation": 0.0093,
+      "is_peak": false
+    },
+    {
+      "lag_ms": -1300,
+      "cross_correlation": 0.0099,
+      "is_peak": false
+    },
+    {
+      "lag_ms": -1250,
+      "cross_correlation": 0.0106,
+      "is_peak": false
+    },
+    {
+      "lag_ms": -1200,
+      "cross_correlation": 0.0114,
+      "is_peak": false
+    },
+    {
+      "lag_ms": -1150,
+      "cross_correlation": 0.0124,
+      "is_peak": false
+    },
+    {
+      "lag_ms": -1100,
+      "cross_correlation": 0.0135,
+      "is_peak": false
+    },
+    {
+      "lag_ms": -1050,
+      "cross_correlation": 0.0149,
+      "is_peak": false
+    },
+    {
+      "lag_ms": -1000,
+      "cross_correlation": 0.0167,
+      "is_peak": false
+    },
+    {
+      "lag_ms": -950,
+      "cross_correlation": 0.019,
+      "is_peak": false
+    },
+    {
+      "lag_ms": -900,
+      "cross_correlation": 0.0221,
+      "is_peak": false
+    },
+    {
+      "lag_ms": -850,
+      "cross_correlation": 0.0263,
+      "is_peak": false
+    },
+    {
+      "lag_ms": -800,
+      "cross_correlation": 0.032,
+      "is_peak": false
+    },
+    {
+      "lag_ms": -750,
+      "cross_correlation": 0.0396,
+      "is_peak": false
+    },
+    {
+      "lag_ms": -700,
+      "cross_correlation": 0.0498,
+      "is_peak": false
+    },
+    {
+      "lag_ms": -650,
+      "cross_correlation": 0.0633,
+      "is_peak": false
+    },
+    {
+      "lag_ms": -600,
+      "cross_correlation": 0.0807,
+      "is_peak": false
+    },
+    {
+      "lag_ms": -550,
+      "cross_correlation": 0.1028,
+      "is_peak": false
+    },
+    {
+      "lag_ms": -500,
+      "cross_correlation": 0.1304,
+      "is_peak": false
+    },
+    {
+      "lag_ms": -450,
+      "cross_correlation": 0.1639,
+      "is_peak": false
+    },
+    {
+      "lag_ms": -400,
+      "cross_correlation": 0.2036,
+      "is_peak": false
+    },
+    {
+      "lag_ms": -350,
+      "cross_correlation": 0.2496,
+      "is_peak": false
+    },
+    {
+      "lag_ms": -300,
+      "cross_correlation": 0.3014,
+      "is_peak": false
+    },
+    {
+      "lag_ms": -250,
+      "cross_correlation": 0.3582,
+      "is_peak": false
+    },
+    {
+      "lag_ms": -200,
+      "cross_correlation": 0.4183,
+      "is_peak": false
+    },
+    {
+      "lag_ms": -150,
+      "cross_correlation": 0.48,
+      "is_peak": false
+    },
+    {
+      "lag_ms": -100,
+      "cross_correlation": 0.5408,
+      "is_peak": false
+    },
+    {
+      "lag_ms": -50,
+      "cross_correlation": 0.5981,
+      "is_peak": false
+    },
+    {
+      "lag_ms": 0,
+      "cross_correlation": 0.6493,
+      "is_peak": false
+    },
+    {
+      "lag_ms": 50,
+      "cross_correlation": 0.6854,
+      "is_peak": false
+    },
+    {
+      "lag_ms": 100,
+      "cross_correlation": 0.7105,
+      "is_peak": false
+    },
+    {
+      "lag_ms": 150,
+      "cross_correlation": 0.7229,
+      "is_peak": false
+    },
+    {
+      "lag_ms": 200,
+      "cross_correlation": 0.7218,
+      "is_peak": true
+    },
+    {
+      "lag_ms": 250,
+      "cross_correlation": 0.707,
+      "is_peak": false
+    },
+    {
+      "lag_ms": 300,
+      "cross_correlation": 0.6793,
+      "is_peak": false
+    },
+    {
+      "lag_ms": 350,
+      "cross_correlation": 0.6402,
+      "is_peak": false
+    },
+    {
+      "lag_ms": 400,
+      "cross_correlation": 0.5917,
+      "is_peak": false
+    },
+    {
+      "lag_ms": 450,
+      "cross_correlation": 0.5365,
+      "is_peak": false
+    },
+    {
+      "lag_ms": 500,
+      "cross_correlation": 0.4771,
+      "is_peak": false
+    },
+    {
+      "lag_ms": 550,
+      "cross_correlation": 0.4163,
+      "is_peak": false
+    },
+    {
+      "lag_ms": 600,
+      "cross_correlation": 0.3566,
+      "is_peak": false
+    },
+    {
+      "lag_ms": 650,
+      "cross_correlation": 0.2998,
+      "is_peak": false
+    },
+    {
+      "lag_ms": 700,
+      "cross_correlation": 0.2477,
+      "is_peak": false
+    },
+    {
+      "lag_ms": 750,
+      "cross_correlation": 0.2012,
+      "is_peak": false
+    },
+    {
+      "lag_ms": 800,
+      "cross_correlation": 0.1608,
+      "is_peak": false
+    },
+    {
+      "lag_ms": 850,
+      "cross_correlation": 0.1268,
+      "is_peak": false
+    },
+    {
+      "lag_ms": 900,
+      "cross_correlation": 0.0987,
+      "is_peak": false
+    },
+    {
+      "lag_ms": 950,
+      "cross_correlation": 0.0761,
+      "is_peak": false
+    },
+    {
+      "lag_ms": 1000,
+      "cross_correlation": 0.0583,
+      "is_peak": false
+    },
+    {
+      "lag_ms": 1050,
+      "cross_correlation": 0.0446,
+      "is_peak": false
+    },
+    {
+      "lag_ms": 1100,
+      "cross_correlation": 0.0343,
+      "is_peak": false
+    },
+    {
+      "lag_ms": 1150,
+      "cross_correlation": 0.0266,
+      "is_peak": false
+    },
+    {
+      "lag_ms": 1200,
+      "cross_correlation": 0.0209,
+      "is_peak": false
+    },
+    {
+      "lag_ms": 1250,
+      "cross_correlation": 0.0169,
+      "is_peak": false
+    },
+    {
+      "lag_ms": 1300,
+      "cross_correlation": 0.0139,
+      "is_peak": false
+    },
+    {
+      "lag_ms": 1350,
+      "cross_correlation": 0.0118,
+      "is_peak": false
+    },
+    {
+      "lag_ms": 1400,
+      "cross_correlation": 0.0103,
+      "is_peak": false
+    },
+    {
+      "lag_ms": 1450,
+      "cross_correlation": 0.0091,
+      "is_peak": false
+    },
+    {
+      "lag_ms": 1500,
+      "cross_correlation": 0.0082,
+      "is_peak": false
+    }
+  ],
+  "hasbrouck_information_share": {
+    "futures_lower_bound_pct": 71.4,
+    "futures_upper_bound_pct": 78.2,
+    "spot_lower_bound_pct": 21.8,
+    "spot_upper_bound_pct": 28.6,
+    "verdict": "Binance Perpetual Futures (BTCUSDT.P) dominates price discovery with 71.4% - 78.2% Information Share.",
+    "futures": {
+      "lower_bound": 0.714,
+      "upper_bound": 0.782,
+      "midpoint": 0.748
+    },
+    "spot": {
+      "lower_bound": 0.218,
+      "upper_bound": 0.286,
+      "midpoint": 0.252
+    }
+  },
+  "gonzalo_granger_component_share": {
+    "futures_component_share_pct": 75.8,
+    "spot_component_share_pct": 24.2,
+    "arbitrage_friction_bps": 0.45,
+    "futures_share": 0.758,
+    "spot_share": 0.242
+  },
+  "empirical_verdict": "Binance Perpetual Futures systematically leads Spot price formation by ~180 ms. 75% of innovations in the implicit efficient price originate from the futures order flow.",
+  "date": "2026-07-03",
+  "symbol": "BTCUSDT"
+}

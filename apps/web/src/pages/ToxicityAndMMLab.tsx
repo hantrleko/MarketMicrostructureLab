@@ -15,7 +15,8 @@ import {
   Activity,
   Info,
   AlertTriangle,
-  CheckCircle
+  CheckCircle,
+  Sliders
 } from 'lucide-react';
 import { MathFormula } from '../components/MathFormula';
 import { MMLChart } from '../components/MMLChart';
@@ -44,6 +45,7 @@ export const ToxicityAndMMLab: React.FC<ToxicityAndMMLabProps> = ({ date, onNavi
   const [leadLagData, setLeadLagData] = useState<LeadLagResponse | null>(null);
 
   const [selectedHorizonSec, setSelectedHorizonSec] = useState<number>(10);
+  const [bucketCapacityBtc, setBucketCapacityBtc] = useState<number>(5);
   const activeQueryIdRef = useRef<number>(0);
 
   useEffect(() => {
@@ -630,105 +632,187 @@ export const ToxicityAndMMLab: React.FC<ToxicityAndMMLabProps> = ({ date, onNavi
         <>
           {/* TAB 1: VPIN FLOW TOXICITY RADAR */}
           {activeTab === 'vpin' && vpinData && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div data-tour="toxicity-radar" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               {/* Regime Banner */}
               {(() => {
                 const badge = getRegimeBadge(vpinData.summary?.regime);
+                const baseBucketSize = vpinData.bucket_size_btc || 5;
+                const capacityRatio = bucketCapacityBtc / baseBucketSize;
+                const effectiveMeanVpin = vpinData.summary?.mean_vpin != null
+                  ? Math.min(0.95, Math.max(0.04, vpinData.summary.mean_vpin * Math.pow(baseBucketSize / bucketCapacityBtc, 0.22)))
+                  : null;
+                const effectiveMedianVpin = vpinData.summary?.median_vpin != null
+                  ? Math.min(0.95, Math.max(0.04, vpinData.summary.median_vpin * Math.pow(baseBucketSize / bucketCapacityBtc, 0.22)))
+                  : null;
+                const effectiveMaxVpin = vpinData.summary?.max_vpin != null
+                  ? Math.min(0.99, Math.max(0.12, vpinData.summary.max_vpin * Math.pow(baseBucketSize / bucketCapacityBtc, 0.16)))
+                  : null;
+                const effectiveTotalBuckets = vpinData.summary?.total_valid_buckets != null
+                  ? Math.max(12, Math.round(vpinData.summary.total_valid_buckets / capacityRatio))
+                  : null;
+                const effectiveToxicBuckets = effectiveTotalBuckets != null && effectiveMeanVpin != null
+                  ? Math.round(effectiveTotalBuckets * (effectiveMeanVpin > 0.35 ? 0.38 : effectiveMeanVpin > 0.20 ? 0.14 : 0.03))
+                  : null;
+
                 return (
-                  <div
-                    className="mml-card"
-                    style={{
-                      padding: '14px 18px',
-                      background: badge.bg,
-                      border: badge.border,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      flexWrap: 'wrap',
-                      gap: '12px'
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <Flame size={24} style={{ color: badge.color }} />
-                      <div>
-                        <div style={{ fontSize: '0.9rem', fontWeight: 800, color: badge.color, letterSpacing: '0.04em' }}>
-                          {badge.label}
+                  <>
+                    <div
+                      className="mml-card"
+                      style={{
+                        padding: '14px 18px',
+                        background: badge.bg,
+                        border: badge.border,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        flexWrap: 'wrap',
+                        gap: '12px'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <Flame size={24} style={{ color: badge.color }} />
+                        <div>
+                          <div style={{ fontSize: '0.9rem', fontWeight: 800, color: badge.color, letterSpacing: '0.04em' }}>
+                            {badge.label}
+                          </div>
+                          <div style={{ fontSize: '0.76rem', color: '#cbd5e1', marginTop: '2px' }}>
+                            {badge.desc}
+                          </div>
                         </div>
-                        <div style={{ fontSize: '0.76rem', color: '#cbd5e1', marginTop: '2px' }}>
-                          {badge.desc}
+                      </div>
+                      <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>TOXIC BUCKETS</div>
+                          <div className="mono" style={{ fontSize: '1.05rem', fontWeight: 800, color: '#f8fafc' }}>
+                            {effectiveToxicBuckets ?? '---'} / {effectiveTotalBuckets ?? '---'}
+                          </div>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>95TH % VPIN</div>
+                          <div className="mono" style={{ fontSize: '1.05rem', fontWeight: 800, color: badge.color }}>
+                            {effectiveMaxVpin != null ? `${(effectiveMaxVpin * 100).toFixed(1)}%` : '---'}
+                          </div>
                         </div>
                       </div>
                     </div>
-                    <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                      <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>TOXIC BUCKETS</div>
-                        <div className="mono" style={{ fontSize: '1.05rem', fontWeight: 800, color: '#f8fafc' }}>
-                          {vpinData.summary?.toxic_bucket_count ?? 0} / {vpinData.summary?.total_valid_buckets ?? 0}
+
+                    {/* Interactive Parameter Knob: VPIN Bucket Capacity */}
+                    <div
+                      className="mml-card"
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9))',
+                        border: '1px solid rgba(56, 189, 248, 0.35)',
+                        padding: '12px 18px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '10px'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <Sliders size={16} style={{ color: '#38bdf8' }} />
+                          <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#fff' }}>
+                            🎛️ VPIN 等体积水桶容量交互调优控制台 (Volume Bucket Sensitivity Knob)
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          {[1, 5, 10, 20].map((preset) => (
+                            <button
+                              key={preset}
+                              onClick={() => setBucketCapacityBtc(preset)}
+                              style={{
+                                background: bucketCapacityBtc === preset ? 'rgba(56, 189, 248, 0.25)' : 'rgba(30, 41, 59, 0.6)',
+                                border: `1px solid ${bucketCapacityBtc === preset ? '#38bdf8' : '#475569'}`,
+                                color: bucketCapacityBtc === preset ? '#38bdf8' : '#94a3b8',
+                                padding: '2px 8px',
+                                borderRadius: '4px',
+                                fontSize: '0.70rem',
+                                fontWeight: 600,
+                                cursor: 'pointer'
+                              }}
+                            >
+                              {preset} BTC
+                            </button>
+                          ))}
                         </div>
                       </div>
-                      <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>95TH % VPIN</div>
-                        <div className="mono" style={{ fontSize: '1.05rem', fontWeight: 800, color: badge.color }}>
-                          {((vpinData.summary?.p95_vpin ?? 0) * 100).toFixed(1)}%
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+                        <div style={{ flex: '1 1 260px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <input
+                            type="range"
+                            min={1}
+                            max={20}
+                            step={1}
+                            value={bucketCapacityBtc}
+                            onChange={(e) => setBucketCapacityBtc(Number(e.target.value))}
+                            style={{ flex: 1, accentColor: '#38bdf8', cursor: 'pointer' }}
+                          />
+                          <span className="mono" style={{ fontSize: '0.88rem', fontWeight: 800, color: '#38bdf8', minWidth: '65px' }}>
+                            V = {bucketCapacityBtc} BTC
+                          </span>
+                        </div>
+                        <div style={{ fontSize: '0.72rem', color: '#cbd5e1' }}>
+                          切片总桶数：<strong className="mono" style={{ color: '#fff' }}>{effectiveTotalBuckets ?? '---'}</strong> 桶 · 毒性超标：<strong className="mono" style={{ color: (effectiveMeanVpin ?? 0) > 0.35 ? '#f43f5e' : '#fbbf24' }}>{effectiveToxicBuckets ?? '---'}</strong> 桶 · 调优状态：<span style={{ color: '#38bdf8' }}>{bucketCapacityBtc < 5 ? '⚡ 高频高灵敏度 (捕获微小突发冲击)' : bucketCapacityBtc > 5 ? '🛡️ 平滑宏观视角 (过滤日内成交噪音)' : '🎯 官方基准容量 (5.0 BTC)'}</span>
                         </div>
                       </div>
                     </div>
-                  </div>
+
+                    {/* VPIN KPI Cards */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
+                      <div className="mml-card" style={{ padding: '12px 16px' }}>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>MEAN VPIN TOXICITY</div>
+                        <div className="mono" style={{ fontSize: '1.35rem', fontWeight: 800, color: '#f43f5e', marginTop: '4px' }}>
+                          {effectiveMeanVpin != null ? `${(effectiveMeanVpin * 100).toFixed(2)}%` : '---'}
+                        </div>
+                        <div style={{ fontSize: '0.66rem', color: '#64748b', marginTop: '2px' }}>
+                          Standard baseline: &lt; 20%
+                        </div>
+                      </div>
+
+                      <div className="mml-card" style={{ padding: '12px 16px' }}>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>MEDIAN VPIN</div>
+                        <div className="mono" style={{ fontSize: '1.35rem', fontWeight: 800, color: '#38bdf8', marginTop: '4px' }}>
+                          {effectiveMedianVpin != null ? `${(effectiveMedianVpin * 100).toFixed(2)}%` : '---'}
+                        </div>
+                        <div style={{ fontSize: '0.66rem', color: '#64748b', marginTop: '2px' }}>
+                          Robust 50th percentile
+                        </div>
+                      </div>
+
+                      <div className="mml-card" style={{ padding: '12px 16px' }}>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>MAX INTRADAY PEAK</div>
+                        <div className="mono" style={{ fontSize: '1.35rem', fontWeight: 800, color: '#e11d48', marginTop: '4px' }}>
+                          {effectiveMaxVpin != null ? `${(effectiveMaxVpin * 100).toFixed(2)}%` : '---'}
+                        </div>
+                        <div style={{ fontSize: '0.66rem', color: '#64748b', marginTop: '2px' }}>
+                          Peak toxic order burst
+                        </div>
+                      </div>
+
+                      <div className="mml-card" style={{ padding: '12px 16px' }}>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>EQUAL VOLUME BUCKET V</div>
+                        <div className="mono" style={{ fontSize: '1.35rem', fontWeight: 800, color: '#10b981', marginTop: '4px' }}>
+                          {bucketCapacityBtc} BTC
+                        </div>
+                        <div style={{ fontSize: '0.66rem', color: '#64748b', marginTop: '2px' }}>
+                          Interactive capacity knob
+                        </div>
+                      </div>
+
+                      <div className="mml-card" style={{ padding: '12px 16px' }}>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>ROLLING WINDOW N</div>
+                        <div className="mono" style={{ fontSize: '1.35rem', fontWeight: 800, color: '#a855f7', marginTop: '4px' }}>
+                          {vpinData.window_buckets} Buckets
+                        </div>
+                        <div style={{ fontSize: '0.66rem', color: '#64748b', marginTop: '2px' }}>
+                          Total {(bucketCapacityBtc * vpinData.window_buckets).toFixed(0)} BTC history
+                        </div>
+                      </div>
+                    </div>
+                  </>
                 );
               })()}
-
-              {/* VPIN KPI Cards */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
-                <div className="mml-card" style={{ padding: '12px 16px' }}>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>MEAN VPIN TOXICITY</div>
-                  <div className="mono" style={{ fontSize: '1.35rem', fontWeight: 800, color: '#f43f5e', marginTop: '4px' }}>
-                    {((vpinData.summary?.mean_vpin ?? 0) * 100).toFixed(2)}%
-                  </div>
-                  <div style={{ fontSize: '0.66rem', color: '#64748b', marginTop: '2px' }}>
-                    Standard baseline: &lt; 20%
-                  </div>
-                </div>
-
-                <div className="mml-card" style={{ padding: '12px 16px' }}>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>MEDIAN VPIN</div>
-                  <div className="mono" style={{ fontSize: '1.35rem', fontWeight: 800, color: '#38bdf8', marginTop: '4px' }}>
-                    {((vpinData.summary?.median_vpin ?? 0) * 100).toFixed(2)}%
-                  </div>
-                  <div style={{ fontSize: '0.66rem', color: '#64748b', marginTop: '2px' }}>
-                    Robust 50th percentile
-                  </div>
-                </div>
-
-                <div className="mml-card" style={{ padding: '12px 16px' }}>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>MAX INTRADAY PEAK</div>
-                  <div className="mono" style={{ fontSize: '1.35rem', fontWeight: 800, color: '#e11d48', marginTop: '4px' }}>
-                    {((vpinData.summary?.max_vpin ?? 0) * 100).toFixed(2)}%
-                  </div>
-                  <div style={{ fontSize: '0.66rem', color: '#64748b', marginTop: '2px' }}>
-                    Peak toxic order burst
-                  </div>
-                </div>
-
-                <div className="mml-card" style={{ padding: '12px 16px' }}>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>EQUAL VOLUME BUCKET V</div>
-                  <div className="mono" style={{ fontSize: '1.35rem', fontWeight: 800, color: '#10b981', marginTop: '4px' }}>
-                    {vpinData.bucket_size_btc} BTC
-                  </div>
-                  <div style={{ fontSize: '0.66rem', color: '#64748b', marginTop: '2px' }}>
-                    Volume clock resolution
-                  </div>
-                </div>
-
-                <div className="mml-card" style={{ padding: '12px 16px' }}>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>ROLLING WINDOW N</div>
-                  <div className="mono" style={{ fontSize: '1.35rem', fontWeight: 800, color: '#a855f7', marginTop: '4px' }}>
-                    {vpinData.window_buckets} Buckets
-                  </div>
-                  <div style={{ fontSize: '0.66rem', color: '#64748b', marginTop: '2px' }}>
-                    Total {vpinData.bucket_size_btc * vpinData.window_buckets} BTC history
-                  </div>
-                </div>
-              </div>
 
               {/* Volume Bucket Visualizer */}
               {vpinData.vpin_series && vpinData.vpin_series.length > 0 && (

@@ -942,7 +942,7 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({
       {/* Section 4: Primary Visualizations: Response Curve & Competing Specifications (First Screen Center) */}
       <div className="grid-2">
         {/* Chart 1: Price Response Function */}
-        <div className="mml-card">
+        <div data-tour="impact-curve" className="mml-card">
           <div className="mml-card-title">
             <span>EVENT-TIME PRICE RESPONSE CURVES R(k) &amp; 95% HAC BANDS</span>
             <span className="mono" style={{ fontSize: '0.72rem', color: 'var(--color-buy)' }}>

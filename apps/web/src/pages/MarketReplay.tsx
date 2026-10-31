@@ -5,6 +5,7 @@ import { ReplayTrade } from '../types';
 import { MMLChart } from '../components/MMLChart';
 import { StoryBridge } from '../components/StoryBridge';
 import { GlossaryTerm } from '../components/GlossaryTerm';
+import { MarketMakingSimulator } from '../components/MarketMakingSimulator';
 import { useExploration } from '../context/ExplorationContext';
 
 interface MarketReplayProps {
@@ -48,6 +49,22 @@ const curatedScenarios: CuratedScenario[] = [
     offset: 50400,
     description: '美洲早盘深厚双向挂单形成流动性吸收带，大额成交被挂单完全消化，瞬态冲击半衰期降至 <2 笔。',
     narration: '【观察看点】高额买卖双向交织，价格在狭窄通道内震荡，盘口具有极高弹性（Resiliency），冲击难以形成趋势。'
+  },
+  {
+    id: 'vpin-toxic-surge',
+    title: '🧪 VPIN 毒性海啸突破警戒线 (Informed Toxic Tsunami)',
+    badge: 'VPIN TOXICITY > 0.35',
+    offset: 52200,
+    description: '重磅行情发布瞬间，单向知情大单蜂拥吃单，等体积量桶买卖严重失衡，做市商遭受严峻逆向选择。',
+    narration: '【观察看点】单向买单排山倒海灌满量桶，主动买入比例突破 85%，做市商被迫拉大点差防守。'
+  },
+  {
+    id: 'lead-lag-arb',
+    title: '⏱️ 币安合约 180ms 剧透现货 (Lead-Lag Arbitrage Cascade)',
+    badge: '180ms FUTURES LEAD',
+    offset: 60300,
+    description: '杠杆永续合约最先跳价，跨市场高频套利者在 180ms 黄金窗口内向现货猛烈扫单抹平基差。',
+    narration: '【观察看点】极短毫秒内爆发连续扫盘，现货档位被迅速抹平，基差回归完成。'
   }
 ];
 
@@ -425,7 +442,7 @@ export const MarketReplay: React.FC<MarketReplayProps> = ({ date, initialSession
       )}
 
       {/* Consolidated Compact Replay Toolbar (~85px, 2 rows) */}
-      <div className="mml-card" style={{ padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      <div data-tour="market-replay" className="mml-card" style={{ padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {/* Curated Scenarios Bookmark Bar */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', paddingBottom: '8px', borderBottom: '1px solid rgba(255, 255, 255, 0.06)' }}>
           <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
@@ -765,6 +782,9 @@ export const MarketReplay: React.FC<MarketReplayProps> = ({ date, initialSession
           </div>
         </div>
       </div>
+
+      {/* Production Avellaneda-Stoikov Market Making Simulator (MML v3.0) */}
+      <MarketMakingSimulator trades={trades} />
 
       {/* Story Bridge to Act 2 */}
       <StoryBridge

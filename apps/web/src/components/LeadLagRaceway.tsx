@@ -62,87 +62,91 @@ export const LeadLagRaceway: React.FC<LeadLagRacewayProps> = ({
           padding: '12px 14px',
           display: 'flex',
           flexDirection: 'column',
-          gap: '10px'
+          gap: '10px',
+          overflowX: 'auto',
+          WebkitOverflowScrolling: 'touch'
         }}
       >
-        {/* Track 1: Futures (Fast Train) */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{ width: '110px', fontSize: '0.72rem', fontWeight: 800, color: '#fbbf24', flexShrink: 0 }}>
-            ⚡ 币安永续合约
+        <div style={{ minWidth: '480px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {/* Track 1: Futures (Fast Train) */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ width: '110px', fontSize: '0.72rem', fontWeight: 800, color: '#fbbf24', flexShrink: 0 }}>
+              ⚡ 币安永续合约
+            </div>
+            <div style={{ flex: 1, position: 'relative', height: '18px', background: '#1e293b', borderRadius: '4px' }}>
+              <div
+                style={{
+                  position: 'absolute',
+                  left: '0%',
+                  width: '45px',
+                  height: '100%',
+                  background: 'linear-gradient(90deg, #f59e0b, #fbbf24)',
+                  borderRadius: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '0.64rem',
+                  fontWeight: 800,
+                  color: '#080b10'
+                }}
+              >
+                0ms 爆发
+              </div>
+              <div style={{ position: 'absolute', left: '55px', top: '2px', fontSize: '0.66rem', color: '#fde68a', whiteSpace: 'nowrap' }}>
+                &larr; 知情主力与算法资金最先在此入场 (信息份额 {futuresSharePct != null ? `${futuresSharePct.toFixed(1)}%` : '---'})
+              </div>
+            </div>
           </div>
-          <div style={{ flex: 1, position: 'relative', height: '18px', background: '#1e293b', borderRadius: '4px' }}>
+
+          {/* Transmission Window Bridge */}
+          <div style={{ display: 'flex', alignItems: 'center', marginLeft: '120px', gap: '8px' }}>
             <div
               style={{
-                position: 'absolute',
-                left: '0%',
-                width: '45px',
-                height: '100%',
-                background: 'linear-gradient(90deg, #f59e0b, #fbbf24)',
-                borderRadius: '4px',
+                padding: '3px 10px',
+                borderRadius: '12px',
+                background: 'rgba(56, 189, 248, 0.15)',
+                border: '1px dashed #38bdf8',
+                fontSize: '0.68rem',
+                color: '#38bdf8',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '0.64rem',
-                fontWeight: 800,
-                color: '#080b10'
+                gap: '6px'
               }}
             >
-              0ms 爆发
-            </div>
-            <div style={{ position: 'absolute', left: '55px', top: '2px', fontSize: '0.66rem', color: '#fde68a' }}>
-              &larr; 知情主力与算法资金最先在此入场 (信息份额 {futuresSharePct != null ? `${futuresSharePct.toFixed(1)}%` : '---'})
+              <Clock size={12} />
+              <span>
+                <strong>+{peakLeadMs} 毫秒黄金窗口：</strong> 现货做市商紧急撤单 / 跨市场做市套利对冲 (互相关 r = {peakCrossCorrelation})
+              </span>
             </div>
           </div>
-        </div>
 
-        {/* Transmission Window Bridge */}
-        <div style={{ display: 'flex', alignItems: 'center', marginLeft: '120px', gap: '8px' }}>
-          <div
-            style={{
-              padding: '3px 10px',
-              borderRadius: '12px',
-              background: 'rgba(56, 189, 248, 0.15)',
-              border: '1px dashed #38bdf8',
-              fontSize: '0.68rem',
-              color: '#38bdf8',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}
-          >
-            <Clock size={12} />
-            <span>
-              <strong>+{peakLeadMs} 毫秒黄金窗口：</strong> 现货做市商紧急撤单 / 跨市场做市套利对冲 (互相关 r = {peakCrossCorrelation})
-            </span>
-          </div>
-        </div>
-
-        {/* Track 2: Spot (Slow Train) */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{ width: '110px', fontSize: '0.72rem', fontWeight: 800, color: '#38bdf8', flexShrink: 0 }}>
-            🐢 币安现货盘口
-          </div>
-          <div style={{ flex: 1, position: 'relative', height: '18px', background: '#1e293b', borderRadius: '4px' }}>
-            <div
-              style={{
-                position: 'absolute',
-                left: '35%',
-                width: '65px',
-                height: '100%',
-                background: 'linear-gradient(90deg, #0284c7, #38bdf8)',
-                borderRadius: '4px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '0.64rem',
-                fontWeight: 800,
-                color: '#080b10'
-              }}
-            >
-              +{peakLeadMs}ms 跟动
+          {/* Track 2: Spot (Slow Train) */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ width: '110px', fontSize: '0.72rem', fontWeight: 800, color: '#38bdf8', flexShrink: 0 }}>
+              🐢 币安现货盘口
             </div>
-            <div style={{ position: 'absolute', left: 'calc(35% + 72px)', top: '2px', fontSize: '0.66rem', color: '#93c5fd' }}>
-              &larr; 被动吸收价格传导，成为价格跟随者 (信息份额 {spotSharePct != null ? `${spotSharePct.toFixed(1)}%` : '---'})
+            <div style={{ flex: 1, position: 'relative', height: '18px', background: '#1e293b', borderRadius: '4px' }}>
+              <div
+                style={{
+                  position: 'absolute',
+                  left: '35%',
+                  width: '65px',
+                  height: '100%',
+                  background: 'linear-gradient(90deg, #0284c7, #38bdf8)',
+                  borderRadius: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '0.64rem',
+                  fontWeight: 800,
+                  color: '#080b10'
+                }}
+              >
+                +{peakLeadMs}ms 跟动
+              </div>
+              <div style={{ position: 'absolute', left: 'calc(35% + 72px)', top: '2px', fontSize: '0.66rem', color: '#93c5fd', whiteSpace: 'nowrap' }}>
+                &larr; 被动吸收价格传导，成为价格跟随者 (信息份额 {spotSharePct != null ? `${spotSharePct.toFixed(1)}%` : '---'})
+              </div>
             </div>
           </div>
         </div>

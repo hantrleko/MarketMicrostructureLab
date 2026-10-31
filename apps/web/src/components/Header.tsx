@@ -1,6 +1,7 @@
 import React from 'react';
-import { Activity, LineChart, PlayCircle, Layers, ShieldCheck, ChevronRight, Zap, History, ShieldAlert, Sparkles } from 'lucide-react';
+import { Activity, LineChart, PlayCircle, Layers, ShieldCheck, ChevronRight, Zap, History, ShieldAlert, Sparkles, Compass } from 'lucide-react';
 import { useExploration } from '../context/ExplorationContext';
+import { getUnlockedBadges } from './CheckpointQuiz';
 
 interface HeaderProps {
   activeTab: string;
@@ -19,7 +20,8 @@ export const Header: React.FC<HeaderProps> = ({
   availableDates,
   onOpenByod
 }) => {
-  const { userMode, setUserMode } = useExploration();
+  const { userMode, setUserMode, startTour } = useExploration();
+  const unlockedBadgesCount = Object.keys(getUnlockedBadges()).length;
 
   const tabs = [
     { id: 'replay', label: '① 逐笔回放 · 看现场', icon: PlayCircle },
@@ -68,7 +70,7 @@ export const Header: React.FC<HeaderProps> = ({
                 letterSpacing: '0.04em'
               }}
             >
-              MML v2.1.1
+              MML v3.0.0
             </span>
           </div>
 
@@ -162,6 +164,49 @@ export const Header: React.FC<HeaderProps> = ({
             <Sparkles size={12} />
             <span>{userMode === 'guided' ? '💡 新手白话' : '🔬 专业量化'}</span>
           </button>
+
+          {/* Guided Spotlight Tour Launcher */}
+          <button
+            onClick={startTour}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              background: 'rgba(56, 189, 248, 0.1)',
+              border: '1px solid rgba(56, 189, 248, 0.3)',
+              color: '#38bdf8',
+              padding: '3px 9px',
+              borderRadius: '12px',
+              fontSize: '0.72rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
+            title="启动五幕沉浸式聚光灯导引"
+          >
+            <Compass size={12} />
+            <span>🧭 漫游导引</span>
+          </button>
+
+          {unlockedBadgesCount > 0 && (
+            <span
+              style={{
+                fontSize: '0.68rem',
+                color: '#fbbf24',
+                background: 'rgba(251, 191, 36, 0.1)',
+                border: '1px solid rgba(251, 191, 36, 0.3)',
+                padding: '2px 8px',
+                borderRadius: '12px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '3px',
+                fontWeight: 700
+              }}
+              title={`已解锁 ${unlockedBadgesCount}/5 幕实证勋章`}
+            >
+              🏅 {unlockedBadgesCount}/5 勋章
+            </span>
+          )}
 
           {onOpenByod && (
             <button

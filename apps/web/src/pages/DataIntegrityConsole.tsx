@@ -2,12 +2,14 @@ import { useState, useEffect, useRef } from 'react';
 import { fetchDatasets, fetchAuditReport } from '../api/client';
 import { DatasetItem, QualityAuditReport } from '../types';
 import { ShieldCheck, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { MultiDayComparisonPanel } from '../components/MultiDayComparisonPanel';
 
 interface DataIntegrityConsoleProps {
   currentDate: string;
+  onSelectDate?: (date: string) => void;
 }
 
-export const DataIntegrityConsole: React.FC<DataIntegrityConsoleProps> = ({ currentDate }) => {
+export const DataIntegrityConsole: React.FC<DataIntegrityConsoleProps> = ({ currentDate, onSelectDate }) => {
   const [datasets, setDatasets] = useState<DatasetItem[]>([]);
   const [audit, setAudit] = useState<QualityAuditReport | null>(null);
   const [certificate, setCertificate] = useState<any>(null);
@@ -80,6 +82,9 @@ export const DataIntegrityConsole: React.FC<DataIntegrityConsoleProps> = ({ curr
           <span className="badge-gold">NON-COMMERCIAL RESEARCH LICENSE</span>
         </div>
       </div>
+
+      {/* Multi-Day Panoramic Comparison & Cross-Asset Microstructure Matrix */}
+      <MultiDayComparisonPanel selectedDate={currentDate} onSelectDate={onSelectDate || (() => {})} />
 
       {/* Stage 1-5 Authoritative Recomputation Certificate Card */}
       <div className="mml-card" style={{ border: '1px solid var(--color-buy)', background: 'rgba(34, 197, 94, 0.04)', padding: '16px 20px' }}>

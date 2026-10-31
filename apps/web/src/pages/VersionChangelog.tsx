@@ -23,6 +23,59 @@ interface ReleaseNote {
 
 const releases: ReleaseNote[] = [
   {
+    version: 'v3.0.0',
+    codename: 'Production Market Making Simulator & Real-Time Cascades · 做市实盘模拟器与在线实时预警',
+    releaseDate: '2026-10-31',
+    gitCommit: 'RELEASE',
+    badgeColor: '#38bdf8',
+    category: 'MAJOR',
+    summary: '重大里程碑升级：从前沿机构微观结构研究全面跃迁至交互式量化高频做市仿真与实战预警平台。发布基于 Avellaneda-Stoikov & Glosten-Milgrom 理论的高频做市策略实盘回测模拟器，实现点差捕获、库存惩罚与逆向选择损益三因子分解；浏览器原生直连币安 WebSocket 在线计算实时 VPIN 毒性，并在 Hawkes 分支比 ρ ≥ 1.0 时触发 Web Audio 合成音效与桌面弹窗报警；引入五幕学术通关微测验与本地勋章系统；提供三日全景流动性演化对比与 BTC/ETH/SOL 多币种特征解构；支持交互式参数调优控制台与增强版 BYOD 瞬时分析。',
+    highlights: [
+      {
+        title: 'Avellaneda-Stoikov 高频做市回测模拟器 (Market Making Engine)',
+        description: '在逐笔微观数据流中高保真驱动回测，用户可自由调优报价点差、库存厌恶度 γ、持仓上限与单笔报价量，实时分解点差毛捕获、持仓浮动盈亏与知情单逆向选择损失，输出夏普比率与最大回撤。',
+        tag: 'MM_SIMULATOR'
+      },
+      {
+        title: '浏览器在线实时 VPIN 与超临界声光/桌面双重预警 (Live VPIN & Avalanche Alarms)',
+        description: '前端通过 WebSocket 原生聚合流实时切分成交量桶，在线输出动态 VPIN 毒性；在 Hawkes ρ ≥ 1.0 或 VPIN ≥ 35% 时触发 Web Audio API 警报音效、高对比 HUD 闪烁与浏览器桌面 Notification 弹窗。',
+        tag: 'LIVE_ALARMS'
+      },
+      {
+        title: '幕间微观结构通关微测验与学术勋章体系 (Checkpoint Quizzes & Badges)',
+        description: '在各幕底部嵌入深度考题，答对可解锁「逐笔穿透者」「自激破译官」「幂律测算师」「毒性鉴别专家」「深度解构宗师」徽章并在顶部常驻展示。',
+        tag: 'CHECKPOINT_QUIZZES'
+      },
+      {
+        title: '三日全景流动性演化矩阵与多资产对比 (Multi-Day Matrix & Multi-Asset)',
+        description: '提供 2026-07-01、07-02、07-03 三日核心实证指标全量横向矩阵与一键切换；横向对比 BTC/ETH/SOL 在到达流速、盘口深度、信息份额与期现传导中的不同微观特征。',
+        tag: 'CROSS_ASSET'
+      },
+      {
+        title: '交互式参数调优控制台与增强版 BYOD 诊断 (Interactive Knobs & BYOD VPIN)',
+        description: '提供 VPIN 水桶容量滑块 (V ∈ [1, 20] BTC) 与 Hawkes 衰减率滑块 (β ∈ [0.2, 4.0]/s)；本地 BYOD 拖拽上传即刻在浏览器本地算完 VPIN 与自激参数，无需上传服务器。',
+        tag: 'INTERACTIVE_KNOBS'
+      }
+    ],
+    engineeringMetrics: [
+      { label: 'Simulation Engine', value: 'Avellaneda-Stoikov / Glosten-Milgrom' },
+      { label: 'Realtime Alerts', value: 'Web Audio API + Desktop Notifications' },
+      { label: 'Interactive Knobs', value: 'VPIN Bucket (1-20 BTC) + Hawkes Beta' },
+      { label: 'Checkpoint Quizzes', value: '5 Acts Comprehensive Empirical Validation' },
+      { label: 'Cross-Asset Scope', value: 'BTC/USDT, ETH/USDT, SOL/USDT' },
+      { label: 'Bundle Gate', value: 'All 15 Chunks < 600 kB Gate Pass' }
+    ],
+    artifacts: [
+      'apps/web/src/components/MarketMakingSimulator.tsx',
+      'apps/web/src/components/CheckpointQuiz.tsx',
+      'apps/web/src/components/MultiDayComparisonPanel.tsx',
+      'apps/web/src/pages/OrderBookLab.tsx',
+      'apps/web/src/pages/ToxicityAndMMLab.tsx',
+      'apps/web/src/pages/OrderFlowObservatory.tsx',
+      'apps/web/src/components/GuidedTourModal.tsx'
+    ]
+  },
+  {
     version: 'v2.1.1',
     codename: 'Integrity Hardening & Interactive Guided Tour · 承诺兑现与交互漫游',
     releaseDate: '2026-10-31',

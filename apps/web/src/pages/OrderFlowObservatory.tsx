@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { fetchFlowBuckets, fetchAutocorrelation, fetchDistributions, fetchHawkes } from '../api/client';
 import { FlowBucket, AutocorrResult, TradeSizeDistribution, DurationDistribution } from '../types';
-import { ShieldCheck, Info, AlertTriangle, Scale } from 'lucide-react';
+import { ShieldCheck, Info, AlertTriangle, Scale, Sliders } from 'lucide-react';
 import { MMLChart } from '../components/MMLChart';
 import { StoryBridge } from '../components/StoryBridge';
 import { GlossaryTerm } from '../components/GlossaryTerm';
@@ -21,6 +21,7 @@ export const OrderFlowObservatory: React.FC<OrderFlowObservatoryProps> = ({ date
   const [durDist, setDurDist] = useState<DurationDistribution | null>(null);
   const [distProvenance, setDistProvenance] = useState<any>(null);
   const [hawkes, setHawkes] = useState<any>(null);
+  const [hawkesBeta, setHawkesBeta] = useState<number>(1.25);
   const [loading, setLoading] = useState<boolean>(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const activeQueryIdRef = useRef<number>(0);
@@ -403,7 +404,7 @@ export const OrderFlowObservatory: React.FC<OrderFlowObservatoryProps> = ({ date
       </div>
 
       {/* Bivariate Hawkes Process Card with Residual Diagnostics & Control Model */}
-      <div className="mml-card">
+      <div data-tour="observatory-hawkes" className="mml-card">
         <div className="mml-card-title">
           <span>BIVARIATE <GlossaryTerm term="hawkes">HAWKES PROCESS</GlossaryTerm> (ARRIVAL CLUSTERING & CONTROL MODEL AUDIT)</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -431,6 +432,84 @@ export const OrderFlowObservatory: React.FC<OrderFlowObservatoryProps> = ({ date
             </div>
           </div>
         )}
+
+        {/* Interactive Hawkes Decay Rate Knob */}
+        {(() => {
+          const baseRadius = hawkes?.branching_ratios?.spectral_radius;
+          const halfLifeMs = Math.round((Math.log(2) / hawkesBeta) * 1000);
+          const effectiveRadius = baseRadius != null 
+            ? baseRadius * Math.pow(1.25 / hawkesBeta, 0.65)
+            : null;
+          const isSupercritical = effectiveRadius != null && effectiveRadius >= 1.0;
+
+          return (
+            <div
+              style={{
+                background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.85))',
+                border: `1px solid ${isSupercritical ? 'rgba(239, 68, 68, 0.5)' : 'rgba(56, 189, 248, 0.35)'}`,
+                borderRadius: '6px',
+                padding: '12px 16px',
+                marginBottom: '14px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Sliders size={15} style={{ color: isSupercritical ? '#f87171' : '#38bdf8' }} />
+                  <span style={{ fontSize: '0.80rem', fontWeight: 800, color: '#fff' }}>
+                    🎛️ Hawkes 记忆衰减速率 β 与自激半衰期敏感度调优 (Interactive Hawkes Knob)
+                  </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  {[0.5, 1.25, 2.5, 4.0].map((preset) => (
+                    <button
+                      key={preset}
+                      onClick={() => setHawkesBeta(preset)}
+                      style={{
+                        background: hawkesBeta === preset ? 'rgba(56, 189, 248, 0.25)' : 'rgba(30, 41, 59, 0.6)',
+                        border: `1px solid ${hawkesBeta === preset ? '#38bdf8' : '#475569'}`,
+                        color: hawkesBeta === preset ? '#38bdf8' : '#94a3b8',
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                        fontSize: '0.68rem',
+                        fontWeight: 600,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      β = {preset}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+                <div style={{ flex: '1 1 260px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <input
+                    type="range"
+                    min={0.2}
+                    max={4.0}
+                    step={0.05}
+                    value={hawkesBeta}
+                    onChange={(e) => setHawkesBeta(Number(e.target.value))}
+                    style={{ flex: 1, accentColor: isSupercritical ? '#ef4444' : '#38bdf8', cursor: 'pointer' }}
+                  />
+                  <span className="mono" style={{ fontSize: '0.84rem', fontWeight: 800, color: isSupercritical ? '#f87171' : '#38bdf8', minWidth: '75px' }}>
+                    β = {hawkesBeta.toFixed(2)}/s
+                  </span>
+                </div>
+
+                <div style={{ fontSize: '0.72rem', color: '#cbd5e1' }}>
+                  冲击半衰期：<strong className="mono" style={{ color: '#fbbf24' }}>t½ = {halfLifeMs} ms</strong> · 动态分支比：<strong className="mono" style={{ color: isSupercritical ? '#ef4444' : '#34d399' }}>ρ = {effectiveRadius?.toFixed(4) ?? '---'}</strong> · 状态：
+                  <span style={{ fontWeight: 700, color: isSupercritical ? '#f87171' : '#34d399', marginLeft: '4px' }}>
+                    {isSupercritical ? '⚠️ 超临界自激雪崩 (SUPERCRITICAL)' : '✅ 平稳亚临界 (SUBCRITICAL)'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
         <div className="grid-4" style={{ marginBottom: '14px' }}>
           <div style={{ background: 'var(--bg-dark)', padding: '12px', borderRadius: '4px' }}>

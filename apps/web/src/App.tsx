@@ -147,7 +147,7 @@ export function AppContent() {
           {activeTab === 'observatory' && <OrderFlowObservatory date={selectedDate} onNavigateTab={setActiveTab} />}
           {activeTab === 'impact' && <MarketImpactResearch date={selectedDate} initialHorizon={impactHorizon} onHorizonChange={setImpactHorizon} onNavigateTab={setActiveTab} />}
           {activeTab === 'toxicity' && <ToxicityAndMMLab date={selectedDate} onNavigateTab={setActiveTab} />}
-          {activeTab === 'integrity' && <DataIntegrityConsole currentDate={selectedDate} />}
+          {activeTab === 'integrity' && <DataIntegrityConsole currentDate={selectedDate} onSelectDate={setSelectedDate} />}
           {activeTab === 'orderbook' && <OrderBookLab onNavigateTab={setActiveTab} />}
           {activeTab === 'changelog' && <VersionChangelog />}
         </Suspense>
@@ -179,7 +179,7 @@ export function AppContent() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <img src="./eugene_finance_logo.png" alt="Logo" style={{ width: '16px', height: '16px', borderRadius: '2px' }} />
-          <span>EUGENE FINANCE &bull; MARKET MICROSTRUCTURE LAB (MML) v2.1.1 &bull; INSTITUTIONAL RESEARCH WORKBENCH</span>
+          <span>EUGENE FINANCE &bull; MARKET MICROSTRUCTURE LAB (MML) v3.0.0 &bull; INSTITUTIONAL RESEARCH WORKBENCH</span>
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'center' }}>
           <span>OFFICIAL SOURCE: BINANCE VISION SPOT (NON-COMMERCIAL RESEARCH LICENSE)</span>

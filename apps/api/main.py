@@ -69,7 +69,7 @@ def get_system_runtime_mode() -> Dict[str, Any]:
     return {
         "status": "HEALTHY",
         "app_name": "Market Microstructure Lab",
-        "version": "2.1.1",
+        "version": "3.0.0",
         "build_commit": commit,
         "data_version": data_version,
         "runtime_mode": mode,
@@ -97,7 +97,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Market Microstructure Lab (MML) API",
     description="Professional Quantitative Microstructure Research Platform",
-    version="2.1.1",
+    version="3.0.0",
     lifespan=lifespan
 )
 

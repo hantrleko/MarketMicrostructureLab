@@ -337,16 +337,25 @@ button {
 /* Mobile responsive constraints */
 @media (max-width: 768px) {
   .main-content {
-    padding: 12px 8px;
+    padding: 10px 6px;
   }
   .mml-card {
-    padding: 12px;
+    padding: 12px 10px;
   }
   .grid-2, .grid-3 {
     grid-template-columns: 1fr;
   }
   .grid-4 {
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr));
+  }
+  .responsive-orderbook-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px;
+  }
+  .table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 }
 

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { fetchOrderBookStatus, controlOrderBook, fetchLiveOrderBook } from '../api/client';
 import { OrderBookStatusResponse, OrderBookLadderResponse, DataSourceStatus } from '../types';
-import { Wifi, Cpu, Database, Play, Square, Activity, Layers, ShieldAlert, Zap, RotateCcw, Globe, Radio, Flame } from 'lucide-react';
+import { Wifi, Cpu, Database, Play, Square, Activity, Layers, ShieldAlert, Zap, RotateCcw, Globe, Radio, Flame, Volume2, VolumeX, Bell } from 'lucide-react';
 import { MMLChart } from '../components/MMLChart';
 import { RealtimeHawkesEngine, HawkesSnapshot } from '../utils/hawkesEngine';
 import { RealtimeHawkesWeapon } from '../components/RealtimeHawkesWeapon';
@@ -71,6 +71,13 @@ export const OrderBookLab: React.FC<OrderBookLabProps> = ({ onNavigateTab }) => 
   const directWssRef = useRef<WebSocket | null>(null);
   const directTradeWssRef = useRef<WebSocket | null>(null);
   const directCumOfiRef = useRef<number>(0);
+  const [liveVpin, setLiveVpin] = useState<number | null>(null);
+  const [isAudioEnabled, setIsAudioEnabled] = useState<boolean>(true);
+  const [isDesktopAlertEnabled, setIsDesktopAlertEnabled] = useState<boolean>(false);
+  const liveCurrentBuyRef = useRef<number>(0);
+  const liveCurrentSellRef = useRef<number>(0);
+  const liveBucketImbalancesRef = useRef<number[]>([]);
+  const lastAlertTimeRef = useRef<number>(0);
 
   // Counterfactual Sandbox State
   const [sandboxAsks, setSandboxAsks] = useState<SandboxLevel[]>(DEFAULT_SANDBOX_ASKS);
@@ -88,14 +95,55 @@ export const OrderBookLab: React.FC<OrderBookLabProps> = ({ onNavigateTab }) => 
   } | null>(null);
   const recoveryTimerRef = useRef<any>(null);
 
+  const triggerAvalancheAlert = (reason: string) => {
+    const now = Date.now();
+    if (now - lastAlertTimeRef.current < 6000) return;
+    lastAlertTimeRef.current = now;
+
+    if (isAudioEnabled && typeof window !== 'undefined') {
+      try {
+        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+        if (AudioCtx) {
+          const ctx = new AudioCtx();
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(880, ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(330, ctx.currentTime + 0.28);
+          gain.gain.setValueAtTime(0.06, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.28);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.28);
+        }
+      } catch {}
+    }
+
+    if (isDesktopAlertEnabled && typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission === 'granted') {
+        new Notification('🚨 Market Microstructure Lab 极端预警', {
+          body: reason,
+          icon: './eugene_finance_logo.png'
+        });
+      }
+    }
+  };
+
   // High-frequency 4Hz snapshot pull for real-time Hawkes indicators and charts
   useEffect(() => {
     if (operatingMode !== 'DIRECT_BINANCE_WSS') return;
     const interval = setInterval(() => {
-      setHawkesSnapshot(hawkesEngineRef.current.getSnapshot());
+      const snap = hawkesEngineRef.current.getSnapshot();
+      setHawkesSnapshot(snap);
+      if (snap.regime === 'SUPERCRITICAL_CASCADE') {
+        triggerAvalancheAlert(`⚡ Hawkes 分支比 ρ=${snap.branchingRatio.toFixed(3)} 触发超临界雪崩！做市需紧急后撤防守！`);
+      } else if (liveVpin !== null && liveVpin >= 0.35) {
+        triggerAvalancheAlert(`🧪 实时 VPIN 毒性 ${(liveVpin * 100).toFixed(1)}% 突破警戒线！知情单边扫盘中！`);
+      }
     }, 250);
     return () => clearInterval(interval);
-  }, [operatingMode]);
+  }, [operatingMode, liveVpin, isAudioEnabled, isDesktopAlertEnabled]);
 
   // Direct Binance Public WebSocket Connection (Zero Backend Required)
   useEffect(() => {
@@ -181,6 +229,26 @@ export const OrderBookLab: React.FC<OrderBookLabProps> = ({ onNavigateTab }) => 
         const timeMs = t.T || t.E || Date.now();
         directCumOfiRef.current += isBuyerMaker ? -qty : qty;
         hawkesEngineRef.current.processTrade({ timeMs, price, qty, isBuyerMaker });
+
+        // Online Real-time VPIN Accumulator
+        const bucketCap = directSymbol.startsWith('BTC') ? 1.0 : directSymbol.startsWith('ETH') ? 10.0 : 50.0;
+        if (isBuyerMaker) {
+          liveCurrentSellRef.current += qty;
+        } else {
+          liveCurrentBuyRef.current += qty;
+        }
+        if (liveCurrentBuyRef.current + liveCurrentSellRef.current >= bucketCap) {
+          const bTotal = liveCurrentBuyRef.current + liveCurrentSellRef.current;
+          const bImb = Math.abs(liveCurrentBuyRef.current - liveCurrentSellRef.current);
+          liveBucketImbalancesRef.current.push(bImb / bTotal);
+          if (liveBucketImbalancesRef.current.length > 20) {
+            liveBucketImbalancesRef.current.shift();
+          }
+          const vpinAvg = liveBucketImbalancesRef.current.reduce((a, b) => a + b, 0) / liveBucketImbalancesRef.current.length;
+          setLiveVpin(vpinAvg);
+          liveCurrentBuyRef.current = 0;
+          liveCurrentSellRef.current = 0;
+        }
       } catch {}
     };
 
@@ -734,7 +802,26 @@ export const OrderBookLab: React.FC<OrderBookLabProps> = ({ onNavigateTab }) => 
               </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              {/* Online VPIN Badge */}
+              <div
+                style={{
+                  fontSize: '0.70rem',
+                  fontWeight: 700,
+                  color: (liveVpin ?? 0) >= 0.35 ? '#f43f5e' : (liveVpin ?? 0) >= 0.20 ? '#fbbf24' : '#38bdf8',
+                  background: (liveVpin ?? 0) >= 0.35 ? 'rgba(244, 63, 94, 0.15)' : 'rgba(56, 189, 248, 0.12)',
+                  border: `1px solid ${(liveVpin ?? 0) >= 0.35 ? '#f43f5e' : '#38bdf8'}40`,
+                  padding: '3px 8px',
+                  borderRadius: '3px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}
+              >
+                <span>实时 VPIN: {liveVpin != null ? `${(liveVpin * 100).toFixed(1)}%` : '切片积累中'}</span>
+              </div>
+
+              {/* Realtime Hawkes Indicator */}
               <div style={{
                 fontSize: '0.70rem',
                 fontWeight: 700,
@@ -751,10 +838,91 @@ export const OrderBookLab: React.FC<OrderBookLabProps> = ({ onNavigateTab }) => 
                 <span>HAWKES &rho;: {hawkesSnapshot.branchingRatio.toFixed(3)} ({hawkesSnapshot.regime === 'SUPERCRITICAL_CASCADE' ? 'CASCADE' : hawkesSnapshot.regime === 'NEAR_CRITICAL' ? 'WARMING' : 'STABLE'})</span>
               </div>
 
-              <div className="badge-buy" style={{ fontSize: '0.68rem', letterSpacing: '0.04em' }}>
-                ZERO-CONFIG REALTIME WEAPON
+              {/* Sound Alarm Toggle */}
+              <button
+                onClick={() => setIsAudioEnabled(!isAudioEnabled)}
+                style={{
+                  background: isAudioEnabled ? 'rgba(16, 185, 129, 0.15)' : 'rgba(100, 116, 139, 0.2)',
+                  border: `1px solid ${isAudioEnabled ? '#10b981' : '#475569'}`,
+                  color: isAudioEnabled ? '#10b981' : '#94a3b8',
+                  padding: '3px 8px',
+                  borderRadius: '3px',
+                  fontSize: '0.70rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}
+                title={isAudioEnabled ? '自激雪崩警报音效已开启，点击静音' : '警报音效已静音，点击开启'}
+              >
+                {isAudioEnabled ? <Volume2 size={12} /> : <VolumeX size={12} />}
+                <span>{isAudioEnabled ? '警报音效' : '已静音'}</span>
+              </button>
+
+              {/* Desktop Alert Toggle */}
+              <button
+                onClick={() => {
+                  if (typeof window !== 'undefined' && 'Notification' in window) {
+                    if (Notification.permission === 'granted') {
+                      setIsDesktopAlertEnabled(!isDesktopAlertEnabled);
+                    } else {
+                      Notification.requestPermission().then((p) => {
+                        if (p === 'granted') setIsDesktopAlertEnabled(true);
+                      });
+                    }
+                  }
+                }}
+                style={{
+                  background: isDesktopAlertEnabled ? 'rgba(56, 189, 248, 0.15)' : 'rgba(100, 116, 139, 0.2)',
+                  border: `1px solid ${isDesktopAlertEnabled ? '#38bdf8' : '#475569'}`,
+                  color: isDesktopAlertEnabled ? '#38bdf8' : '#94a3b8',
+                  padding: '3px 8px',
+                  borderRadius: '3px',
+                  fontSize: '0.70rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}
+                title="开启/关闭浏览器桌面系统弹窗预警"
+              >
+                <Bell size={12} />
+                <span>{isDesktopAlertEnabled ? '桌面预警' : '开启弹窗'}</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Supercritical Cascade / Toxic Avalanche HUD Flashing Banner */}
+        {operatingMode === 'DIRECT_BINANCE_WSS' && (hawkesSnapshot.isSupercritical || ((liveVpin ?? 0) >= 0.35)) && (
+          <div
+            style={{
+              background: 'linear-gradient(90deg, rgba(239, 68, 68, 0.25), rgba(244, 63, 94, 0.35))',
+              border: '2px solid #ef4444',
+              borderRadius: '6px',
+              padding: '10px 14px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              color: '#fff'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <ShieldAlert size={22} style={{ color: '#ef4444' }} />
+              <div>
+                <div style={{ fontSize: '0.86rem', fontWeight: 800, color: '#fca5a5' }}>
+                  🚨 极端微观结构预警：检测到超临界自激订单流雪崩 / 知情毒性海啸！
+                </div>
+                <div style={{ fontSize: '0.74rem', color: '#fecdd3' }}>
+                  Hawkes 分支比 &rho; = {hawkesSnapshot.branchingRatio.toFixed(3)} {hawkesSnapshot.isSupercritical ? '(>1.0 链式吃单踩踏)' : ''} &bull; 实时 VPIN = {liveVpin != null ? `${(liveVpin * 100).toFixed(1)}%` : '---'} {(liveVpin ?? 0) >= 0.35 ? '(知情单边扫空盘口)' : ''} &bull; 建议做市商紧急撤单避险！
+                </div>
               </div>
             </div>
+            <span style={{ fontSize: '0.70rem', fontWeight: 800, background: '#ef4444', color: '#fff', padding: '3px 8px', borderRadius: '4px' }}>
+              CRITICAL EMERGENCY
+            </span>
           </div>
         )}
 
@@ -925,7 +1093,7 @@ export const OrderBookLab: React.FC<OrderBookLabProps> = ({ onNavigateTab }) => 
       </div>
 
       {/* Main Order Book Ladder & OFI Streaming Chart Grid */}
-      <div className="responsive-orderbook-grid">
+      <div data-tour="live-orderbook" className="responsive-orderbook-grid">
         {/* L2 Depth Ladder */}
         <div className="mml-card">
           <div className="mml-card-title">

@@ -6,9 +6,10 @@ interface StoryBridgeProps {
   currentActTitle: string;
   takeaway: string;
   nextAct: string;
-  nextActNumber: number;
+  nextActNumber?: number;
   nextActTitle: string;
   nextQuestion: string;
+  isAppendix?: boolean;
   onNavigate: (tab: string) => void;
 }
 
@@ -17,9 +18,10 @@ export const StoryBridge: React.FC<StoryBridgeProps> = ({
   currentActTitle,
   takeaway,
   nextAct,
-  nextActNumber,
+  nextActNumber = 1,
   nextActTitle,
   nextQuestion,
+  isAppendix = false,
   onNavigate
 }) => {
   return (
@@ -96,7 +98,7 @@ export const StoryBridge: React.FC<StoryBridgeProps> = ({
             e.currentTarget.style.boxShadow = '0 2px 10px rgba(2, 132, 199, 0.4)';
           }}
         >
-          <span>进入第 {nextActNumber} 幕：{nextActTitle}</span>
+          <span>{isAppendix ? `进入附录：${nextActTitle}` : `进入第 ${nextActNumber} 幕：${nextActTitle}`}</span>
           <ArrowRight size={15} />
         </button>
       </div>

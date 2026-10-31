@@ -6,6 +6,8 @@ import { MathFormula } from '../components/MathFormula';
 import { MMLChart } from '../components/MMLChart';
 import { ShareResearchCardModal } from '../components/ShareResearchCardModal';
 import { StoryBridge } from '../components/StoryBridge';
+import { GlossaryTerm } from '../components/GlossaryTerm';
+import { useExploration } from '../context/ExplorationContext';
 
 interface MarketImpactResearchProps {
   date: string;
@@ -53,6 +55,7 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({
   onHorizonChange,
   onNavigateTab
 }) => {
+  const { userMode } = useExploration();
   const [horizon, setHorizon] = useState<number>(initialHorizon || 20);
   const [compHorizon, setCompHorizon] = useState<number>(20);
   const [priceResp, setPriceResp] = useState<PriceResponseData | null>(null);
@@ -608,6 +611,25 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({
           </div>
         </details>
       </div>
+
+      {/* User Mode Guided Callout */}
+      {userMode === 'guided' && (
+        <div
+          style={{
+            background: 'linear-gradient(135deg, rgba(2, 132, 199, 0.12), rgba(15, 23, 42, 0.4))',
+            border: '1px solid rgba(56, 189, 248, 0.3)',
+            borderRadius: '6px',
+            padding: '10px 14px',
+            fontSize: '0.76rem',
+            color: '#e2e8f0',
+            lineHeight: 1.5,
+            marginBottom: '4px'
+          }}
+        >
+          <strong style={{ color: '#38bdf8' }}>💡 新手冲击导引：</strong>
+          大单直接吃掉挂单后，价格会产生瞬时位移（即时冲击）。通过下方加权最小二乘回归，我们发现单笔成交并<strong>不满足</strong>机构几天内大母单的平方根法则，而呈现微弱的对数形态；几笔成交后做市商重新挂单，价格迅速产生流动性回补。可在下方点击切换不同的 <GlossaryTerm term="bps">基点 (bps)</GlossaryTerm> 冲击预测步长 k！
+        </div>
+      )}
 
       {/* Section 2: Parameter Control & Key Horizon Selector Toolbar */}
       <div className="mml-card" style={{ padding: '8px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
@@ -2156,11 +2178,11 @@ export const MarketImpactResearch: React.FC<MarketImpactResearchProps> = ({
         onClose={() => setIsShareCardOpen(false)}
         date={date}
         horizon={horizon}
-        gammaWls={modelsData?.power_law_model?.fit?.gamma ?? -0.0739}
-        gammaOls={modelsData?.logarithmic_model?.fit?.gamma ?? -0.0305}
-        hawkesRho={0.8540}
-        rSquared={modelsData?.walk_forward_validation?.mean_log_oos_r2 ?? 0.001}
-        obsCount={modelsData?.observations ?? 250000}
+        gammaWls={modelsData?.power_law_model?.fit?.gamma}
+        gammaOls={modelsData?.logarithmic_model?.fit?.gamma}
+        hawkesRho={(modelsData as any)?.hawkes_rho ?? certificate?.hawkes_rho}
+        rSquared={modelsData?.walk_forward_validation?.mean_log_oos_r2}
+        obsCount={modelsData?.observations}
         certHash={certificate?.recomputed_sample_identities?.[date]?.content_sha256}
       />
 

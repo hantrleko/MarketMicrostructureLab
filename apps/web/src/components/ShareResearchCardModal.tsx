@@ -6,11 +6,11 @@ interface ShareResearchCardModalProps {
   onClose: () => void;
   date: string;
   horizon: number;
-  gammaWls: number;
-  gammaOls: number;
-  hawkesRho: number;
-  rSquared: number;
-  obsCount: number;
+  gammaWls?: number | null;
+  gammaOls?: number | null;
+  hawkesRho?: number | null;
+  rSquared?: number | null;
+  obsCount?: number | null;
   certHash?: string;
 }
 
@@ -31,14 +31,14 @@ export const ShareResearchCardModal: React.FC<ShareResearchCardModalProps> = ({
   if (!isOpen) return null;
 
   const copySnapshot = () => {
-    const text = `EUGENE FINANCE - MARKET MICROSTRUCTURE LAB (V1.2.0)
+    const text = `EUGENE FINANCE - MARKET MICROSTRUCTURE LAB (v2.1.1)
 Date: ${date} | Horizon: k=${horizon}
-Observed Trades: ${obsCount.toLocaleString()}
-WLS Impact Gamma: ${gammaWls.toFixed(4)} (Reject H0: gamma=0.5)
-OLS Impact Gamma: ${gammaOls.toFixed(4)}
-Hawkes Clustering Ratio: ${hawkesRho.toFixed(4)}
-Walk-Forward OOS R^2: ${rSquared.toFixed(4)}
-Audit SHA-256: ${certHash.substring(0, 16)}...
+Observed Trades: ${obsCount != null ? obsCount.toLocaleString() : '---'}
+WLS Impact Gamma: ${gammaWls != null ? gammaWls.toFixed(4) : '---'}
+OLS Impact Gamma: ${gammaOls != null ? gammaOls.toFixed(4) : '---'}
+Hawkes Clustering Ratio: ${hawkesRho != null ? hawkesRho.toFixed(4) : '---'}
+Walk-Forward OOS R^2: ${rSquared != null ? rSquared.toFixed(4) : '---'}
+Audit SHA-256: ${certHash ? certHash.substring(0, 16) + '...' : '---'}
 https://hantrleko.github.io/MarketMicrostructureLab/?tab=impact&date=${date}&k=${horizon}`;
 
     navigator.clipboard.writeText(text);
@@ -162,25 +162,25 @@ https://hantrleko.github.io/MarketMicrostructureLab/?tab=impact&date=${date}&k=$
               <div style={{ background: 'rgba(0, 0, 0, 0.3)', padding: '10px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.06)' }}>
                 <div style={{ fontSize: '0.66rem', color: 'var(--text-dim)' }}>WLS IMPACT EXPONENT &gamma;</div>
                 <div className="mono" style={{ fontSize: '1.15rem', fontWeight: 700, color: '#ff9100' }}>
-                  {gammaWls.toFixed(4)}
+                  {gammaWls != null ? gammaWls.toFixed(4) : '---'}
                 </div>
                 <div style={{ fontSize: '0.64rem', color: '#ef4444' }}>Reject Square-Root Law (p &lt; 0.001)</div>
               </div>
 
               <div style={{ background: 'rgba(0, 0, 0, 0.3)', padding: '10px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.06)' }}>
                 <div style={{ fontSize: '0.66rem', color: 'var(--text-dim)' }}>HAWKES CLUSTERING &rho;</div>
-                <div className="mono" style={{ fontSize: '1.15rem', fontWeight: 700, color: hawkesRho >= 1.0 ? '#ef4444' : '#10b981' }}>
-                  {hawkesRho.toFixed(4)}
+                <div className="mono" style={{ fontSize: '1.15rem', fontWeight: 700, color: (hawkesRho ?? 0) >= 1.0 ? '#ef4444' : '#10b981' }}>
+                  {hawkesRho != null ? hawkesRho.toFixed(4) : '---'}
                 </div>
                 <div style={{ fontSize: '0.64rem', color: 'var(--text-muted)' }}>
-                  {hawkesRho >= 1.0 ? 'Supercritical Shock' : 'Subcritical Stable'}
+                  {hawkesRho != null ? (hawkesRho >= 1.0 ? 'Supercritical Shock' : 'Subcritical Stable') : '---'}
                 </div>
               </div>
 
               <div style={{ background: 'rgba(0, 0, 0, 0.3)', padding: '10px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.06)' }}>
                 <div style={{ fontSize: '0.66rem', color: 'var(--text-dim)' }}>SAMPLE OBSERVATIONS</div>
                 <div className="mono" style={{ fontSize: '1.05rem', fontWeight: 700, color: '#fff' }}>
-                  {obsCount.toLocaleString()}
+                  {obsCount != null ? obsCount.toLocaleString() : '---'}
                 </div>
                 <div style={{ fontSize: '0.64rem', color: 'var(--text-dim)' }}>Binance Spot Hive Partition</div>
               </div>
@@ -188,7 +188,7 @@ https://hantrleko.github.io/MarketMicrostructureLab/?tab=impact&date=${date}&k=$
               <div style={{ background: 'rgba(0, 0, 0, 0.3)', padding: '10px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.06)' }}>
                 <div style={{ fontSize: '0.66rem', color: 'var(--text-dim)' }}>OUT-OF-SAMPLE R&sup2;</div>
                 <div className="mono" style={{ fontSize: '1.05rem', fontWeight: 700, color: '#38bdf8' }}>
-                  {rSquared.toFixed(4)}
+                  {rSquared != null ? rSquared.toFixed(4) : '---'}
                 </div>
                 <div style={{ fontSize: '0.64rem', color: 'var(--text-dim)' }}>Non-Overlapping Purged Test</div>
               </div>

@@ -2,6 +2,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { Header } from './components/Header';
 import { BYODModal } from './components/BYODModal';
 import { WelcomeMissionBanner } from './components/WelcomeMissionBanner';
+import { GuidedTourModal } from './components/GuidedTourModal';
 import { ExplorationProvider } from './context/ExplorationContext';
 import { subscribeDataLayerState, DataLayerState } from './api/client';
 
@@ -162,6 +163,8 @@ export function AppContent() {
         }}
       />
 
+      <GuidedTourModal onNavigateTab={setActiveTab} />
+
       <footer style={{
         borderTop: '1px solid var(--border-color)',
         padding: '14px 28px',
@@ -176,7 +179,7 @@ export function AppContent() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <img src="./eugene_finance_logo.png" alt="Logo" style={{ width: '16px', height: '16px', borderRadius: '2px' }} />
-          <span>EUGENE FINANCE &bull; MARKET MICROSTRUCTURE LAB (MML) v2.1.0 &bull; INSTITUTIONAL RESEARCH WORKBENCH</span>
+          <span>EUGENE FINANCE &bull; MARKET MICROSTRUCTURE LAB (MML) v2.1.1 &bull; INSTITUTIONAL RESEARCH WORKBENCH</span>
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'center' }}>
           <span>OFFICIAL SOURCE: BINANCE VISION SPOT (NON-COMMERCIAL RESEARCH LICENSE)</span>

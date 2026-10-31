@@ -23,6 +23,7 @@ import { VolumeBucketVisualizer } from '../components/VolumeBucketVisualizer';
 import { AdverseSelectionTugOfWar } from '../components/AdverseSelectionTugOfWar';
 import { LeadLagRaceway } from '../components/LeadLagRaceway';
 import { StoryBridge } from '../components/StoryBridge';
+import { GlossaryTerm } from '../components/GlossaryTerm';
 import { useExploration } from '../context/ExplorationContext';
 
 interface ToxicityAndMMLabProps {
@@ -583,6 +584,24 @@ export const ToxicityAndMMLab: React.FC<ToxicityAndMMLabProps> = ({ date, onNavi
         </div>
       </div>
 
+      {/* User Mode Guided Callout */}
+      {userMode === 'guided' && (
+        <div
+          style={{
+            background: 'linear-gradient(135deg, rgba(2, 132, 199, 0.12), rgba(15, 23, 42, 0.4))',
+            border: '1px solid rgba(56, 189, 248, 0.3)',
+            borderRadius: '6px',
+            padding: '10px 14px',
+            fontSize: '0.76rem',
+            color: '#e2e8f0',
+            lineHeight: 1.5
+          }}
+        >
+          <strong style={{ color: '#38bdf8' }}>💡 新手识别庄家导引：</strong>
+          大单冲击后，真正血流成河的是对手方的做市商！【子页面① <GlossaryTerm term="vpin">VPIN 毒性雷达</GlossaryTerm>】用等体积水桶测算买卖失衡，识别知情巨鲸单边扫货；【子页面② <GlossaryTerm term="adverse_selection">逆向选择</GlossaryTerm>】计算做市商赚取的点差是否被大单割肉吃穿；【子页面③ <GlossaryTerm term="information_share">期现领先</GlossaryTerm>】实证了杠杆永续合约提前 180ms 剧透现货价格！
+        </div>
+      )}
+
       {loading && (
         <div className="mml-card" style={{ padding: '60px', textAlign: 'center', color: 'var(--text-muted)' }}>
           Computing V2.0 microstructure toxicity and adverse selection metrics for {date}...
@@ -1134,8 +1153,8 @@ export const ToxicityAndMMLab: React.FC<ToxicityAndMMLabProps> = ({ date, onNavi
               <LeadLagRaceway
                 peakLeadMs={leadLagData.peak_lead_ms}
                 peakCrossCorrelation={leadLagData.peak_cross_correlation}
-                futuresSharePct={leadLagData.gonzalo_granger_component_share?.futures_component_share_pct ?? 75.8}
-                spotSharePct={leadLagData.gonzalo_granger_component_share?.spot_component_share_pct ?? 24.2}
+                futuresSharePct={leadLagData.gonzalo_granger_component_share?.futures_component_share_pct}
+                spotSharePct={leadLagData.gonzalo_granger_component_share?.spot_component_share_pct}
               />
 
               {/* Cross-Correlation Curve Chart */}

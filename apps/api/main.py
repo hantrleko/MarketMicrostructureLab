@@ -64,12 +64,12 @@ def get_system_runtime_mode() -> Dict[str, Any]:
         data_desc = "No local parquet datasets found; static API serving only"
 
     commit = get_runtime_git_commit()
-    data_version = os.environ.get("DATA_VERSION", "V2.1.0 Eugene Finance Guided Workbench")
+    data_version = os.environ.get("DATA_VERSION", "V2.1.1 Eugene Finance Guided Workbench")
 
     return {
         "status": "HEALTHY",
         "app_name": "Market Microstructure Lab",
-        "version": "2.1.0",
+        "version": "2.1.1",
         "build_commit": commit,
         "data_version": data_version,
         "runtime_mode": mode,
@@ -97,7 +97,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Market Microstructure Lab (MML) API",
     description="Professional Quantitative Microstructure Research Platform",
-    version="2.1.0",
+    version="2.1.1",
     lifespan=lifespan
 )
 

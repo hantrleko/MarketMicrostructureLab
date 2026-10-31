@@ -4,6 +4,8 @@ import { FlowBucket, AutocorrResult, TradeSizeDistribution, DurationDistribution
 import { ShieldCheck, Info, AlertTriangle, Scale } from 'lucide-react';
 import { MMLChart } from '../components/MMLChart';
 import { StoryBridge } from '../components/StoryBridge';
+import { GlossaryTerm } from '../components/GlossaryTerm';
+import { useExploration } from '../context/ExplorationContext';
 
 interface OrderFlowObservatoryProps {
   date: string;
@@ -11,6 +13,7 @@ interface OrderFlowObservatoryProps {
 }
 
 export const OrderFlowObservatory: React.FC<OrderFlowObservatoryProps> = ({ date, onNavigateTab }) => {
+  const { userMode } = useExploration();
   const [interval, setInterval] = useState<string>('1m');
   const [buckets, setBuckets] = useState<FlowBucket[]>([]);
   const [autocorr, setAutocorr] = useState<AutocorrResult | null>(null);
@@ -241,6 +244,24 @@ export const OrderFlowObservatory: React.FC<OrderFlowObservatoryProps> = ({ date
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      {/* User Mode Guided Callout */}
+      {userMode === 'guided' && (
+        <div
+          style={{
+            background: 'linear-gradient(135deg, rgba(2, 132, 199, 0.12), rgba(15, 23, 42, 0.4))',
+            border: '1px solid rgba(56, 189, 248, 0.3)',
+            borderRadius: '6px',
+            padding: '10px 14px',
+            fontSize: '0.76rem',
+            color: '#e2e8f0',
+            lineHeight: 1.5
+          }}
+        >
+          <strong style={{ color: '#38bdf8' }}>💡 新手探秘导引：</strong>
+          大单进场不是孤立事件，而是像地震一样会引发同向余震。<GlossaryTerm term="hawkes">Hawkes 自激点过程</GlossaryTerm> 用于量化买卖单互相激发的羊群效应。当下方的分支比 &rho; 接近 1 时，说明每来 1 笔大单就会招来同等强度的追单；若 &rho; &ge; 1.0，市场进入不可遏制的超临界雪崩！
+        </div>
+      )}
+
       {/* Top Bar with Interval Picker */}
       <div className="mml-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -384,7 +405,7 @@ export const OrderFlowObservatory: React.FC<OrderFlowObservatoryProps> = ({ date
       {/* Bivariate Hawkes Process Card with Residual Diagnostics & Control Model */}
       <div className="mml-card">
         <div className="mml-card-title">
-          <span>BIVARIATE HAWKES PROCESS (ARRIVAL CLUSTERING & CONTROL MODEL AUDIT)</span>
+          <span>BIVARIATE <GlossaryTerm term="hawkes">HAWKES PROCESS</GlossaryTerm> (ARRIVAL CLUSTERING & CONTROL MODEL AUDIT)</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span className={hawkes?.stability_status === 'SUBCRITICAL_STABLE' ? 'badge-buy' : 'badge-sell'}>
               {hawkes?.stability_status || 'SUBCRITICAL_STABLE'}

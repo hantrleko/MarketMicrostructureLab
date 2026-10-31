@@ -124,16 +124,28 @@ export const GlossaryTerm: React.FC<GlossaryTermProps> = ({ term, children, inli
 
   return (
     <span
+      tabIndex={0}
+      role="button"
+      aria-expanded={isOpen}
       style={{
         position: 'relative',
         display: inline ? 'inline' : 'inline-flex',
         alignItems: 'center',
         gap: '3px',
-        cursor: 'help'
+        cursor: 'help',
+        outline: 'none'
       }}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onClick={() => setIsOpen(!isOpen)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          setIsOpen(!isOpen);
+        } else if (e.key === 'Escape') {
+          setIsOpen(false);
+        }
+      }}
     >
       <span
         style={{

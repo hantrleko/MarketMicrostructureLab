@@ -27,7 +27,7 @@ export const Header: React.FC<HeaderProps> = ({
     { id: 'impact', label: '③ 价格冲击 · 算击穿', icon: LineChart },
     { id: 'toxicity', label: '④ 毒性做市 · 识庄家', icon: ShieldAlert },
     { id: 'orderbook', label: '⚡ 实时盘口 · 战实盘', icon: Layers },
-    { id: 'integrity', label: '🛡️ 数据防伪', icon: ShieldCheck },
+    { id: 'integrity', label: '🛡️ 附录 · 数据防伪', icon: ShieldCheck },
     { id: 'changelog', label: '📜 版本日志', icon: History },
   ];
 
@@ -68,7 +68,7 @@ export const Header: React.FC<HeaderProps> = ({
                 letterSpacing: '0.04em'
               }}
             >
-              MML v2.1
+              MML v2.1.1
             </span>
           </div>
 

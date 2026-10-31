@@ -4,6 +4,8 @@ import { fetchReplayWindow } from '../api/client';
 import { ReplayTrade } from '../types';
 import { MMLChart } from '../components/MMLChart';
 import { StoryBridge } from '../components/StoryBridge';
+import { GlossaryTerm } from '../components/GlossaryTerm';
+import { useExploration } from '../context/ExplorationContext';
 
 interface MarketReplayProps {
   date: string;
@@ -50,6 +52,7 @@ const curatedScenarios: CuratedScenario[] = [
 ];
 
 export const MarketReplay: React.FC<MarketReplayProps> = ({ date, initialSession, customTrades, onClearCustomTrades, onNavigateTab }) => {
+  const { userMode } = useExploration();
   const [startSecond, setStartSecond] = useState<number>(initialSession !== undefined ? initialSession : 0);
   const [durationSeconds] = useState<number>(60);
   const [trades, setTrades] = useState<ReplayTrade[]>([]);
@@ -402,6 +405,25 @@ export const MarketReplay: React.FC<MarketReplayProps> = ({ date, initialSession
         </div>
       )}
 
+      {/* User Mode Guided Callout */}
+      {userMode === 'guided' && (
+        <div
+          style={{
+            background: 'linear-gradient(135deg, rgba(2, 132, 199, 0.12), rgba(15, 23, 42, 0.4))',
+            border: '1px solid rgba(56, 189, 248, 0.3)',
+            borderRadius: '6px',
+            padding: '10px 14px',
+            fontSize: '0.76rem',
+            color: '#e2e8f0',
+            lineHeight: 1.5,
+            marginBottom: '10px'
+          }}
+        >
+          <strong style={{ color: '#38bdf8' }}>💡 新手破案导引：</strong>
+          真实微观盘口没有平滑连续的 K 线，只有每毫秒发生的一笔笔吃单撮合。推荐先点击下方【🐋 巨鲸砸盘】精选剧本，然后点击播放键，观察大单如何瞬间砸穿买一价并使 <GlossaryTerm term="cvd">CVD (累积量差)</GlossaryTerm> 剧烈下坠！
+        </div>
+      )}
+
       {/* Consolidated Compact Replay Toolbar (~85px, 2 rows) */}
       <div className="mml-card" style={{ padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {/* Curated Scenarios Bookmark Bar */}
@@ -647,7 +669,7 @@ export const MarketReplay: React.FC<MarketReplayProps> = ({ date, initialSession
         {/* Trajectory & CVD Canvas */}
         <div className="mml-card">
           <div className="mml-card-title">
-            <span>TICK-LEVEL PRICE TRAJECTORY & CVD</span>
+            <span>TICK-LEVEL PRICE TRAJECTORY & <GlossaryTerm term="cvd">CVD</GlossaryTerm></span>
             <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
               WINDOW: {visibleTrades.length} / {trades.length} DISPLAYED ({totalInWindow} IN 60s)
             </span>
@@ -727,7 +749,9 @@ export const MarketReplay: React.FC<MarketReplayProps> = ({ date, initialSession
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px' }}>
-              <span style={{ color: 'var(--text-dim)' }}>CUMULATIVE CVD:</span>
+              <span style={{ color: 'var(--text-dim)' }}>
+                <GlossaryTerm term="cvd">CUMULATIVE CVD</GlossaryTerm>:
+              </span>
               <span className="mono" style={{ fontWeight: 700, color: runningCvd >= 0 ? 'var(--color-buy)' : 'var(--color-sell)' }}>
                 {runningCvd.toFixed(4)} BTC
               </span>

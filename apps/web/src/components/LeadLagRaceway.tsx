@@ -4,8 +4,8 @@ import { GitCompare, Clock } from 'lucide-react';
 interface LeadLagRacewayProps {
   peakLeadMs: number;
   peakCrossCorrelation: number;
-  futuresSharePct: number;
-  spotSharePct: number;
+  futuresSharePct?: number | null;
+  spotSharePct?: number | null;
 }
 
 export const LeadLagRaceway: React.FC<LeadLagRacewayProps> = ({
@@ -90,7 +90,7 @@ export const LeadLagRaceway: React.FC<LeadLagRacewayProps> = ({
               0ms 爆发
             </div>
             <div style={{ position: 'absolute', left: '55px', top: '2px', fontSize: '0.66rem', color: '#fde68a' }}>
-              &larr; 知情主力与算法资金最先在此入场 (信息份额 {futuresSharePct}%)
+              &larr; 知情主力与算法资金最先在此入场 (信息份额 {futuresSharePct != null ? `${futuresSharePct.toFixed(1)}%` : '---'})
             </div>
           </div>
         </div>
@@ -142,7 +142,7 @@ export const LeadLagRaceway: React.FC<LeadLagRacewayProps> = ({
               +{peakLeadMs}ms 跟动
             </div>
             <div style={{ position: 'absolute', left: 'calc(35% + 72px)', top: '2px', fontSize: '0.66rem', color: '#93c5fd' }}>
-              &larr; 被动吸收价格传导，成为价格跟随者 (信息份额 {spotSharePct}%)
+              &larr; 被动吸收价格传导，成为价格跟随者 (信息份额 {spotSharePct != null ? `${spotSharePct.toFixed(1)}%` : '---'})
             </div>
           </div>
         </div>

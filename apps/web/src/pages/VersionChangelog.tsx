@@ -23,6 +23,50 @@ interface ReleaseNote {
 
 const releases: ReleaseNote[] = [
   {
+    version: 'v2.1.1',
+    codename: 'Integrity Hardening & Interactive Guided Tour · 承诺兑现与交互漫游',
+    releaseDate: '2026-10-31',
+    gitCommit: 'LATEST',
+    badgeColor: '#10b981',
+    category: 'FEATURE',
+    summary: '全面兑现 V2.1 架构承诺，消除工程技术债：上线全新 5 步渐进式破冰漫游弹窗（GuidedTourModal）；实现真正起效的「💡 新手白话 / 🔬 专业量化」模式感知渲染；在全站各页面核心点位深度嵌入交互式微词典（GlossaryTerm）；彻底剔除前端硬编码兜底常量，严守零模拟假数据准则；规范统一「五幕主线 + 附录：数据防伪审计」叙事体系。',
+    highlights: [
+      {
+        title: '分步交互式破冰漫游弹窗 (GuidedTourModal)',
+        description: '响应首屏“3分钟微观破案故事”按钮，提供悬浮式 5 步渐进漫游卡片，跨页面无缝指引巨鲸吃单、Hawkes 羊群余震、加权冲击回补、VPIN 水桶与实盘自激武器。',
+        tag: 'INTERACTIVE_TOUR'
+      },
+      {
+        title: '双视角透镜感知分化渲染 (Real Dual-Mode Lens)',
+        description: '在 MarketReplay、OrderFlowObservatory、MarketImpactResearch、ToxicityAndMMLab、OrderBookLab 五大页面全部接入 userMode 感知分化，新手视角呈现白话提炼，专业视角呈现完整计量方程。',
+        tag: 'DUAL_MODE'
+      },
+      {
+        title: '全局交互微词典挂载与无障碍支持 (Glossary Term Integration & a11y)',
+        description: '在全站指标处深度挂载 <GlossaryTerm />，并支持键盘回车/空格/Esc 控制与屏幕阅读器无障碍支持。',
+        tag: 'GLOSSARY_A11Y'
+      },
+      {
+        title: '严守零假数据原则与叙事体系归一 (Zero-Mock Data & Narrative Alignment)',
+        description: '清除所有遗留的硬编码兜底数字，缺失时优雅呈现骨架屏或破折号；统一规范为“五幕式探索主线 + 附录：数据防伪与密码学可信审计”。',
+        tag: 'INTEGRITY'
+      }
+    ],
+    engineeringMetrics: [
+      { label: 'Interactive Tour Steps', value: '5 Progressive Steps' },
+      { label: 'Dual-Mode Pages', value: '5 Empirical Acts' },
+      { label: 'Zero-Mock Enforcement', value: '100% Dynamic / Null-Safe' },
+      { label: 'Accessibility Standards', value: 'Keyboard & ARIA Compliant' }
+    ],
+    artifacts: [
+      'GuidedTourModal.tsx',
+      'GlossaryTerm.tsx (a11y)',
+      'StoryBridge.tsx (appendix support)',
+      'LeadLagRaceway.tsx (null-safe)',
+      'ShareResearchCardModal.tsx (null-safe)'
+    ]
+  },
+  {
     version: 'v2.1.0',
     codename: 'Newcomer Onboarding & Cohesive Storytelling · 破冰叙事与直观微件',
     releaseDate: '2026-10-29',

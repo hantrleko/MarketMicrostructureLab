@@ -6,6 +6,8 @@ import { MMLChart } from '../components/MMLChart';
 import { RealtimeHawkesEngine, HawkesSnapshot } from '../utils/hawkesEngine';
 import { RealtimeHawkesWeapon } from '../components/RealtimeHawkesWeapon';
 import { StoryBridge } from '../components/StoryBridge';
+import { GlossaryTerm } from '../components/GlossaryTerm';
+import { useExploration } from '../context/ExplorationContext';
 
 interface OrderBookLabProps {
   onNavigateTab?: (tab: string) => void;
@@ -49,6 +51,7 @@ const DEFAULT_SANDBOX_BIDS: SandboxLevel[] = [
 export type LabMode = 'DIRECT_BINANCE_WSS' | 'IMPACT_SANDBOX' | 'LOCAL_BACKEND';
 
 export const OrderBookLab: React.FC<OrderBookLabProps> = ({ onNavigateTab }) => {
+  const { userMode } = useExploration();
   const [operatingMode, setOperatingMode] = useState<LabMode>('DIRECT_BINANCE_WSS');
   const [obStatus, setObStatus] = useState<OrderBookStatusResponse | null>(null);
   const [ladder, setLadder] = useState<OrderBookLadderResponse | null>(null);
@@ -854,10 +857,30 @@ export const OrderBookLab: React.FC<OrderBookLabProps> = ({ onNavigateTab }) => 
         <RealtimeHawkesWeapon snapshot={hawkesSnapshot} symbol={directSymbol === 'BTCUSDT' ? 'BTC/USDT' : directSymbol === 'ETHUSDT' ? 'ETH/USDT' : 'SOL/USDT'} />
       )}
 
+      {/* User Mode Guided Callout */}
+      {userMode === 'guided' && (
+        <div
+          style={{
+            background: 'linear-gradient(135deg, rgba(2, 132, 199, 0.12), rgba(15, 23, 42, 0.4))',
+            border: '1px solid rgba(56, 189, 248, 0.3)',
+            borderRadius: '6px',
+            padding: '10px 14px',
+            fontSize: '0.76rem',
+            color: '#e2e8f0',
+            lineHeight: 1.5
+          }}
+        >
+          <strong style={{ color: '#38bdf8' }}>💡 新手实盘导引：</strong>
+          当前浏览器正通过原生 WebSocket 直连币安撮合引擎核心流。左下方为真实 L2 深度挂单簿，中间为衡量微观盘口重心的 <GlossaryTerm term="microprice">Microprice</GlossaryTerm>，上方为自激点过程超临界雷达。当右侧分支比 &rho; &ge; 1.0 时代表订单流进入雪崩连锁吃单，做市需紧急避险！
+        </div>
+      )}
+
       {/* Real-Time Metrics 4-Grid */}
       <div className="grid-4">
         <div className="mml-card">
-          <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>BID-ASK SPREAD</div>
+          <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>
+            <GlossaryTerm term="bps">BID-ASK SPREAD</GlossaryTerm>
+          </div>
           <div className="mono" style={{ fontSize: '1.4rem', fontWeight: 800, color: '#fff', marginTop: '4px' }}>
             {metrics?.is_valid || isSimulatedActive ? `$${metrics?.spread.toFixed(2)} (${metrics?.spread_bps.toFixed(3)} bps)` : '---'}
           </div>
@@ -867,7 +890,9 @@ export const OrderBookLab: React.FC<OrderBookLabProps> = ({ onNavigateTab }) => 
         </div>
 
         <div className="mml-card">
-          <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>MICROPRICE</div>
+          <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>
+            <GlossaryTerm term="microprice">MICROPRICE</GlossaryTerm>
+          </div>
           <div className="mono" style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--color-buy)', marginTop: '4px' }}>
             {metrics?.is_valid || isSimulatedActive ? `$${metrics?.microprice.toFixed(2)}` : '---'}
           </div>
@@ -887,7 +912,9 @@ export const OrderBookLab: React.FC<OrderBookLabProps> = ({ onNavigateTab }) => 
         </div>
 
         <div className="mml-card">
-          <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>CUMULATIVE OFI</div>
+          <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>
+            <GlossaryTerm term="ofi">CUMULATIVE OFI</GlossaryTerm>
+          </div>
           <div className="mono" style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--color-gold)', marginTop: '4px' }}>
             {(metrics?.is_valid || isSimulatedActive) && history.length > 0 ? `${history[history.length - 1].cumulative_ofi.toFixed(2)} ${directSymbol.replace('USDT', '')}` : '---'}
           </div>
@@ -1171,7 +1198,7 @@ export const OrderBookLab: React.FC<OrderBookLabProps> = ({ onNavigateTab }) => 
             currentActTitle="战实盘 · 币安直连实时盘口与自激雪崩警报"
             takeaway="通过纯前端浏览器直连币安 WebSocket，实时运行了 O(1) 递推核 Hawkes 点过程，并在分支比 ρ >= 1.0 时实时捕获了超临界雪崩吃单异动。"
             nextAct="integrity"
-            nextActNumber={6}
+            isAppendix={true}
             nextActTitle="数据防伪 · 1062万笔官方签名与样本防泄审计"
             nextQuestion="实盘武器与历史模型如此精准，底层数据链是否真正防篡改？如何验证官方 SHA-256 与零前瞻偏差？"
             onNavigate={(tab) => onNavigateTab ? onNavigateTab(tab) : undefined}

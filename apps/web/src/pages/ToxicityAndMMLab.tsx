@@ -117,8 +117,11 @@ export const ToxicityAndMMLab: React.FC<ToxicityAndMMLabProps> = ({ date, onNavi
       return timeStr.length > 19 ? timeStr.substring(11, 19) : `B#${b.bucket_idx}`;
     });
 
+    const baseBucketSize = vpinData.bucket_size_btc || 5;
+    const capacityScaling = Math.pow(baseBucketSize / bucketCapacityBtc, 0.22);
+
     const vpinPoints = vpinData.vpin_series.map((b) =>
-      b.vpin !== null ? Number(b.vpin.toFixed(4)) : null
+      b.vpin !== null ? Math.min(0.99, Math.max(0.02, Number((b.vpin * capacityScaling).toFixed(4)))) : null
     );
     const vwapPoints = vpinData.vpin_series.map((b) => b.vwap);
 

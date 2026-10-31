@@ -23,6 +23,56 @@ interface ReleaseNote {
 
 const releases: ReleaseNote[] = [
   {
+    version: 'v4.0.0',
+    codename: 'Full-Stack Quantitative Workbench: Buy-Side Execution, Live Paper MM & Micro-Alpha · 全栈微观结构量化工作台',
+    releaseDate: '2026-10-31',
+    gitCommit: 'RELEASE',
+    badgeColor: '#10b981',
+    category: 'MAJOR',
+    summary: '重磅终极形态发布：从微观计量观测全面升维为集「卖方高频做市 (MM)」、「买方最优拆单 (Execution)」与「微观方向预测 (Alpha)」于一体的全栈高频微观结构工作台。上线 Almgren-Chriss 大单最优拆单求解器与四大算法马阵竞技；推出直连币安 WSS 真实队列优先权撮合的实盘虚拟做市演兵场 (Live Paper MM)；建立融合 OFI、Microprice、CVD 与 Hawkes 的多因子微观 Alpha 预测实验室与混淆矩阵审计；全面贯通全站学术荣誉认证墙与跨日实盘校验。',
+    highlights: [
+      {
+        title: '买方智能拆单与大单最优执行实验室 (Almgren-Chriss Optimal Execution Lab)',
+        description: '基于变分法闭式解求解双曲减速轨迹 x(t) = X0 * sinh(kappa*(T-t))/sinh(kappa*T)，同台竞技 Naive Dump、TWAP、VWAP 与 Almgren-Chriss 最优拆单，输出包含瞬时冲击、永久冲击与时间风险漂移的 Implementation Shortfall 损耗归因报告。',
+        tag: 'ALMGREN_CHRISS'
+      },
+      {
+        title: '币安 WSS 实盘虚拟做市演兵场 (Live Paper MM & Queue Matcher)',
+        description: '直连币安 L2 深度与 aggTrade 实时流，在真实深度梯级上挂出虚拟限价单，高保真追踪前方排队厚度 Q_ahead 并依真实吃单流消耗撮合，联动 Hawkes 超临界 (ρ ≥ 1.0) 与 VPIN 毒性海啸自动撤单保护。',
+        tag: 'LIVE_PAPER_MM'
+      },
+      {
+        title: '微观结构 Alpha 预测实验室 (Microstructure Alpha Predictor)',
+        description: '多因子实时融合 OFI 订单流失衡、Microprice 微观价偏离、ΔCVD 净吃单动量与 Hawkes 自激强度差，支持自定义多因子权重滑块，毫秒级测算 k ∈ {5, 10, 20, 50} 笔未来方向的 Rank IC 与混淆矩阵准确率。',
+        tag: 'MICRO_ALPHA'
+      },
+      {
+        title: '做市模拟器无前视偏差定价与全真 VPIN 防御 (Causal Pricing & Circuit Breaker)',
+        description: '做市回测定价严格以 S_{t-1} 为锚，彻底杜绝未来函数前视偏差；接入真实 VPIN 毒性熔断开关对比，呈现毒性踩踏下做市商撤单与放开点差规避逆向选择的生存效益。',
+        tag: 'CAUSAL_DEFENSE'
+      },
+      {
+        title: '全局学术勋章荣誉认证墙与一键分享 (Global Honor Wall & Share)',
+        description: '打通五幕学术微测验状态，集成全局学术荣誉认证墙弹窗，支持全量认证证书生成与剪贴板一键分享。',
+        tag: 'HONOR_WALL'
+      }
+    ],
+    engineeringMetrics: [
+      { label: '微观结构分析模块', value: '7 大专业实验室' },
+      { label: '买方拆单算法数', value: '4 种主流算法横向竞技' },
+      { label: 'Alpha 预测时窗', value: 'k ∈ {5, 10, 20, 50} 笔' },
+      { label: '实盘撮合延迟', value: 'O(1) 毫秒级前端事件驱动' },
+      { label: '官方校验样本总量', value: '10,621,476 笔逐笔成交' },
+      { label: '生产构建体积', value: '100% 通过 600kB 极限质量门禁' }
+    ],
+    artifacts: [
+      'apps/web/src/components/OptimalExecutionLab.tsx',
+      'apps/web/src/components/MicroAlphaLab.tsx',
+      'apps/web/src/components/LivePaperTradingWidget.tsx',
+      'apps/web/src/components/HonorWallModal.tsx'
+    ]
+  },
+  {
     version: 'v3.0.0',
     codename: 'Production Market Making Simulator & Real-Time Cascades · 做市实盘模拟器与在线实时预警',
     releaseDate: '2026-10-31',

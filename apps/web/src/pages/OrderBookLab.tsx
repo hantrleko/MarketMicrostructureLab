@@ -8,6 +8,7 @@ import { RealtimeHawkesWeapon } from '../components/RealtimeHawkesWeapon';
 import { StoryBridge } from '../components/StoryBridge';
 import { GlossaryTerm } from '../components/GlossaryTerm';
 import { useExploration } from '../context/ExplorationContext';
+import { LivePaperTradingWidget } from '../components/LivePaperTradingWidget';
 
 interface OrderBookLabProps {
   onNavigateTab?: (tab: string) => void;
@@ -78,6 +79,16 @@ export const OrderBookLab: React.FC<OrderBookLabProps> = ({ onNavigateTab }) => 
   const liveCurrentSellRef = useRef<number>(0);
   const liveBucketImbalancesRef = useRef<number[]>([]);
   const lastAlertTimeRef = useRef<number>(0);
+
+  // Live Paper Trading MM state
+  const [lastAggTrade, setLastAggTrade] = useState<{ price: number; qty: number; isBuyerMaker: boolean; timeMs: number } | null>(null);
+  const [paperMMQuotes, setPaperMMQuotes] = useState<{
+    active: boolean;
+    bidPrice: number | null;
+    askPrice: number | null;
+    bidAhead: number;
+    askAhead: number;
+  }>({ active: false, bidPrice: null, askPrice: null, bidAhead: 0, askAhead: 0 });
 
   // Counterfactual Sandbox State
   const [sandboxAsks, setSandboxAsks] = useState<SandboxLevel[]>(DEFAULT_SANDBOX_ASKS);
@@ -227,6 +238,7 @@ export const OrderBookLab: React.FC<OrderBookLabProps> = ({ onNavigateTab }) => 
         const qty = parseFloat(t.q);
         const isBuyerMaker = t.m;
         const timeMs = t.T || t.E || Date.now();
+        setLastAggTrade({ price, qty, isBuyerMaker, timeMs });
         directCumOfiRef.current += isBuyerMaker ? -qty : qty;
         hawkesEngineRef.current.processTrade({ timeMs, price, qty, isBuyerMaker });
 
@@ -1092,6 +1104,21 @@ export const OrderBookLab: React.FC<OrderBookLabProps> = ({ onNavigateTab }) => 
         </div>
       </div>
 
+      {/* Live Paper Trading MM Widget */}
+      <LivePaperTradingWidget
+        symbol={directSymbol}
+        bestBid={metrics?.best_bid || 0}
+        bestAsk={metrics?.best_ask || 0}
+        midPrice={metrics?.mid_price || 0}
+        bids={bids}
+        asks={asks}
+        hawkesRho={hawkesSnapshot.branchingRatio}
+        isHawkesSupercritical={hawkesSnapshot.isSupercritical}
+        liveVpin={liveVpin}
+        incomingTrade={lastAggTrade}
+        onQuotesChange={setPaperMMQuotes}
+      />
+
       {/* Main Order Book Ladder & OFI Streaming Chart Grid */}
       <div data-tour="live-orderbook" className="responsive-orderbook-grid">
         {/* L2 Depth Ladder */}
@@ -1214,6 +1241,7 @@ export const OrderBookLab: React.FC<OrderBookLabProps> = ({ onNavigateTab }) => 
               <div style={{ display: 'flex', flexDirection: 'column-reverse', gap: '2px' }}>
                 {asks.map((ask, idx) => {
                   const pct = Math.min(100, (ask.qty / maxQty) * 100);
+                  const isMyAsk = paperMMQuotes.active && paperMMQuotes.askPrice !== null && Math.abs(ask.price - paperMMQuotes.askPrice) < 0.01;
                   return (
                     <div
                       key={`ask_${idx}`}
@@ -1222,7 +1250,8 @@ export const OrderBookLab: React.FC<OrderBookLabProps> = ({ onNavigateTab }) => 
                         display: 'flex',
                         justifyContent: 'space-between',
                         padding: '3px 8px',
-                        background: 'rgba(255, 145, 0, 0.04)',
+                        background: isMyAsk ? 'rgba(255, 145, 0, 0.15)' : 'rgba(255, 145, 0, 0.04)',
+                        border: isMyAsk ? '1px solid #ff9100' : 'none',
                         borderRadius: '2px',
                         overflow: 'hidden'
                       }}
@@ -1238,11 +1267,16 @@ export const OrderBookLab: React.FC<OrderBookLabProps> = ({ onNavigateTab }) => 
                           zIndex: 0
                         }}
                       />
-                      <span className="mono" style={{ color: 'var(--color-sell)', fontWeight: 600, zIndex: 1 }}>
+                      <span className="mono" style={{ color: 'var(--color-sell)', fontWeight: 600, zIndex: 1, display: 'flex', alignItems: 'center', gap: '5px' }}>
                         ${ask.price.toFixed(2)}
+                        {isMyAsk && (
+                          <span style={{ fontSize: '0.60rem', background: '#ff9100', color: '#000', padding: '1px 5px', borderRadius: '3px', fontWeight: 800 }}>
+                            🎯 MY ASK (前方: {paperMMQuotes.askAhead.toFixed(3)})
+                          </span>
+                        )}
                       </span>
                       <span className="mono" style={{ color: 'var(--text-main)', zIndex: 1 }}>
-                        {ask.qty.toFixed(4)} BTC
+                        {ask.qty.toFixed(4)} {directSymbol.replace('USDT', '')}
                       </span>
                     </div>
                   );
@@ -1278,6 +1312,7 @@ export const OrderBookLab: React.FC<OrderBookLabProps> = ({ onNavigateTab }) => 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                 {bids.map((bid, idx) => {
                   const pct = Math.min(100, (bid.qty / maxQty) * 100);
+                  const isMyBid = paperMMQuotes.active && paperMMQuotes.bidPrice !== null && Math.abs(bid.price - paperMMQuotes.bidPrice) < 0.01;
                   return (
                     <div
                       key={`bid_${idx}`}
@@ -1286,7 +1321,8 @@ export const OrderBookLab: React.FC<OrderBookLabProps> = ({ onNavigateTab }) => 
                         display: 'flex',
                         justifyContent: 'space-between',
                         padding: '3px 8px',
-                        background: 'rgba(0, 229, 255, 0.04)',
+                        background: isMyBid ? 'rgba(0, 229, 255, 0.15)' : 'rgba(0, 229, 255, 0.04)',
+                        border: isMyBid ? '1px solid #00e5ff' : 'none',
                         borderRadius: '2px',
                         overflow: 'hidden'
                       }}
@@ -1302,11 +1338,16 @@ export const OrderBookLab: React.FC<OrderBookLabProps> = ({ onNavigateTab }) => 
                           zIndex: 0
                         }}
                       />
-                      <span className="mono" style={{ color: 'var(--color-buy)', fontWeight: 600, zIndex: 1 }}>
+                      <span className="mono" style={{ color: 'var(--color-buy)', fontWeight: 600, zIndex: 1, display: 'flex', alignItems: 'center', gap: '5px' }}>
                         ${bid.price.toFixed(2)}
+                        {isMyBid && (
+                          <span style={{ fontSize: '0.60rem', background: '#00e5ff', color: '#000', padding: '1px 5px', borderRadius: '3px', fontWeight: 800 }}>
+                            🎯 MY BID (前方: {paperMMQuotes.bidAhead.toFixed(3)})
+                          </span>
+                        )}
                       </span>
                       <span className="mono" style={{ color: 'var(--text-main)', zIndex: 1 }}>
-                        {bid.qty.toFixed(4)} BTC
+                        {bid.qty.toFixed(4)} {directSymbol.replace('USDT', '')}
                       </span>
                     </div>
                   );

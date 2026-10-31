@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { CheckCircle2, XCircle, RotateCcw, ChevronDown, ChevronUp } from 'lucide-react';
+import { useExploration } from '../context/ExplorationContext';
 
 export interface QuizQuestion {
   act: number;
@@ -107,17 +108,11 @@ interface CheckpointQuizProps {
 
 export const CheckpointQuiz: React.FC<CheckpointQuizProps> = ({ act, onPassed }) => {
   const q = QUIZ_QUESTIONS[act];
+  const { unlockedBadges, unlockBadge } = useExploration();
   const [isOpen, setIsOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [isAnswered, setIsAnswered] = useState(false);
-  const [isPassed, setIsPassed] = useState(false);
-
-  useEffect(() => {
-    const unlocked = getUnlockedBadges();
-    if (unlocked[act]) {
-      setIsPassed(true);
-    }
-  }, [act]);
+  const isPassed = Boolean(unlockedBadges[act]);
 
   if (!q) return null;
 
@@ -126,8 +121,7 @@ export const CheckpointQuiz: React.FC<CheckpointQuizProps> = ({ act, onPassed })
     setSelectedIndex(idx);
     setIsAnswered(true);
     if (idx === q.correctIndex) {
-      setIsPassed(true);
-      saveUnlockedBadge(act);
+      unlockBadge(act);
       if (onPassed) onPassed();
     }
   };

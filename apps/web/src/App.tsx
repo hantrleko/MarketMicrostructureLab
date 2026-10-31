@@ -3,6 +3,7 @@ import { Header } from './components/Header';
 import { BYODModal } from './components/BYODModal';
 import { WelcomeMissionBanner } from './components/WelcomeMissionBanner';
 import { GuidedTourModal } from './components/GuidedTourModal';
+import { HonorWallModal } from './components/HonorWallModal';
 import { ExplorationProvider } from './context/ExplorationContext';
 import { subscribeDataLayerState, DataLayerState } from './api/client';
 
@@ -13,6 +14,8 @@ const DataIntegrityConsole = React.lazy(() => import('./pages/DataIntegrityConso
 const OrderBookLab = React.lazy(() => import('./pages/OrderBookLab').then(m => ({ default: m.OrderBookLab })));
 const ToxicityAndMMLab = React.lazy(() => import('./pages/ToxicityAndMMLab').then(m => ({ default: m.ToxicityAndMMLab })));
 const VersionChangelog = React.lazy(() => import('./pages/VersionChangelog').then(m => ({ default: m.VersionChangelog })));
+const OptimalExecutionLab = React.lazy(() => import('./components/OptimalExecutionLab').then(m => ({ default: m.OptimalExecutionLab })));
+const MicroAlphaLab = React.lazy(() => import('./components/MicroAlphaLab').then(m => ({ default: m.MicroAlphaLab })));
 
 interface UrlParams {
   tab: string;
@@ -24,7 +27,7 @@ interface UrlParams {
 function getUrlParams(): UrlParams {
   if (typeof window === 'undefined') return { tab: 'replay', date: '2026-07-01' };
   const params = new URLSearchParams(window.location.search);
-  const validTabs = ['replay', 'observatory', 'impact', 'toxicity', 'orderbook', 'integrity', 'changelog'];
+  const validTabs = ['replay', 'observatory', 'impact', 'toxicity', 'orderbook', 'execution', 'alpha', 'integrity', 'changelog'];
   const tab = params.get('tab');
   const date = params.get('date');
   const sessionStr = params.get('session');
@@ -149,6 +152,8 @@ export function AppContent() {
           {activeTab === 'toxicity' && <ToxicityAndMMLab date={selectedDate} onNavigateTab={setActiveTab} />}
           {activeTab === 'integrity' && <DataIntegrityConsole currentDate={selectedDate} onSelectDate={setSelectedDate} />}
           {activeTab === 'orderbook' && <OrderBookLab onNavigateTab={setActiveTab} />}
+          {activeTab === 'execution' && <OptimalExecutionLab />}
+          {activeTab === 'alpha' && <MicroAlphaLab selectedDate={selectedDate} />}
           {activeTab === 'changelog' && <VersionChangelog />}
         </Suspense>
       </main>
@@ -164,6 +169,7 @@ export function AppContent() {
       />
 
       <GuidedTourModal onNavigateTab={setActiveTab} />
+      <HonorWallModal />
 
       <footer style={{
         borderTop: '1px solid var(--border-color)',
@@ -179,7 +185,7 @@ export function AppContent() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <img src="./eugene_finance_logo.png" alt="Logo" style={{ width: '16px', height: '16px', borderRadius: '2px' }} />
-          <span>EUGENE FINANCE &bull; MARKET MICROSTRUCTURE LAB (MML) v3.0.0 &bull; INSTITUTIONAL RESEARCH WORKBENCH</span>
+          <span>EUGENE FINANCE &bull; MARKET MICROSTRUCTURE LAB (MML) v4.0.0 &bull; INSTITUTIONAL RESEARCH WORKBENCH</span>
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'center' }}>
           <span>OFFICIAL SOURCE: BINANCE VISION SPOT (NON-COMMERCIAL RESEARCH LICENSE)</span>

@@ -27,8 +27,16 @@ interface CuratedScenario {
 
 const curatedScenarios: CuratedScenario[] = [
   {
+    id: 'day-open-init',
+    title: '🌅 开盘基准建仓与点差均衡 (Day Open Auction & Baseline)',
+    badge: 'BENCHMARK SPREAD 1.12 bps',
+    offset: 0,
+    description: 'UTC 00:00 每日伊始，基准点差收敛在 1.12 bps，做市商双边挂单深厚，订单流呈现标准平稳泊松到达过程。',
+    narration: '【观察看点】开盘初始分钟，价格在基准点差区间微幅浮动，买卖双边成交笔数大致均衡，瞬态冲击极小。'
+  },
+  {
     id: 'whale-dump',
-    title: '🐋 巨鲸砸盘与流动性缺口 (Whale Dump & Impact)',
+    title: '🐋 巨鲸砸盘与流动性缺口 (Whale Dump & Impact Hole)',
     badge: 'WHALE SELL & RECOVERY',
     offset: 20994,
     description: '单笔大额卖单连续下击引发买方档位被击穿，瞬态流动性空洞显现，做市商在 5 笔交易内快速回补价差。',
@@ -43,27 +51,19 @@ const curatedScenarios: CuratedScenario[] = [
     narration: '【观察看点】订单密集到达，间隔时间压缩至几毫秒，单向吃单引发价格梯级单边推进，长记忆性特征显著。'
   },
   {
-    id: 'vacuum-bounce',
-    title: '🛡️ 深厚挂单吸收与双向均衡 (Market Making Resilience)',
-    badge: 'HIGH RESILIENCY ABSORPTION',
-    offset: 50400,
-    description: '美洲早盘深厚双向挂单形成流动性吸收带，大额成交被挂单完全消化，瞬态冲击半衰期降至 <2 笔。',
-    narration: '【观察看点】高额买卖双向交织，价格在狭窄通道内震荡，盘口具有极高弹性（Resiliency），冲击难以形成趋势。'
-  },
-  {
     id: 'vpin-toxic-surge',
     title: '🧪 VPIN 毒性海啸突破警戒线 (Informed Toxic Tsunami)',
     badge: 'VPIN TOXICITY > 0.35',
-    offset: 52200,
-    description: '重磅行情发布瞬间，单向知情大单蜂拥吃单，等体积量桶买卖严重失衡，做市商遭受严峻逆向选择。',
+    offset: 50400,
+    description: '美洲开盘重磅行情发布瞬间，单向知情大单蜂拥吃单，等体积量桶买卖严重失衡，做市商遭受严峻逆向选择。',
     narration: '【观察看点】单向买单排山倒海灌满量桶，主动买入比例突破 85%，做市商被迫拉大点差防守。'
   },
   {
     id: 'lead-lag-arb',
     title: '⏱️ 币安合约 180ms 剧透现货 (Lead-Lag Arbitrage Cascade)',
     badge: '180ms FUTURES LEAD',
-    offset: 60300,
-    description: '杠杆永续合约最先跳价，跨市场高频套利者在 180ms 黄金窗口内向现货猛烈扫单抹平基差。',
+    offset: 72000,
+    description: '晚间永续合约最先跳价，跨市场高频套利者在 180ms 黄金窗口内向现货猛烈扫单抹平基差。',
     narration: '【观察看点】极短毫秒内爆发连续扫盘，现货档位被迅速抹平，基差回归完成。'
   }
 ];

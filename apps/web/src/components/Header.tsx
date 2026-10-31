@@ -1,7 +1,6 @@
 import React from 'react';
 import { Activity, LineChart, PlayCircle, Layers, ShieldCheck, ChevronRight, Zap, History, ShieldAlert, Sparkles, Compass } from 'lucide-react';
 import { useExploration } from '../context/ExplorationContext';
-import { getUnlockedBadges } from './CheckpointQuiz';
 
 interface HeaderProps {
   activeTab: string;
@@ -20,15 +19,17 @@ export const Header: React.FC<HeaderProps> = ({
   availableDates,
   onOpenByod
 }) => {
-  const { userMode, setUserMode, startTour } = useExploration();
-  const unlockedBadgesCount = Object.keys(getUnlockedBadges()).length;
+  const { userMode, setUserMode, startTour, unlockedBadges, setIsHonorWallOpen } = useExploration();
+  const unlockedBadgesCount = Object.keys(unlockedBadges).filter((k) => unlockedBadges[Number(k)]).length;
 
   const tabs = [
     { id: 'replay', label: '① 逐笔回放 · 看现场', icon: PlayCircle },
     { id: 'observatory', label: '② 订单流 · 探规律', icon: Activity },
     { id: 'impact', label: '③ 价格冲击 · 算击穿', icon: LineChart },
     { id: 'toxicity', label: '④ 毒性做市 · 识庄家', icon: ShieldAlert },
-    { id: 'orderbook', label: '⚡ 实时盘口 · 战实盘', icon: Layers },
+    { id: 'orderbook', label: '⑤ 实时盘口 · 战实盘', icon: Layers },
+    { id: 'execution', label: '💼 买方拆单 · 优执行', icon: Zap },
+    { id: 'alpha', label: '🎯 微观 Alpha · 测方向', icon: Sparkles },
     { id: 'integrity', label: '🛡️ 附录 · 数据防伪', icon: ShieldCheck },
     { id: 'changelog', label: '📜 版本日志', icon: History },
   ];
@@ -70,7 +71,7 @@ export const Header: React.FC<HeaderProps> = ({
                 letterSpacing: '0.04em'
               }}
             >
-              MML v3.0.0
+              MML v4.0.0
             </span>
           </div>
 
@@ -92,6 +93,42 @@ export const Header: React.FC<HeaderProps> = ({
                 title="Order Book module operates in live WebSocket synchronization or simulated local demo, independent of historical archives."
               >
                 L2 REAL-TIME / SIMULATED ENGINE
+              </span>
+            </div>
+          ) : activeTab === 'execution' ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: '8px' }}>
+              <span
+                className="mono"
+                style={{
+                  fontSize: '0.72rem',
+                  fontWeight: 600,
+                  color: '#10b981',
+                  background: 'rgba(16, 185, 129, 0.1)',
+                  border: '1px solid rgba(16, 185, 129, 0.3)',
+                  padding: '2px 8px',
+                  borderRadius: '3px',
+                  letterSpacing: '0.02em'
+                }}
+              >
+                ALMGREN-CHRISS OPTIMAL SOLVER
+              </span>
+            </div>
+          ) : activeTab === 'alpha' ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: '8px' }}>
+              <span
+                className="mono"
+                style={{
+                  fontSize: '0.72rem',
+                  fontWeight: 600,
+                  color: '#38bdf8',
+                  background: 'rgba(56, 189, 248, 0.1)',
+                  border: '1px solid rgba(56, 189, 248, 0.3)',
+                  padding: '2px 8px',
+                  borderRadius: '3px',
+                  letterSpacing: '0.02em'
+                }}
+              >
+                MULTI-FACTOR DIRECTIONAL PREDICTOR
               </span>
             </div>
           ) : activeTab === 'changelog' ? (
@@ -188,25 +225,25 @@ export const Header: React.FC<HeaderProps> = ({
             <span>🧭 漫游导引</span>
           </button>
 
-          {unlockedBadgesCount > 0 && (
-            <span
-              style={{
-                fontSize: '0.68rem',
-                color: '#fbbf24',
-                background: 'rgba(251, 191, 36, 0.1)',
-                border: '1px solid rgba(251, 191, 36, 0.3)',
-                padding: '2px 8px',
-                borderRadius: '12px',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '3px',
-                fontWeight: 700
-              }}
-              title={`已解锁 ${unlockedBadgesCount}/5 幕实证勋章`}
-            >
-              🏅 {unlockedBadgesCount}/5 勋章
-            </span>
-          )}
+          <button
+            onClick={() => setIsHonorWallOpen(true)}
+            style={{
+              fontSize: '0.68rem',
+              color: unlockedBadgesCount > 0 ? '#fbbf24' : '#94a3b8',
+              background: unlockedBadgesCount > 0 ? 'rgba(251, 191, 36, 0.1)' : 'rgba(51, 65, 85, 0.3)',
+              border: `1px solid ${unlockedBadgesCount > 0 ? 'rgba(251, 191, 36, 0.3)' : 'rgba(71, 85, 105, 0.3)'}`,
+              padding: '2px 8px',
+              borderRadius: '12px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '3px',
+              fontWeight: 700,
+              cursor: 'pointer'
+            }}
+            title="点击打开微观结构学术勋章荣誉墙"
+          >
+            🏅 {unlockedBadgesCount}/5 勋章
+          </button>
 
           {onOpenByod && (
             <button

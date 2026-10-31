@@ -507,6 +507,53 @@ export const OrderFlowObservatory: React.FC<OrderFlowObservatoryProps> = ({ date
                   </span>
                 </div>
               </div>
+
+              {/* Real-time Hawkes Memory Decay Kernel Visual Curve */}
+              <div style={{ marginTop: '8px', background: 'rgba(15, 23, 42, 0.7)', borderRadius: '6px', padding: '10px 14px', border: '1px solid rgba(51, 65, 85, 0.4)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <span style={{ fontSize: '0.68rem', color: '#94a3b8' }}>
+                    📈 记忆衰减核曲线: <strong className="mono" style={{ color: '#38bdf8' }}>γ(Δt) = e^{(-hawkesBeta.toFixed(2))} · Δt</strong> (0s ~ 2.0s 冲击记忆消退轨迹)
+                  </span>
+                  <span className="mono" style={{ fontSize: '0.66rem', color: '#fbbf24' }}>
+                    半衰点: Δt = {(Math.LN2 / hawkesBeta).toFixed(3)}s (残余 50%)
+                  </span>
+                </div>
+                <div style={{ height: '52px', width: '100%', position: 'relative' }}>
+                  {(() => {
+                    const width = 600;
+                    const height = 48;
+                    const points = Array.from({ length: 41 }, (_, i) => {
+                      const dt = (i / 40) * 2.0; // 0 to 2 seconds
+                      const yVal = Math.exp(-hawkesBeta * dt);
+                      const x = (i / 40) * (width - 20) + 10;
+                      const y = height - 6 - yVal * (height - 12);
+                      return { x, y, dt, yVal };
+                    });
+                    const dLine = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ');
+                    const dArea = `${dLine} L ${(width - 10).toFixed(1)} ${(height - 6).toFixed(1)} L 10 ${(height - 6).toFixed(1)} Z`;
+                    const halfPoint = points.find((p) => p.yVal <= 0.5) || points[points.length - 1];
+
+                    return (
+                      <svg viewBox={`0 0 ${width} ${height}`} style={{ width: '100%', height: '100%', overflow: 'visible' }}>
+                        <defs>
+                          <linearGradient id="decayGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor={isSupercritical ? '#ef4444' : '#38bdf8'} stopOpacity="0.4" />
+                            <stop offset="100%" stopColor={isSupercritical ? '#ef4444' : '#38bdf8'} stopOpacity="0.0" />
+                          </linearGradient>
+                        </defs>
+                        {/* Horizontal base line */}
+                        <line x1="10" y1={height - 6} x2={width - 10} y2={height - 6} stroke="#334155" strokeWidth="1" strokeDasharray="2,2" />
+                        {/* Area & Line */}
+                        <path d={dArea} fill="url(#decayGrad)" />
+                        <path d={dLine} fill="none" stroke={isSupercritical ? '#f87171' : '#38bdf8'} strokeWidth="2" />
+                        {/* Half-life indicator */}
+                        <circle cx={halfPoint.x} cy={halfPoint.y} r="3.5" fill="#fbbf24" />
+                        <line x1={halfPoint.x} y1={halfPoint.y} x2={halfPoint.x} y2={height - 6} stroke="#fbbf24" strokeWidth="1" strokeDasharray="2,2" />
+                      </svg>
+                    );
+                  })()}
+                </div>
+              </div>
             </div>
           );
         })()}

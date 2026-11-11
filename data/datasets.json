@@ -1,0 +1,52 @@
+{
+  "datasets": [
+    {
+      "symbol": "BTCUSDT",
+      "date": "2026-07-01",
+      "status": "NORMALIZED",
+      "records": 4166849,
+      "official_sha256": "c1366b2200130527cdd87da1c5b1a012ac31de00db93b3db2a13281187bb8653",
+      "timestamp_unit": "us",
+      "audit_passed": true,
+      "min_price": 57800.19,
+      "max_price": 61334.0,
+      "total_base_volume": 25093.446620000006,
+      "total_quote_volume": 1491051306.8189511,
+      "buy_ratio": 0.49579502400974934,
+      "sell_ratio": 0.5042049759902507,
+      "max_gap_seconds": 8.747052
+    },
+    {
+      "symbol": "BTCUSDT",
+      "date": "2026-07-02",
+      "status": "NORMALIZED",
+      "records": 3883096,
+      "official_sha256": "c3f109b71a6980c84f4f2e7e03198e579b836e76e5a356c80063cc830848b073",
+      "timestamp_unit": "us",
+      "audit_passed": true,
+      "min_price": 59588.0,
+      "max_price": 62200.0,
+      "total_base_volume": 21382.141630000002,
+      "total_quote_volume": 1308156569.7200916,
+      "buy_ratio": 0.5126211146981686,
+      "sell_ratio": 0.4873788853018313,
+      "max_gap_seconds": 9.586879999999999
+    },
+    {
+      "symbol": "BTCUSDT",
+      "date": "2026-07-03",
+      "status": "NORMALIZED",
+      "records": 2571531,
+      "official_sha256": "d73d74dc6a0775d686c09228ff2b3c02e5763d9409716a809f5279844dd364be",
+      "timestamp_unit": "us",
+      "audit_passed": true,
+      "min_price": 61248.86,
+      "max_price": 62979.86,
+      "total_base_volume": 14048.986269999996,
+      "total_quote_volume": 870359931.5832849,
+      "buy_ratio": 0.5290680921209971,
+      "sell_ratio": 0.4709319078790028,
+      "max_gap_seconds": 9.069565999999998
+    }
+  ]
+}

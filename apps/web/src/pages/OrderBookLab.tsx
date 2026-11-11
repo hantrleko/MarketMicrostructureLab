@@ -1270,8 +1270,22 @@ export const OrderBookLab: React.FC<OrderBookLabProps> = ({ onNavigateTab }) => 
                       <span className="mono" style={{ color: 'var(--color-sell)', fontWeight: 600, zIndex: 1, display: 'flex', alignItems: 'center', gap: '5px' }}>
                         ${ask.price.toFixed(2)}
                         {isMyAsk && (
-                          <span style={{ fontSize: '0.60rem', background: '#ff9100', color: '#000', padding: '1px 5px', borderRadius: '3px', fontWeight: 800 }}>
-                            🎯 MY ASK (前方: {paperMMQuotes.askAhead.toFixed(3)})
+                          <span
+                            style={{
+                              fontSize: '0.60rem',
+                              background: 'linear-gradient(135deg, #ea580c, #f97316)',
+                              color: '#fff',
+                              padding: '1px 6px',
+                              borderRadius: '3px',
+                              fontWeight: 800,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              boxShadow: '0 0 8px rgba(249, 115, 22, 0.4)'
+                            }}
+                          >
+                            <span>🎯 MY ASK</span>
+                            <span style={{ opacity: 0.85, fontSize: '0.58rem' }}>(前方: {paperMMQuotes.askAhead.toFixed(3)})</span>
                           </span>
                         )}
                       </span>
@@ -1283,30 +1297,111 @@ export const OrderBookLab: React.FC<OrderBookLabProps> = ({ onNavigateTab }) => 
                 })}
               </div>
 
-              {/* SPREAD DIVIDER */}
-              <div
-                style={{
-                  margin: '6px 0',
-                  padding: '6px 10px',
-                  background: 'var(--bg-dark)',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '4px',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  fontSize: '0.75rem'
-                }}
-              >
-                <span style={{ color: 'var(--color-gold)', fontWeight: 700 }}>
-                  SPREAD: ${metrics?.spread?.toFixed(2) || '0.00'}
-                </span>
-                <span className="mono" style={{ color: 'var(--text-muted)' }}>
-                  MID: ${metrics?.mid_price?.toFixed(2) || '0.00'}
-                </span>
-                <span className="mono" style={{ color: 'var(--color-buy)' }}>
-                  {metrics?.spread_bps?.toFixed(3) || '0'} bps
-                </span>
-              </div>
+              {/* SPREAD & MICROPRICE IMBALANCE DIVIDER */}
+              {(() => {
+                const imb = metrics?.imbalance ?? 0;
+                // clamp imb between -1 and 1
+                const clampedImb = Math.max(-1, Math.min(1, imb));
+                const needlePos = ((clampedImb + 1) / 2) * 100;
+                const midP = metrics?.mid_price ?? 0;
+                const microP = metrics?.microprice ?? midP;
+                const deltaP = microP - midP;
+                const deltaBps = midP > 0 ? (deltaP / midP) * 10000 : 0;
+
+                return (
+                  <div
+                    style={{
+                      margin: '8px 0',
+                      padding: '8px 12px',
+                      background: 'rgba(10, 15, 26, 0.85)',
+                      border: '1px solid rgba(56, 189, 248, 0.25)',
+                      borderRadius: '6px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '6px',
+                      boxShadow: 'inset 0 0 12px rgba(0, 0, 0, 0.4)'
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.74rem' }}>
+                      <span style={{ color: 'var(--color-gold)', fontWeight: 700 }}>
+                        SPREAD: ${metrics?.spread?.toFixed(2) || '0.00'} <span style={{ fontSize: '0.68rem', color: '#fbbf24', opacity: 0.85 }}>({metrics?.spread_bps?.toFixed(2) || '0'} bps)</span>
+                      </span>
+                      <span className="mono" style={{ color: '#94a3b8' }}>
+                        MID: <strong style={{ color: '#f8fafc' }}>${midP.toFixed(2)}</strong>
+                      </span>
+                      <span className="mono" style={{ color: deltaP >= 0 ? '#10b981' : '#f43f5e', fontSize: '0.72rem' }}>
+                        MICRO: ${microP.toFixed(2)} <span style={{ fontSize: '0.66rem' }}>({deltaBps >= 0 ? `+${deltaBps.toFixed(2)}` : deltaBps.toFixed(2)} bps)</span>
+                      </span>
+                    </div>
+
+                    {/* Order Book Imbalance Balance Meter */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      <div style={{ position: 'relative', width: '100%', height: '6px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '3px', overflow: 'hidden' }}>
+                        {/* Left: Bid Depth dominance */}
+                        <div
+                          style={{
+                            position: 'absolute',
+                            left: 0,
+                            top: 0,
+                            bottom: 0,
+                            width: '50%',
+                            background: 'linear-gradient(90deg, rgba(16, 185, 129, 0.45), rgba(0, 229, 255, 0.25))'
+                          }}
+                        />
+                        {/* Right: Ask Depth dominance */}
+                        <div
+                          style={{
+                            position: 'absolute',
+                            right: 0,
+                            top: 0,
+                            bottom: 0,
+                            width: '50%',
+                            background: 'linear-gradient(90deg, rgba(255, 145, 0, 0.25), rgba(244, 63, 94, 0.45))'
+                          }}
+                        />
+                        {/* Center Notch */}
+                        <div
+                          style={{
+                            position: 'absolute',
+                            left: '50%',
+                            top: 0,
+                            bottom: 0,
+                            width: '1px',
+                            background: '#94a3b8',
+                            zIndex: 2
+                          }}
+                        />
+                        {/* Dynamic Imbalance Needle */}
+                        <div
+                          style={{
+                            position: 'absolute',
+                            left: `calc(${needlePos}% - 2px)`,
+                            top: '-1px',
+                            width: '4px',
+                            height: '8px',
+                            background: '#ffffff',
+                            borderRadius: '2px',
+                            boxShadow: '0 0 6px #ffffff',
+                            zIndex: 3,
+                            transition: 'left 0.15s ease'
+                          }}
+                        />
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.60rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        <span style={{ color: clampedImb > 0 ? '#10b981' : '#64748b' }}>
+                          ◀ 买盘积压 {clampedImb > 0 ? `+${(clampedImb * 100).toFixed(0)}%` : ''}
+                        </span>
+                        <span style={{ color: '#94a3b8' }}>
+                          L5 IMBALANCE: <strong className="mono" style={{ color: clampedImb > 0 ? '#10b981' : clampedImb < 0 ? '#f43f5e' : '#cbd5e1' }}>{clampedImb >= 0 ? `+${clampedImb.toFixed(3)}` : clampedImb.toFixed(3)}</strong>
+                        </span>
+                        <span style={{ color: clampedImb < 0 ? '#f43f5e' : '#64748b' }}>
+                          {clampedImb < 0 ? `${(clampedImb * 100).toFixed(0)}%` : ''} 卖盘积压 ▶
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* BIDS */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
@@ -1341,8 +1436,22 @@ export const OrderBookLab: React.FC<OrderBookLabProps> = ({ onNavigateTab }) => 
                       <span className="mono" style={{ color: 'var(--color-buy)', fontWeight: 600, zIndex: 1, display: 'flex', alignItems: 'center', gap: '5px' }}>
                         ${bid.price.toFixed(2)}
                         {isMyBid && (
-                          <span style={{ fontSize: '0.60rem', background: '#00e5ff', color: '#000', padding: '1px 5px', borderRadius: '3px', fontWeight: 800 }}>
-                            🎯 MY BID (前方: {paperMMQuotes.bidAhead.toFixed(3)})
+                          <span
+                            style={{
+                              fontSize: '0.60rem',
+                              background: 'linear-gradient(135deg, #0284c7, #06b6d4)',
+                              color: '#fff',
+                              padding: '1px 6px',
+                              borderRadius: '3px',
+                              fontWeight: 800,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              boxShadow: '0 0 8px rgba(6, 182, 212, 0.4)'
+                            }}
+                          >
+                            <span>🎯 MY BID</span>
+                            <span style={{ opacity: 0.85, fontSize: '0.58rem' }}>(前方: {paperMMQuotes.bidAhead.toFixed(3)})</span>
                           </span>
                         )}
                       </span>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Play, Pause, SkipForward, RotateCcw, FastForward, Clock, Zap, Timer, AlertTriangle, Compass, Sparkles } from 'lucide-react';
+import { Play, Pause, SkipForward, RotateCcw, FastForward, Clock, Zap, AlertTriangle, Compass, Sparkles } from 'lucide-react';
 import { fetchReplayWindow } from '../api/client';
 import { ReplayTrade } from '../types';
 import { MMLChart } from '../components/MMLChart';
@@ -7,6 +7,7 @@ import { StoryBridge } from '../components/StoryBridge';
 import { GlossaryTerm } from '../components/GlossaryTerm';
 import { MarketMakingSimulator } from '../components/MarketMakingSimulator';
 import { useExploration } from '../context/ExplorationContext';
+import { SegmentedControl } from '../components/PrecisionUI';
 
 interface MarketReplayProps {
   date: string;
@@ -545,36 +546,14 @@ export const MarketReplay: React.FC<MarketReplayProps> = ({ date, initialSession
 
           <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
             <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>MODE:</span>
-            <button
-              onClick={() => setPlaybackMode('EVENT_INDEX')}
-              style={{
-                background: playbackMode === 'EVENT_INDEX' ? 'var(--color-gold)' : 'transparent',
-                color: playbackMode === 'EVENT_INDEX' ? '#080b10' : 'var(--text-muted)',
-                border: `1px solid ${playbackMode === 'EVENT_INDEX' ? 'var(--color-gold)' : 'var(--border-color)'}`,
-                padding: '3px 7px',
-                borderRadius: '3px',
-                fontSize: '0.70rem',
-                fontWeight: 600,
-                cursor: 'pointer'
-              }}
-            >
-              <Zap size={11} style={{ display: 'inline', marginRight: '3px' }} /> TPS RATE
-            </button>
-            <button
-              onClick={() => setPlaybackMode('REAL_CLOCK')}
-              style={{
-                background: playbackMode === 'REAL_CLOCK' ? 'var(--color-buy)' : 'transparent',
-                color: playbackMode === 'REAL_CLOCK' ? '#080b10' : 'var(--text-muted)',
-                border: `1px solid ${playbackMode === 'REAL_CLOCK' ? 'var(--color-buy)' : 'var(--border-color)'}`,
-                padding: '3px 7px',
-                borderRadius: '3px',
-                fontSize: '0.70rem',
-                fontWeight: 600,
-                cursor: 'pointer'
-              }}
-            >
-              <Timer size={11} style={{ display: 'inline', marginRight: '3px' }} /> PROPORTIONAL CLOCK
-            </button>
+            <SegmentedControl
+              value={playbackMode}
+              onChange={(val) => setPlaybackMode(val as any)}
+              options={[
+                { label: '⚡ TPS RATE', value: 'EVENT_INDEX' },
+                { label: '⏱ PROPORTIONAL CLOCK', value: 'REAL_CLOCK' },
+              ]}
+            />
 
             <div className="mono" style={{ fontSize: '0.74rem', color: 'var(--text-dim)', marginLeft: '6px' }}>
               WINDOW: <strong style={{ color: 'var(--color-gold)' }}>{totalInWindow.toLocaleString()}</strong> IN 60s
@@ -642,27 +621,19 @@ export const MarketReplay: React.FC<MarketReplayProps> = ({ date, initialSession
               <RotateCcw size={13} /> RESET
             </button>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginLeft: '6px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: '6px' }}>
               <FastForward size={12} color="var(--text-dim)" />
               <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>SPEED:</span>
-              {[1, 2, 5, 10].map((spd) => (
-                <button
-                  key={spd}
-                  onClick={() => setPlaybackSpeed(spd)}
-                  style={{
-                    background: playbackSpeed === spd ? 'var(--color-buy-soft)' : 'transparent',
-                    color: playbackSpeed === spd ? 'var(--color-buy)' : 'var(--text-dim)',
-                    border: `1px solid ${playbackSpeed === spd ? 'var(--color-buy)' : 'var(--border-color)'}`,
-                    padding: '2px 6px',
-                    borderRadius: '3px',
-                    fontSize: '0.70rem',
-                    fontWeight: 600,
-                    cursor: 'pointer'
-                  }}
-                >
-                  {spd}x
-                </button>
-              ))}
+              <SegmentedControl
+                value={playbackSpeed}
+                onChange={(val) => setPlaybackSpeed(Number(val))}
+                options={[
+                  { label: '1x', value: 1 },
+                  { label: '2x', value: 2 },
+                  { label: '5x', value: 5 },
+                  { label: '10x', value: 10 },
+                ]}
+              />
             </div>
           </div>
 
@@ -677,6 +648,52 @@ export const MarketReplay: React.FC<MarketReplayProps> = ({ date, initialSession
                 当前显示第 <strong style={{ color: '#fff' }}>{(currentIndex + 1).toLocaleString()}</strong> / {trades.length.toLocaleString()} 笔 ({(((currentIndex + 1) / Math.max(1, trades.length)) * 100).toFixed(1)}%) &bull; {playbackMode === 'REAL_CLOCK' ? `Proportional ${playbackSpeed}x` : `${playbackSpeed * 10} tps`}
               </span>
             )}
+          </div>
+        </div>
+
+        {/* Row 3: Interactive Precision Timeline Scrubber Bar */}
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '6px',
+            padding: '10px 14px',
+            background: 'rgba(10, 15, 26, 0.75)',
+            borderRadius: '6px',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            marginTop: '8px'
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.72rem' }}>
+            <span style={{ color: 'var(--text-dim)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ color: 'var(--accent-blue)', fontWeight: 700 }}>TIMELINE SCRUBBER</span>
+              <span>&bull;</span>
+              <span>当前刻度: <strong className="mono" style={{ color: '#fff' }}>{currentTrade?.event_time_utc ? currentTrade.event_time_utc.split('T')[1] : clipStartUtc}</strong></span>
+            </span>
+            <span className="mono" style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>
+              {trades.length > 0 ? `${(currentIndex + 1).toLocaleString()} / ${trades.length.toLocaleString()} ticks` : '0 ticks'} ({trades.length > 0 ? (((currentIndex + 1) / trades.length) * 100).toFixed(1) : 0}%)
+            </span>
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={Math.max(0, trades.length - 1)}
+            value={currentIndex}
+            onChange={(e) => {
+              setIsPlaying(false);
+              setCurrentIndex(Number(e.target.value));
+            }}
+            style={{
+              width: '100%',
+              accentColor: 'var(--accent-blue)',
+              cursor: 'pointer',
+              height: '6px'
+            }}
+          />
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.64rem', color: '#64748b' }}>
+            <span>{clipStartUtc} UTC (0.0s)</span>
+            <span style={{ color: 'var(--text-dim)' }}>拖动滑块任意跳转事件刻度</span>
+            <span>{clipEndUtc} UTC (+{clipDurationSec}s)</span>
           </div>
         </div>
       </div>

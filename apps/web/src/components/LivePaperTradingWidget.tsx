@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Play, Square, ShieldAlert, DollarSign, RotateCcw } from 'lucide-react';
+import { PrecisionSlider, SegmentedControl } from './PrecisionUI';
 
 export interface LivePaperTradeRecord {
   id: string;
@@ -338,89 +339,64 @@ export const LivePaperTradingWidget: React.FC<LivePaperTradingWidgetProps> = ({
           borderRadius: '6px',
           padding: '12px 14px',
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: '12px',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
+          gap: '14px',
           fontSize: '0.74rem'
         }}
       >
         {/* Order Size */}
         <div>
-          <label style={{ display: 'block', color: '#94a3b8', marginBottom: '4px' }}>
+          <label style={{ display: 'block', color: '#94a3b8', marginBottom: '6px', fontSize: '0.72rem' }}>
             挂单单笔容量: <strong className="mono" style={{ color: '#38bdf8' }}>{orderSize} {symbol.replace('USDT', '')}</strong>
           </label>
-          <div style={{ display: 'flex', gap: '4px' }}>
-            {[0.01, 0.05, 0.1, 0.5].map((sz) => (
-              <button
-                key={sz}
-                onClick={() => setOrderSize(sz)}
-                style={{
-                  flex: 1,
-                  background: orderSize === sz ? 'rgba(56, 189, 248, 0.25)' : 'rgba(30, 41, 59, 0.8)',
-                  border: `1px solid ${orderSize === sz ? '#38bdf8' : '#475569'}`,
-                  color: orderSize === sz ? '#38bdf8' : '#cbd5e1',
-                  padding: '3px 0',
-                  borderRadius: '3px',
-                  fontSize: '0.70rem',
-                  fontWeight: 600,
-                  cursor: 'pointer'
-                }}
-              >
-                {sz}
-              </button>
-            ))}
-          </div>
+          <SegmentedControl
+            value={orderSize}
+            onChange={(val) => setOrderSize(Number(val))}
+            options={[
+              { label: '0.01', value: 0.01 },
+              { label: '0.05', value: 0.05 },
+              { label: '0.10', value: 0.1 },
+              { label: '0.50', value: 0.5 },
+            ]}
+          />
         </div>
 
         {/* Spread Bps */}
         <div>
-          <label style={{ display: 'block', color: '#94a3b8', marginBottom: '4px' }}>
-            点差宽度: <strong className="mono" style={{ color: '#fbbf24' }}>{spreadOffsetBps.toFixed(1)} bps</strong>
-          </label>
-          <input
-            type="range"
+          <PrecisionSlider
+            label="点差宽度"
+            value={spreadOffsetBps}
+            onChange={setSpreadOffsetBps}
             min={0.5}
             max={5.0}
             step={0.1}
-            value={spreadOffsetBps}
-            onChange={(e) => setSpreadOffsetBps(parseFloat(e.target.value))}
-            style={{ width: '100%', accentColor: '#fbbf24', cursor: 'pointer' }}
+            unit=" bps"
+            accentColor="var(--gold-primary)"
           />
         </div>
 
         {/* Fee Tier */}
         <div>
-          <label style={{ display: 'block', color: '#94a3b8', marginBottom: '4px' }}>
+          <label style={{ display: 'block', color: '#94a3b8', marginBottom: '6px', fontSize: '0.72rem' }}>
             费率档位: <strong className="mono" style={{ color: feeTier === 'MM_REBATE' ? '#10b981' : '#cbd5e1' }}>{feeTier}</strong>
           </label>
-          <div style={{ display: 'flex', gap: '4px' }}>
-            {(['VIP0', 'VIP9', 'MM_REBATE'] as const).map((tier) => (
-              <button
-                key={tier}
-                onClick={() => setFeeTier(tier)}
-                style={{
-                  flex: 1,
-                  background: feeTier === tier ? 'rgba(16, 185, 129, 0.2)' : 'rgba(30, 41, 59, 0.8)',
-                  border: `1px solid ${feeTier === tier ? '#10b981' : '#475569'}`,
-                  color: feeTier === tier ? '#10b981' : '#cbd5e1',
-                  padding: '3px 0',
-                  borderRadius: '3px',
-                  fontSize: '0.66rem',
-                  fontWeight: 700,
-                  cursor: 'pointer'
-                }}
-              >
-                {tier === 'MM_REBATE' ? '返佣 -0.5bp' : tier}
-              </button>
-            ))}
-          </div>
+          <SegmentedControl
+            value={feeTier}
+            onChange={(val) => setFeeTier(val as any)}
+            options={[
+              { label: 'VIP0', value: 'VIP0' },
+              { label: 'VIP9', value: 'VIP9' },
+              { label: '返佣 -0.5bp', value: 'MM_REBATE' },
+            ]}
+          />
         </div>
 
         {/* Automated Defenses */}
         <div>
-          <label style={{ display: 'block', color: '#94a3b8', marginBottom: '4px' }}>
+          <label style={{ display: 'block', color: '#94a3b8', marginBottom: '6px', fontSize: '0.72rem' }}>
             高频量化风控开关:
           </label>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', color: '#cbd5e1' }}>
               <input
                 type="checkbox"
@@ -453,23 +429,67 @@ export const LivePaperTradingWidget: React.FC<LivePaperTradingWidgetProps> = ({
             fontSize: '0.74rem'
           }}
         >
-          <div style={{ background: 'rgba(0, 229, 255, 0.08)', border: '1px solid rgba(0, 229, 255, 0.3)', borderRadius: '6px', padding: '8px 12px' }}>
+          <div style={{ background: 'rgba(0, 229, 255, 0.08)', border: '1px solid rgba(0, 229, 255, 0.3)', borderRadius: '6px', padding: '10px 12px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', color: '#00e5ff', fontWeight: 700 }}>
               <span>🎯 我的挂买单 (MY BID)</span>
               <span className="mono">${myBidPrice?.toFixed(2) ?? '---'}</span>
             </div>
-            <div style={{ color: '#94a3b8', marginTop: '4px' }}>
-              排队前方厚度: <strong className="mono" style={{ color: '#f8fafc' }}>{bidQueueAhead.toFixed(3)} {symbol.replace('USDT', '')}</strong>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#94a3b8', marginTop: '6px' }}>
+              <span>排队前方厚度:</span>
+              <strong className="mono" style={{ color: '#f8fafc' }}>{bidQueueAhead.toFixed(3)} {symbol.replace('USDT', '')}</strong>
+            </div>
+            {/* Visual Queue Depletion Meter */}
+            <div style={{ marginTop: '6px' }}>
+              <div style={{ height: '4px', width: '100%', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '2px', overflow: 'hidden' }}>
+                <div
+                  style={{
+                    height: '100%',
+                    width: `${Math.max(8, Math.min(100, 100 - (bidQueueAhead / Math.max(0.01, bidQueueAhead + orderSize)) * 100))}%`,
+                    background: 'linear-gradient(90deg, #00e5ff, #10b981)',
+                    borderRadius: '2px',
+                    transition: 'width 0.2s ease'
+                  }}
+                />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.62rem', color: '#64748b', marginTop: '3px' }}>
+                <span>队列深处</span>
+                <span style={{ color: bidQueueAhead <= orderSize ? '#10b981' : '#94a3b8' }}>
+                  {bidQueueAhead <= 0 ? '⚡ 下笔成交直接吃单' : '排队撮合中'}
+                </span>
+                <span>队首成交</span>
+              </div>
             </div>
           </div>
 
-          <div style={{ background: 'rgba(255, 145, 0, 0.08)', border: '1px solid rgba(255, 145, 0, 0.3)', borderRadius: '6px', padding: '8px 12px' }}>
+          <div style={{ background: 'rgba(255, 145, 0, 0.08)', border: '1px solid rgba(255, 145, 0, 0.3)', borderRadius: '6px', padding: '10px 12px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', color: '#ff9100', fontWeight: 700 }}>
               <span>🎯 我的挂卖单 (MY ASK)</span>
               <span className="mono">${myAskPrice?.toFixed(2) ?? '---'}</span>
             </div>
-            <div style={{ color: '#94a3b8', marginTop: '4px' }}>
-              排队前方厚度: <strong className="mono" style={{ color: '#f8fafc' }}>{askQueueAhead.toFixed(3)} {symbol.replace('USDT', '')}</strong>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#94a3b8', marginTop: '6px' }}>
+              <span>排队前方厚度:</span>
+              <strong className="mono" style={{ color: '#f8fafc' }}>{askQueueAhead.toFixed(3)} {symbol.replace('USDT', '')}</strong>
+            </div>
+            {/* Visual Queue Depletion Meter */}
+            <div style={{ marginTop: '6px' }}>
+              <div style={{ height: '4px', width: '100%', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '2px', overflow: 'hidden' }}>
+                <div
+                  style={{
+                    height: '100%',
+                    width: `${Math.max(8, Math.min(100, 100 - (askQueueAhead / Math.max(0.01, askQueueAhead + orderSize)) * 100))}%`,
+                    background: 'linear-gradient(90deg, #ff9100, #f43f5e)',
+                    borderRadius: '2px',
+                    transition: 'width 0.2s ease'
+                  }}
+                />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.62rem', color: '#64748b', marginTop: '3px' }}>
+                <span>队列深处</span>
+                <span style={{ color: askQueueAhead <= orderSize ? '#ff9100' : '#94a3b8' }}>
+                  {askQueueAhead <= 0 ? '⚡ 下笔成交直接吃单' : '排队撮合中'}
+                </span>
+                <span>队首成交</span>
+              </div>
             </div>
           </div>
         </div>

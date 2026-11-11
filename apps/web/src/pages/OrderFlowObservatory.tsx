@@ -6,6 +6,7 @@ import { MMLChart } from '../components/MMLChart';
 import { StoryBridge } from '../components/StoryBridge';
 import { GlossaryTerm } from '../components/GlossaryTerm';
 import { useExploration } from '../context/ExplorationContext';
+import { PrecisionSlider, CollapsibleTheory, SegmentedControl } from '../components/PrecisionUI';
 
 interface OrderFlowObservatoryProps {
   date: string;
@@ -463,44 +464,32 @@ export const OrderFlowObservatory: React.FC<OrderFlowObservatoryProps> = ({ date
                   </span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  {[0.5, 1.25, 2.5, 4.0].map((preset) => (
-                    <button
-                      key={preset}
-                      onClick={() => setHawkesBeta(preset)}
-                      style={{
-                        background: hawkesBeta === preset ? 'rgba(56, 189, 248, 0.25)' : 'rgba(30, 41, 59, 0.6)',
-                        border: `1px solid ${hawkesBeta === preset ? '#38bdf8' : '#475569'}`,
-                        color: hawkesBeta === preset ? '#38bdf8' : '#94a3b8',
-                        padding: '2px 8px',
-                        borderRadius: '4px',
-                        fontSize: '0.68rem',
-                        fontWeight: 600,
-                        cursor: 'pointer'
-                      }}
-                    >
-                      β = {preset}
-                    </button>
-                  ))}
+                  <SegmentedControl
+                    value={hawkesBeta}
+                    onChange={(val) => setHawkesBeta(Number(val))}
+                    options={[
+                      { label: 'β = 0.5', value: 0.5 },
+                      { label: 'β = 1.25', value: 1.25 },
+                      { label: 'β = 2.5', value: 2.5 },
+                      { label: 'β = 4.0', value: 4.0 },
+                    ]}
+                  />
                 </div>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-                <div style={{ flex: '1 1 260px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <input
-                    type="range"
-                    min={0.2}
-                    max={4.0}
-                    step={0.05}
-                    value={hawkesBeta}
-                    onChange={(e) => setHawkesBeta(Number(e.target.value))}
-                    style={{ flex: 1, accentColor: isSupercritical ? '#ef4444' : '#38bdf8', cursor: 'pointer' }}
-                  />
-                  <span className="mono" style={{ fontSize: '0.84rem', fontWeight: 800, color: isSupercritical ? '#f87171' : '#38bdf8', minWidth: '75px' }}>
-                    β = {hawkesBeta.toFixed(2)}/s
-                  </span>
-                </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px', alignItems: 'center' }}>
+                <PrecisionSlider
+                  label="Hawkes 记忆衰减速率 β"
+                  value={hawkesBeta}
+                  onChange={setHawkesBeta}
+                  min={0.2}
+                  max={4.0}
+                  step={0.05}
+                  unit="/s"
+                  accentColor={isSupercritical ? '#ef4444' : '#38bdf8'}
+                />
 
-                <div style={{ fontSize: '0.72rem', color: '#cbd5e1' }}>
+                <div style={{ fontSize: '0.74rem', color: '#cbd5e1', background: 'rgba(10, 15, 26, 0.6)', padding: '10px 14px', borderRadius: '4px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
                   冲击半衰期：<strong className="mono" style={{ color: '#fbbf24' }}>t½ = {halfLifeMs} ms</strong> · 动态分支比：<strong className="mono" style={{ color: isSupercritical ? '#ef4444' : '#34d399' }}>ρ = {effectiveRadius?.toFixed(4) ?? '---'}</strong> · 状态：
                   <span style={{ fontWeight: 700, color: isSupercritical ? '#f87171' : '#34d399', marginLeft: '4px' }}>
                     {isSupercritical ? '⚠️ 超临界自激雪崩 (SUPERCRITICAL)' : '✅ 平稳亚临界 (SUBCRITICAL)'}
@@ -625,23 +614,29 @@ export const OrderFlowObservatory: React.FC<OrderFlowObservatoryProps> = ({ date
           </div>
         )}
 
-        {/* Residual Diagnostics Info */}
-        <div style={{ background: 'rgba(0, 229, 255, 0.04)', border: '1px solid var(--border-color)', borderRadius: '4px', padding: '10px 14px', marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.78rem' }}>
-            <ShieldCheck size={16} color="var(--color-buy)" />
-            <span><strong>Random Time Change Theorem (Compensator Diagnostic):</strong></span>
+        <CollapsibleTheory
+          title="Hawkes 点过程补偿子与随机时间变换定理 (Compensator & Martingale Diagnostic)"
+          subtitle="利用残差积分补偿子检验点过程拟合优度与内生集群统计解释"
+          defaultOpen={false}
+        >
+          {/* Residual Diagnostics Info */}
+          <div style={{ background: 'rgba(0, 229, 255, 0.04)', border: '1px solid var(--border-color)', borderRadius: '4px', padding: '10px 14px', marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.78rem' }}>
+              <ShieldCheck size={16} color="var(--color-buy)" />
+              <span><strong>Random Time Change Theorem (Compensator Diagnostic):</strong></span>
+            </div>
+            <div style={{ display: 'flex', gap: '16px', fontSize: '0.76rem' }}>
+              <span>BUY KS STAT: <strong className="mono">{hawkes?.residual_diagnostics?.buy_ks_statistic?.toFixed(4) || '---'}</strong> (p={hawkes?.residual_diagnostics?.buy_ks_p_value !== undefined ? hawkes.residual_diagnostics.buy_ks_p_value.toFixed(4) : '---'})</span>
+              <span>SELL KS STAT: <strong className="mono">{hawkes?.residual_diagnostics?.sell_ks_statistic?.toFixed(4) || '---'}</strong> (p={hawkes?.residual_diagnostics?.sell_ks_p_value !== undefined ? hawkes.residual_diagnostics.sell_ks_p_value.toFixed(4) : '---'})</span>
+            </div>
           </div>
-          <div style={{ display: 'flex', gap: '16px', fontSize: '0.76rem' }}>
-            <span>BUY KS STAT: <strong className="mono">{hawkes?.residual_diagnostics?.buy_ks_statistic?.toFixed(4) || '---'}</strong> (p={hawkes?.residual_diagnostics?.buy_ks_p_value !== undefined ? hawkes.residual_diagnostics.buy_ks_p_value.toFixed(4) : '---'})</span>
-            <span>SELL KS STAT: <strong className="mono">{hawkes?.residual_diagnostics?.sell_ks_statistic?.toFixed(4) || '---'}</strong> (p={hawkes?.residual_diagnostics?.sell_ks_p_value !== undefined ? hawkes.residual_diagnostics.sell_ks_p_value.toFixed(4) : '---'})</span>
-          </div>
-        </div>
 
-        <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>
-          <strong>Hawkes Statistical Interpretation:</strong>{' '}
-          {hawkes?.statistical_interpretation ||
-            'Spectral radius rho(Gamma) describes point process stability. Aggregated vs. raw comparison indicates high sensitivity to timestamp collisions; KS rejection highlights missing microstructure features (e.g., volume marks, power-law kernels).'}
-        </div>
+          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: '1.5' }}>
+            <strong>Hawkes Statistical Interpretation:</strong>{' '}
+            {hawkes?.statistical_interpretation ||
+              'Spectral radius rho(Gamma) describes point process stability. Aggregated vs. raw comparison indicates high sensitivity to timestamp collisions; KS rejection highlights missing microstructure features (e.g., volume marks, power-law kernels).'}
+          </div>
+        </CollapsibleTheory>
       </div>
 
       {/* Multi-Asset Microstructure Benchmark Section */}

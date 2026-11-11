@@ -89,6 +89,34 @@ export function AppContent() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
+  // Global Keyboard Navigation Shortcuts (1-9 to jump tabs, B for BYOD)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT')) {
+        return;
+      }
+      const keyMap: Record<string, string> = {
+        '1': 'replay',
+        '2': 'observatory',
+        '3': 'impact',
+        '4': 'toxicity',
+        '5': 'orderbook',
+        '6': 'execution',
+        '7': 'alpha',
+        '8': 'integrity',
+        '9': 'changelog'
+      };
+      if (keyMap[e.key]) {
+        setActiveTab(keyMap[e.key]);
+      } else if (e.key === 'b' || e.key === 'B') {
+        setIsByodOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   const getDataLayerBadge = () => {
     switch (dataLayer) {
       case 'STATIC':

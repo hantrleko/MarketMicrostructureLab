@@ -26,6 +26,7 @@ import { LeadLagRaceway } from '../components/LeadLagRaceway';
 import { StoryBridge } from '../components/StoryBridge';
 import { GlossaryTerm } from '../components/GlossaryTerm';
 import { useExploration } from '../context/ExplorationContext';
+import { PrecisionSlider, SegmentedControl, CollapsibleTheory } from '../components/PrecisionUI';
 
 interface ToxicityAndMMLabProps {
   date: string;
@@ -719,43 +720,31 @@ export const ToxicityAndMMLab: React.FC<ToxicityAndMMLabProps> = ({ date, onNavi
                           </span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          {[1, 5, 10, 20].map((preset) => (
-                            <button
-                              key={preset}
-                              onClick={() => setBucketCapacityBtc(preset)}
-                              style={{
-                                background: bucketCapacityBtc === preset ? 'rgba(56, 189, 248, 0.25)' : 'rgba(30, 41, 59, 0.6)',
-                                border: `1px solid ${bucketCapacityBtc === preset ? '#38bdf8' : '#475569'}`,
-                                color: bucketCapacityBtc === preset ? '#38bdf8' : '#94a3b8',
-                                padding: '2px 8px',
-                                borderRadius: '4px',
-                                fontSize: '0.70rem',
-                                fontWeight: 600,
-                                cursor: 'pointer'
-                              }}
-                            >
-                              {preset} BTC
-                            </button>
-                          ))}
+                          <SegmentedControl
+                            value={bucketCapacityBtc}
+                            onChange={(val) => setBucketCapacityBtc(Number(val))}
+                            options={[
+                              { label: '1 BTC', value: 1 },
+                              { label: '5 BTC', value: 5 },
+                              { label: '10 BTC', value: 10 },
+                              { label: '20 BTC', value: 20 },
+                            ]}
+                          />
                         </div>
                       </div>
 
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-                        <div style={{ flex: '1 1 260px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                          <input
-                            type="range"
-                            min={1}
-                            max={20}
-                            step={1}
-                            value={bucketCapacityBtc}
-                            onChange={(e) => setBucketCapacityBtc(Number(e.target.value))}
-                            style={{ flex: 1, accentColor: '#38bdf8', cursor: 'pointer' }}
-                          />
-                          <span className="mono" style={{ fontSize: '0.88rem', fontWeight: 800, color: '#38bdf8', minWidth: '65px' }}>
-                            V = {bucketCapacityBtc} BTC
-                          </span>
-                        </div>
-                        <div style={{ fontSize: '0.72rem', color: '#cbd5e1' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px', alignItems: 'center' }}>
+                        <PrecisionSlider
+                          label="水桶单桶容量 (V)"
+                          value={bucketCapacityBtc}
+                          onChange={setBucketCapacityBtc}
+                          min={1}
+                          max={20}
+                          step={1}
+                          unit=" BTC"
+                          accentColor="#38bdf8"
+                        />
+                        <div style={{ fontSize: '0.74rem', color: '#cbd5e1', background: 'rgba(10, 15, 26, 0.6)', padding: '10px 14px', borderRadius: '4px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
                           切片总桶数：<strong className="mono" style={{ color: '#fff' }}>{effectiveTotalBuckets ?? '---'}</strong> 桶 · 毒性超标：<strong className="mono" style={{ color: (effectiveMeanVpin ?? 0) > 0.35 ? '#f43f5e' : '#fbbf24' }}>{effectiveToxicBuckets ?? '---'}</strong> 桶 · 调优状态：<span style={{ color: '#38bdf8' }}>{bucketCapacityBtc < 5 ? '⚡ 高频高灵敏度 (捕获微小突发冲击)' : bucketCapacityBtc > 5 ? '🛡️ 平滑宏观视角 (过滤日内成交噪音)' : '🎯 官方基准容量 (5.0 BTC)'}</span>
                         </div>
                       </div>
@@ -859,10 +848,11 @@ export const ToxicityAndMMLab: React.FC<ToxicityAndMMLabProps> = ({ date, onNavi
                   </div>
                 </div>
 
-                <div className="mml-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <div style={{ fontSize: '0.84rem', fontWeight: 700, color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Info size={15} /> Econometric Derivation & Market Making Defense
-                  </div>
+                <CollapsibleTheory
+                  title="Easley, Lopez de Prado & O'Hara (2012) VPIN 毒性计量推导"
+                  subtitle="知情交易概率 (PIN) 在高频等体积时间切片下的连续非参数近似"
+                  defaultOpen={true}
+                >
                   <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', lineHeight: '1.6' }}>
                     <p style={{ margin: '0 0 8px 0' }}>
                       <strong>Easley, Lopez de Prado & O'Hara (2012) VPIN Formulation:</strong>
@@ -875,7 +865,7 @@ export const ToxicityAndMMLab: React.FC<ToxicityAndMMLabProps> = ({ date, onNavi
                       When VPIN surges above <strong>0.35</strong>, adverse selection risk dominates spread earnings. Automated market maker systems should widen quote spreads, pull resting depth, or skew inventory towards incoming toxic volume.
                     </p>
                   </div>
-                </div>
+                </CollapsibleTheory>
               </div>
             </div>
           )}
@@ -910,28 +900,16 @@ export const ToxicityAndMMLab: React.FC<ToxicityAndMMLabProps> = ({ date, onNavi
                 </div>
 
                 {/* Horizon Selector */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <div style={{ fontSize: '0.68rem', color: '#94a3b8', fontWeight: 600 }}>FORWARD EVALUATION HORIZON (k):</div>
-                  <div style={{ display: 'flex', gap: '6px' }}>
-                    {asData.horizons.map((h) => (
-                      <button
-                        key={h.horizon_sec}
-                        onClick={() => setSelectedHorizonSec(h.horizon_sec)}
-                        style={{
-                          padding: '4px 10px',
-                          borderRadius: '4px',
-                          fontSize: '0.74rem',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                          border: selectedHorizonSec === h.horizon_sec ? '1px solid #38bdf8' : '1px solid #334155',
-                          background: selectedHorizonSec === h.horizon_sec ? 'rgba(56, 189, 248, 0.2)' : 'rgba(15, 23, 42, 0.6)',
-                          color: selectedHorizonSec === h.horizon_sec ? '#38bdf8' : '#94a3b8'
-                        }}
-                      >
-                        {h.horizon_sec}s
-                      </button>
-                    ))}
-                  </div>
+                  <SegmentedControl
+                    value={selectedHorizonSec}
+                    onChange={(val) => setSelectedHorizonSec(Number(val))}
+                    options={asData.horizons.map((h) => ({
+                      label: `${h.horizon_sec}s`,
+                      value: h.horizon_sec
+                    }))}
+                  />
                 </div>
               </div>
 

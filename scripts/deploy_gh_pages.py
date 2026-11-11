@@ -43,16 +43,19 @@ def run(cmd, cwd=None, sensitive=False):
 def main():
     print("=== DEPLOYING TO GITHUB PAGES ===", flush=True)
     
-    # Get auth token from gh CLI quietly without printing
-    print("[*] Retrieving auth token from gh CLI...", flush=True)
-    res_token = subprocess.run(["gh", "auth", "token"], capture_output=True, text=True)
-    if res_token.returncode != 0 or not res_token.stdout.strip():
-        raise RuntimeError("Failed to retrieve auth token from GitHub CLI.")
-    token = res_token.stdout.strip()
-    print("[+] Successfully authenticated via GitHub CLI (token secured).", flush=True)
-
-    # Remote push URL with token (masked in all output logs)
-    push_url = f"https://x-access-token:{token}@github.com/hantrleko/MarketMicrostructureLab.git"
+    # Get auth token from gh CLI quietly if available, fallback to standard git credentials
+    print("[*] Checking GitHub credentials...", flush=True)
+    push_url = "https://github.com/hantrleko/MarketMicrostructureLab.git"
+    try:
+        res_token = subprocess.run(["gh", "auth", "token"], capture_output=True, text=True)
+        if res_token.returncode == 0 and res_token.stdout.strip():
+            token = res_token.stdout.strip()
+            push_url = f"https://x-access-token:{token}@github.com/hantrleko/MarketMicrostructureLab.git"
+            print("[+] Successfully authenticated via GitHub CLI (token secured).", flush=True)
+        else:
+            print("[*] gh CLI token unavailable; using Git Credential Manager.", flush=True)
+    except Exception:
+        print("[*] Falling back to system Git Credential Manager.", flush=True)
 
     # Verify dist folder
     if not DIST.exists() or not (DIST / "index.html").exists():

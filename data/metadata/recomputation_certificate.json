@@ -1,10 +1,10 @@
 {
   "schema_version": "1.1.0",
-  "certificate_id": "28d210ae-9deb-46cb-9732-81244b8487ef",
-  "certification_timestamp_utc": "2026-11-11T04:55:11.289513+00:00",
+  "certificate_id": "3f719fef-9dc7-4d24-baad-a2a8d0828b15",
+  "certification_timestamp_utc": "2026-11-20T15:58:38.922335+00:00",
   "target_date": "2026-07-01",
   "target_horizon_lag": 20,
-  "git_commit": "c0be940",
+  "git_commit": "32b2208",
   "audit_scope": {
     "coverage_level": "SAMPLE_LEVEL_250K_TRADES",
     "sample_description": "Authoritative session-active 250,000 tick window for econometric parameter recomputation",

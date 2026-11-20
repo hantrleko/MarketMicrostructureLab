@@ -179,9 +179,23 @@ export function AppContent() {
           {activeTab === 'impact' && <MarketImpactResearch date={selectedDate} initialHorizon={impactHorizon} onHorizonChange={setImpactHorizon} onNavigateTab={setActiveTab} />}
           {activeTab === 'toxicity' && <ToxicityAndMMLab date={selectedDate} onNavigateTab={setActiveTab} />}
           {activeTab === 'integrity' && <DataIntegrityConsole currentDate={selectedDate} onSelectDate={setSelectedDate} />}
-          {activeTab === 'orderbook' && <OrderBookLab onNavigateTab={setActiveTab} />}
+          {activeTab === 'orderbook' && (
+            <OrderBookLab
+              onNavigateTab={setActiveTab}
+              onExportRecordedTrades={(trades, targetTab) => {
+                setCustomTrades(trades);
+                setActiveTab(targetTab);
+              }}
+            />
+          )}
           {activeTab === 'execution' && <OptimalExecutionLab />}
-          {activeTab === 'alpha' && <MicroAlphaLab selectedDate={selectedDate} />}
+          {activeTab === 'alpha' && (
+            <MicroAlphaLab
+              selectedDate={selectedDate}
+              customTrades={customTrades}
+              onClearCustomTrades={() => setCustomTrades(null)}
+            />
+          )}
           {activeTab === 'changelog' && <VersionChangelog />}
         </Suspense>
       </main>

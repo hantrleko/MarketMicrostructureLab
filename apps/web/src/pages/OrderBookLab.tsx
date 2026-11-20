@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { fetchOrderBookStatus, controlOrderBook, fetchLiveOrderBook } from '../api/client';
-import { OrderBookStatusResponse, OrderBookLadderResponse, DataSourceStatus } from '../types';
-import { Wifi, Cpu, Database, Play, Square, Activity, Layers, ShieldAlert, Zap, RotateCcw, Globe, Radio, Flame, Volume2, VolumeX, Bell } from 'lucide-react';
+import { OrderBookStatusResponse, OrderBookLadderResponse, DataSourceStatus, ReplayTrade } from '../types';
+import { Wifi, Cpu, Database, Play, Square, Activity, Layers, ShieldAlert, Zap, RotateCcw, Globe, Radio, Flame, Volume2, VolumeX, Bell, Circle, Download, ArrowRight } from 'lucide-react';
 import { MMLChart } from '../components/MMLChart';
 import { RealtimeHawkesEngine, HawkesSnapshot } from '../utils/hawkesEngine';
 import { RealtimeHawkesWeapon } from '../components/RealtimeHawkesWeapon';
@@ -9,9 +9,11 @@ import { StoryBridge } from '../components/StoryBridge';
 import { GlossaryTerm } from '../components/GlossaryTerm';
 import { useExploration } from '../context/ExplorationContext';
 import { LivePaperTradingWidget } from '../components/LivePaperTradingWidget';
+import { exportRecordsToCsv } from '../utils/exportSuite';
 
 interface OrderBookLabProps {
   onNavigateTab?: (tab: string) => void;
+  onExportRecordedTrades?: (trades: ReplayTrade[], targetTab: 'replay' | 'alpha') => void;
 }
 
 interface SandboxLevel {
@@ -51,7 +53,7 @@ const DEFAULT_SANDBOX_BIDS: SandboxLevel[] = [
 
 export type LabMode = 'DIRECT_BINANCE_WSS' | 'IMPACT_SANDBOX' | 'LOCAL_BACKEND';
 
-export const OrderBookLab: React.FC<OrderBookLabProps> = ({ onNavigateTab }) => {
+export const OrderBookLab: React.FC<OrderBookLabProps> = ({ onNavigateTab, onExportRecordedTrades }) => {
   const { userMode } = useExploration();
   const [operatingMode, setOperatingMode] = useState<LabMode>('DIRECT_BINANCE_WSS');
   const [obStatus, setObStatus] = useState<OrderBookStatusResponse | null>(null);
@@ -71,7 +73,24 @@ export const OrderBookLab: React.FC<OrderBookLabProps> = ({ onNavigateTab }) => 
   const [directHistory, setDirectHistory] = useState<any[]>([]);
   const directWssRef = useRef<WebSocket | null>(null);
   const directTradeWssRef = useRef<WebSocket | null>(null);
+  const perpTradeWssRef = useRef<WebSocket | null>(null);
   const directCumOfiRef = useRef<number>(0);
+
+  // Spot vs Perpetual Futures Dual-Feed Radar State
+  const [perpPrice, setPerpPrice] = useState<number | null>(null);
+  const [perpStatus, setPerpStatus] = useState<'CONNECTING' | 'CONNECTED' | 'DISCONNECTED'>('CONNECTING');
+  const [perpLeadDeltaBps, setPerpLeadDeltaBps] = useState<number>(0);
+  const lastPerpPriceRef = useRef<number | null>(null);
+
+  // Live Session Recorder (Black-box -> Replay / Micro-Alpha)
+  const [isRecording, setIsRecording] = useState<boolean>(false);
+  const isRecordingRef = useRef<boolean>(false);
+  const [recordedCount, setRecordedCount] = useState<number>(0);
+  const recordedTradesRef = useRef<ReplayTrade[]>([]);
+
+  useEffect(() => {
+    isRecordingRef.current = isRecording;
+  }, [isRecording]);
   const [liveVpin, setLiveVpin] = useState<number | null>(null);
   const [isAudioEnabled, setIsAudioEnabled] = useState<boolean>(true);
   const [isDesktopAlertEnabled, setIsDesktopAlertEnabled] = useState<boolean>(false);
@@ -242,6 +261,26 @@ export const OrderBookLab: React.FC<OrderBookLabProps> = ({ onNavigateTab }) => 
         directCumOfiRef.current += isBuyerMaker ? -qty : qty;
         hawkesEngineRef.current.processTrade({ timeMs, price, qty, isBuyerMaker });
 
+        // Live Session Black-Box Recorder
+        if (isRecordingRef.current) {
+          const recTrade: ReplayTrade = {
+            trade_id: String(t.a || timeMs),
+            event_time_utc: new Date(timeMs).toISOString(),
+            event_timestamp_ns: String(timeMs * 1_000_000),
+            price,
+            base_quantity: qty,
+            quote_quantity: price * qty,
+            is_buyer_maker: isBuyerMaker,
+            direction: isBuyerMaker ? -1 : 1,
+            aggressor_side: isBuyerMaker ? 'SELL' : 'BUY'
+          };
+          recordedTradesRef.current.push(recTrade);
+          if (recordedTradesRef.current.length > 5000) {
+            recordedTradesRef.current.shift();
+          }
+          setRecordedCount(recordedTradesRef.current.length);
+        }
+
         // Online Real-time VPIN Accumulator
         const bucketCap = directSymbol.startsWith('BTC') ? 1.0 : directSymbol.startsWith('ETH') ? 10.0 : 50.0;
         if (isBuyerMaker) {
@@ -264,9 +303,39 @@ export const OrderBookLab: React.FC<OrderBookLabProps> = ({ onNavigateTab }) => 
       } catch {}
     };
 
+    // 3. Binance Perpetual Futures aggTrade for Spot-Perp Basis & Lead-Lag Radar
+    setPerpStatus('CONNECTING');
+    setPerpPrice(null);
+    lastPerpPriceRef.current = null;
+    const perpWs = new WebSocket(`wss://fstream.binance.com/ws/${streamSym}@aggTrade`);
+    perpTradeWssRef.current = perpWs;
+
+    perpWs.onopen = () => {
+      setPerpStatus('CONNECTED');
+    };
+
+    perpWs.onmessage = (event) => {
+      try {
+        const pt = JSON.parse(event.data);
+        const pPrice = parseFloat(pt.p);
+        if (!Number.isNaN(pPrice) && pPrice > 0) {
+          const prevP = lastPerpPriceRef.current;
+          if (prevP && prevP > 0) {
+            setPerpLeadDeltaBps(((pPrice - prevP) / prevP) * 10000);
+          }
+          lastPerpPriceRef.current = pPrice;
+          setPerpPrice(pPrice);
+        }
+      } catch {}
+    };
+
+    perpWs.onerror = () => setPerpStatus('DISCONNECTED');
+    perpWs.onclose = () => setPerpStatus('DISCONNECTED');
+
     return () => {
       if (depthWs) depthWs.close();
       if (tradeWs) tradeWs.close();
+      if (perpWs) perpWs.close();
     };
   }, [operatingMode, directSymbol]);
 
@@ -906,6 +975,161 @@ export const OrderBookLab: React.FC<OrderBookLabProps> = ({ onNavigateTab }) => 
             </div>
           </div>
         )}
+
+        {/* Spot-Perp Dual-Feed Radar & Live Session Black-Box Recorder */}
+        {operatingMode === 'DIRECT_BINANCE_WSS' && (() => {
+          const spotMid = metrics?.mid_price || 0;
+          const basisBps = perpPrice && spotMid > 0 ? ((perpPrice - spotMid) / spotMid) * 10000 : null;
+          return (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '12px',
+                background: 'rgba(10, 15, 26, 0.78)',
+                border: '1px solid rgba(56, 189, 248, 0.2)',
+                borderRadius: '6px',
+                padding: '9px 14px',
+                fontSize: '0.73rem'
+              }}
+            >
+              {/* Left: Spot vs Perpetual Dual-Feed Basis */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
+                <span style={{ color: '#38bdf8', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                  <Activity size={13} /> 现货-永续双路共振雷达
+                </span>
+                <span className="mono" style={{ color: '#94a3b8' }}>
+                  PERP ({directSymbol}.P):{' '}
+                  <strong style={{ color: perpStatus === 'CONNECTED' ? '#fff' : '#fbbf24' }}>
+                    {perpPrice ? `$${perpPrice.toFixed(2)}` : perpStatus}
+                  </strong>
+                </span>
+                <span className="mono" style={{ color: '#94a3b8' }}>
+                  基差 BASIS:{' '}
+                  <strong style={{ color: basisBps === null ? '#64748b' : basisBps >= 0 ? '#10b981' : '#f43f5e' }}>
+                    {basisBps !== null ? `${basisBps >= 0 ? '+' : ''}${basisBps.toFixed(2)} bps` : '---'}
+                  </strong>
+                </span>
+                {Math.abs(perpLeadDeltaBps) > 0.3 && (
+                  <span
+                    className="mono"
+                    style={{
+                      fontSize: '0.68rem',
+                      padding: '1px 6px',
+                      borderRadius: '3px',
+                      background: perpLeadDeltaBps > 0 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(244, 63, 94, 0.15)',
+                      color: perpLeadDeltaBps > 0 ? '#10b981' : '#f43f5e',
+                      fontWeight: 700
+                    }}
+                  >
+                    {perpLeadDeltaBps > 0 ? '⚡ 永续率先拉升' : '⚡ 永续率先下砸'} ({perpLeadDeltaBps >= 0 ? '+' : ''}{perpLeadDeltaBps.toFixed(2)} bps)
+                  </span>
+                )}
+              </div>
+
+              {/* Right: Live Session Black-Box Recorder */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => {
+                    if (!isRecording) {
+                      recordedTradesRef.current = [];
+                      setRecordedCount(0);
+                    }
+                    setIsRecording(!isRecording);
+                  }}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    background: isRecording ? 'rgba(239, 68, 68, 0.2)' : 'rgba(30, 41, 59, 0.8)',
+                    border: `1px solid ${isRecording ? '#ef4444' : '#475569'}`,
+                    color: isRecording ? '#f87171' : '#cbd5e1',
+                    padding: '4px 10px',
+                    borderRadius: '4px',
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  <Circle size={10} fill={isRecording ? '#ef4444' : 'transparent'} className={isRecording ? 'animate-pulse' : ''} />
+                  {isRecording ? `停止录制 (${recordedCount} 笔)` : '● 录制实盘黑匣子'}
+                </button>
+
+                {recordedCount > 0 && (
+                  <>
+                    <button
+                      onClick={() => {
+                        setIsRecording(false);
+                        onExportRecordedTrades?.([...recordedTradesRef.current], 'replay');
+                      }}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        background: 'rgba(0, 229, 255, 0.15)',
+                        border: '1px solid rgba(0, 229, 255, 0.4)',
+                        color: '#00e5ff',
+                        padding: '4px 9px',
+                        borderRadius: '4px',
+                        fontSize: '0.70rem',
+                        fontWeight: 700,
+                        cursor: 'pointer'
+                      }}
+                      title="将录制的真实逐笔行情直接送入第一幕回放器"
+                    >
+                      <ArrowRight size={11} /> 送入回放 ({recordedCount})
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setIsRecording(false);
+                        onExportRecordedTrades?.([...recordedTradesRef.current], 'alpha');
+                      }}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        background: 'rgba(168, 85, 247, 0.15)',
+                        border: '1px solid rgba(168, 85, 247, 0.4)',
+                        color: '#c084fc',
+                        padding: '4px 9px',
+                        borderRadius: '4px',
+                        fontSize: '0.70rem',
+                        fontWeight: 700,
+                        cursor: 'pointer'
+                      }}
+                      title="用刚才录制的实盘行情直接测试 Micro-Alpha 因子"
+                    >
+                      <Zap size={11} /> 送入 Alpha 回测
+                    </button>
+
+                    <button
+                      onClick={() => exportRecordsToCsv(`live_recorded_${directSymbol.toLowerCase()}.csv`, recordedTradesRef.current)}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        background: 'rgba(16, 185, 129, 0.15)',
+                        border: '1px solid rgba(16, 185, 129, 0.4)',
+                        color: '#10b981',
+                        padding: '4px 8px',
+                        borderRadius: '4px',
+                        fontSize: '0.70rem',
+                        fontWeight: 700,
+                        cursor: 'pointer'
+                      }}
+                      title="导出录制逐笔 CSV"
+                    >
+                      <Download size={11} /> CSV
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Supercritical Cascade / Toxic Avalanche HUD Flashing Banner */}
         {operatingMode === 'DIRECT_BINANCE_WSS' && (hawkesSnapshot.isSupercritical || ((liveVpin ?? 0) >= 0.35)) && (

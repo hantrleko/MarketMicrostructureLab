@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Square, ShieldAlert, DollarSign, RotateCcw } from 'lucide-react';
+import { Play, Square, ShieldAlert, DollarSign, RotateCcw, Code2, Download } from 'lucide-react';
 import { PrecisionSlider, SegmentedControl } from './PrecisionUI';
+import { downloadTextFile, generateAvellanedaStoikovPython, exportRecordsToCsv } from '../utils/exportSuite';
 
 export interface LivePaperTradeRecord {
   id: string;
@@ -46,8 +47,12 @@ export const LivePaperTradingWidget: React.FC<LivePaperTradingWidgetProps> = ({
   onQuotesChange
 }) => {
   const [isActive, setIsActive] = useState<boolean>(false);
+  const [quotingMode, setQuotingMode] = useState<'FIXED' | 'AS_DYNAMIC'>('AS_DYNAMIC');
   const [orderSize, setOrderSize] = useState<number>(symbol.startsWith('BTC') ? 0.05 : symbol.startsWith('ETH') ? 0.5 : 2.0);
   const [spreadOffsetBps, setSpreadOffsetBps] = useState<number>(1.2);
+  const [asGamma, setAsGamma] = useState<number>(0.15);
+  const [asKappa, setAsKappa] = useState<number>(1.5);
+  const [asSigmaBps, setAsSigmaBps] = useState<number>(12);
   const [feeTier, setFeeTier] = useState<'VIP0' | 'VIP9' | 'MM_REBATE'>('MM_REBATE');
   const [enableHawkesDefense, setEnableHawkesDefense] = useState<boolean>(true);
   const [enableVpinDefense, setEnableVpinDefense] = useState<boolean>(true);
@@ -77,6 +82,15 @@ export const LivePaperTradingWidget: React.FC<LivePaperTradingWidgetProps> = ({
   const isVpinAlarm = enableVpinDefense && liveVpin !== null && liveVpin > 0.35;
   const shouldDefend = isHawkesAlarm || isVpinAlarm;
 
+  // Avellaneda-Stoikov real-time reservation price & optimal half-spread
+  const qNorm = position / Math.max(0.001, orderSize);
+  const skewBps = quotingMode === 'AS_DYNAMIC' ? qNorm * asGamma * (asSigmaBps / 5) * 1.5 : 0;
+  const reservationPrice = midPrice > 0 ? midPrice * (1 - skewBps / 10000) : 0;
+  const optimalHalfSpreadBps =
+    quotingMode === 'AS_DYNAMIC'
+      ? Math.max(0.25, asGamma * asSigmaBps * 0.12 + (1.0 / Math.max(0.2, asKappa)) * 1.1)
+      : spreadOffsetBps;
+
   // Re-quote or withdraw on defense
   useEffect(() => {
     if (!isActive) {
@@ -102,14 +116,23 @@ export const LivePaperTradingWidget: React.FC<LivePaperTradingWidgetProps> = ({
       return;
     }
 
-    // Normal active quoting: place quotes at bestBid / bestAsk or offset
     setIsDefending(false);
-    const targetBid = bestBid > 0 ? bestBid : midPrice * (1 - spreadOffsetBps / 10000);
-    const targetAsk = bestAsk > 0 ? bestAsk : midPrice * (1 + spreadOffsetBps / 10000);
+    let targetBid = bestBid > 0 ? bestBid : midPrice * (1 - spreadOffsetBps / 10000);
+    let targetAsk = bestAsk > 0 ? bestAsk : midPrice * (1 + spreadOffsetBps / 10000);
 
-    // Initial queue ahead estimation from current book snapshot
-    const bidAhead = bids.length > 0 && Math.abs(bids[0].price - targetBid) < 0.01 ? bids[0].qty : 0.5;
-    const askAhead = asks.length > 0 && Math.abs(asks[0].price - targetAsk) < 0.01 ? asks[0].qty : 0.5;
+    if (quotingMode === 'AS_DYNAMIC' && midPrice > 0) {
+      targetBid = Number((reservationPrice * (1 - optimalHalfSpreadBps / 10000)).toFixed(2));
+      targetAsk = Number((reservationPrice * (1 + optimalHalfSpreadBps / 10000)).toFixed(2));
+      // Ensure non-crossing against opposing best quote
+      if (bestAsk > 0 && targetBid >= bestAsk) targetBid = Number((bestAsk - 0.01).toFixed(2));
+      if (bestBid > 0 && targetAsk <= bestBid) targetAsk = Number((bestBid + 0.01).toFixed(2));
+    }
+
+    // Queue ahead estimation from matching book level (0 if inside spread)
+    const matchedBid = bids.find((b) => Math.abs(b.price - targetBid) < 0.02);
+    const matchedAsk = asks.find((a) => Math.abs(a.price - targetAsk) < 0.02);
+    const bidAhead = targetBid > bestBid ? 0 : matchedBid ? matchedBid.qty : 0.35;
+    const askAhead = targetAsk < bestAsk ? 0 : matchedAsk ? matchedAsk.qty : 0.35;
 
     setMyBidPrice(targetBid);
     setMyAskPrice(targetAsk);
@@ -123,7 +146,7 @@ export const LivePaperTradingWidget: React.FC<LivePaperTradingWidgetProps> = ({
       bidAhead,
       askAhead
     });
-  }, [isActive, shouldDefend, bestBid, bestAsk, midPrice, spreadOffsetBps]);
+  }, [isActive, shouldDefend, bestBid, bestAsk, midPrice, spreadOffsetBps, quotingMode, position, asGamma, asKappa, asSigmaBps]);
 
   // Process incoming trade against virtual orders with queue priority
   useEffect(() => {
@@ -265,7 +288,7 @@ export const LivePaperTradingWidget: React.FC<LivePaperTradingWidgetProps> = ({
           </span>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
           <button
             onClick={() => setIsActive(!isActive)}
             style={{
@@ -287,6 +310,61 @@ export const LivePaperTradingWidget: React.FC<LivePaperTradingWidgetProps> = ({
           </button>
 
           <button
+            onClick={() => {
+              const code = generateAvellanedaStoikovPython({
+                symbol,
+                gamma: asGamma,
+                kappa: asKappa,
+                sigmaBps: asSigmaBps,
+                orderSize,
+                hawkesThreshold: 1.0,
+                vpinThreshold: 0.35
+              });
+              downloadTextFile(`as_mm_${symbol.toLowerCase()}.py`, code, 'text/x-python;charset=utf-8');
+            }}
+            style={{
+              background: 'rgba(56, 189, 248, 0.12)',
+              border: '1px solid rgba(56, 189, 248, 0.35)',
+              color: '#38bdf8',
+              padding: '5px 10px',
+              borderRadius: '4px',
+              fontSize: '0.72rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}
+            title="导出可直接运行的 Avellaneda-Stoikov Python 做市策略脚本"
+          >
+            <Code2 size={12} />
+            导出 Python 策略
+          </button>
+
+          {tradeHistory.length > 0 && (
+            <button
+              onClick={() => exportRecordsToCsv(`paper_mm_fills_${symbol.toLowerCase()}.csv`, tradeHistory)}
+              style={{
+                background: 'rgba(16, 185, 129, 0.12)',
+                border: '1px solid rgba(16, 185, 129, 0.35)',
+                color: '#10b981',
+                padding: '5px 10px',
+                borderRadius: '4px',
+                fontSize: '0.72rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+              title="导出虚拟做市成交记录 CSV"
+            >
+              <Download size={12} />
+              导出成交 CSV
+            </button>
+          )}
+
+          <button
             onClick={handleReset}
             style={{
               background: 'rgba(30, 41, 59, 0.6)',
@@ -305,6 +383,50 @@ export const LivePaperTradingWidget: React.FC<LivePaperTradingWidgetProps> = ({
             重置战绩
           </button>
         </div>
+      </div>
+
+      {/* Quoting Engine Selector & AS Reservation Telemetry */}
+      <div
+        style={{
+          background: 'rgba(10, 15, 26, 0.75)',
+          border: '1px solid rgba(56, 189, 248, 0.2)',
+          borderRadius: '6px',
+          padding: '10px 14px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '10px',
+          fontSize: '0.73rem'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          <span style={{ color: '#94a3b8', fontWeight: 700 }}>报价引擎 (QUOTING ENGINE):</span>
+          <SegmentedControl
+            size="sm"
+            value={quotingMode}
+            onChange={(val) => setQuotingMode(val as 'FIXED' | 'AS_DYNAMIC')}
+            options={[
+              { id: 'AS_DYNAMIC', label: 'Avellaneda-Stoikov 动态库存偏斜', badge: 'QUANT' },
+              { id: 'FIXED', label: '固定点差锚定' }
+            ]}
+          />
+        </div>
+        {quotingMode === 'AS_DYNAMIC' && midPrice > 0 && (
+          <div className="mono" style={{ display: 'flex', alignItems: 'center', gap: '14px', fontSize: '0.72rem', flexWrap: 'wrap' }}>
+            <span style={{ color: '#94a3b8' }}>
+              保留价格 r(s,q): <strong style={{ color: '#38bdf8' }}>${reservationPrice.toFixed(2)}</strong>
+            </span>
+            <span style={{ color: '#94a3b8' }}>
+              库存偏斜 Δr: <strong style={{ color: skewBps > 0 ? '#f43f5e' : skewBps < 0 ? '#10b981' : '#cbd5e1' }}>
+                {skewBps >= 0 ? `-${skewBps.toFixed(2)}` : `+${Math.abs(skewBps).toFixed(2)}`} bps
+              </strong>
+            </span>
+            <span style={{ color: '#94a3b8' }}>
+              最优半点差 δ*: <strong style={{ color: '#fbbf24' }}>{optimalHalfSpreadBps.toFixed(2)} bps</strong>
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Defense Notification Banner */}
@@ -361,19 +483,58 @@ export const LivePaperTradingWidget: React.FC<LivePaperTradingWidgetProps> = ({
           />
         </div>
 
-        {/* Spread Bps */}
-        <div>
-          <PrecisionSlider
-            label="点差宽度"
-            value={spreadOffsetBps}
-            onChange={setSpreadOffsetBps}
-            min={0.5}
-            max={5.0}
-            step={0.1}
-            unit=" bps"
-            accentColor="var(--gold-primary)"
-          />
-        </div>
+        {/* Spread Bps OR AS Model Sliders */}
+        {quotingMode === 'FIXED' ? (
+          <div>
+            <PrecisionSlider
+              label="点差宽度"
+              value={spreadOffsetBps}
+              onChange={setSpreadOffsetBps}
+              min={0.5}
+              max={5.0}
+              step={0.1}
+              unit=" bps"
+              accentColor="var(--gold-primary)"
+            />
+          </div>
+        ) : (
+          <>
+            <div>
+              <PrecisionSlider
+                label="风险厌恶 γ (库存偏斜)"
+                value={asGamma}
+                onChange={setAsGamma}
+                min={0.02}
+                max={0.5}
+                step={0.02}
+                color="cyan"
+              />
+            </div>
+            <div>
+              <PrecisionSlider
+                label="订单流密度 κ (点差收缩)"
+                value={asKappa}
+                onChange={setAsKappa}
+                min={0.5}
+                max={5.0}
+                step={0.1}
+                color="amber"
+              />
+            </div>
+            <div>
+              <PrecisionSlider
+                label="瞬时波动率 σ"
+                value={asSigmaBps}
+                onChange={setAsSigmaBps}
+                min={2}
+                max={40}
+                step={1}
+                unit=" bps"
+                color="purple"
+              />
+            </div>
+          </>
+        )}
 
         {/* Fee Tier */}
         <div>

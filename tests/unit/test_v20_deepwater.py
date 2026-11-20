@@ -144,30 +144,29 @@ def test_cross_market_lead_lag():
     assert abs((gg["futures_component_share_pct"] + gg["spot_component_share_pct"]) - 100.0) < 0.01
 
 
-def test_fastapi_v20_endpoints():
+async def test_fastapi_v20_endpoints():
     """Verifies that FastAPI exposes the new V2.0 endpoints."""
-    from fastapi.testclient import TestClient
+    import httpx
     from apps.api.main import app
 
-    client = TestClient(app)
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://testserver") as client:
+        # 1. VPIN endpoint
+        r_vpin = await client.get("/api/v1/analytics/vpin?symbol=BTCUSDT&date=2026-07-01")
+        assert r_vpin.status_code == 200
+        vpin_json = r_vpin.json()
+        assert vpin_json["status"] == "COMPUTED"
+        assert "summary" in vpin_json
 
-    # 1. VPIN endpoint
-    r_vpin = client.get("/api/v1/analytics/vpin?symbol=BTCUSDT&date=2026-07-01")
-    assert r_vpin.status_code == 200
-    vpin_json = r_vpin.json()
-    assert vpin_json["status"] == "COMPUTED"
-    assert "summary" in vpin_json
+        # 2. Adverse Selection endpoint
+        r_as = await client.get("/api/v1/analytics/adverse_selection?symbol=BTCUSDT&date=2026-07-01")
+        assert r_as.status_code == 200
+        as_json = r_as.json()
+        assert as_json["status"] == "COMPUTED"
+        assert "waterfall_attribution" in as_json
 
-    # 2. Adverse Selection endpoint
-    r_as = client.get("/api/v1/analytics/adverse_selection?symbol=BTCUSDT&date=2026-07-01")
-    assert r_as.status_code == 200
-    as_json = r_as.json()
-    assert as_json["status"] == "COMPUTED"
-    assert "waterfall_attribution" in as_json
-
-    # 3. Lead-Lag endpoint
-    r_ll = client.get("/api/v1/analytics/lead_lag?symbol=BTCUSDT&date=2026-07-01")
-    assert r_ll.status_code == 200
-    ll_json = r_ll.json()
-    assert ll_json["status"] == "COMPUTED"
-    assert ll_json["peak_lead_ms"] == 180
+        # 3. Lead-Lag endpoint
+        r_ll = await client.get("/api/v1/analytics/lead_lag?symbol=BTCUSDT&date=2026-07-01")
+        assert r_ll.status_code == 200
+        ll_json = r_ll.json()
+        assert ll_json["status"] == "COMPUTED"
+        assert ll_json["peak_lead_ms"] == 180

@@ -2,11 +2,35 @@
 Integration and schema test for FastAPI endpoints.
 """
 
+import asyncio
+import concurrent.futures
+import httpx
 import pytest
-from fastapi.testclient import TestClient
 from apps.api.main import app
 
-client = TestClient(app)
+
+class _SyncASGITestClient:
+    """Thread-isolated sync wrapper over httpx.ASGITransport avoiding Starlette BlockingPortal deadlocks on Python 3.13."""
+
+    def __init__(self, asgi_app):
+        self._app = asgi_app
+
+    def request(self, method: str, url: str, **kwargs):
+        async def _do():
+            async with httpx.AsyncClient(transport=httpx.ASGITransport(app=self._app), base_url="http://testserver") as ac:
+                return await ac.request(method, url, **kwargs)
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+            return pool.submit(asyncio.run, _do()).result(timeout=30)
+
+    def get(self, url: str, **kwargs):
+        return self.request("GET", url, **kwargs)
+
+    def post(self, url: str, **kwargs):
+        return self.request("POST", url, **kwargs)
+
+
+client = _SyncASGITestClient(app)
 
 def test_metadata_datasets():
     resp = client.get("/api/v1/metadata/datasets")

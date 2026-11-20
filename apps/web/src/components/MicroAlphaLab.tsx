@@ -1,10 +1,13 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Target, BarChart3, Activity } from 'lucide-react';
+import { Target, BarChart3, Activity, Code2, FileText, Sparkles, Radio } from 'lucide-react';
 import { MMLChart } from './MMLChart';
 import { MathFormula } from './MathFormula';
 import { PrecisionSlider, SegmentedControl, CollapsibleTheory } from './PrecisionUI';
 import { fetchReplayWindow } from '../api/client';
 import { ReplayTrade } from '../types';
+import { scanAlphaGridAsync } from '../workers/quantWorkerClient';
+import type { AlphaGridResult } from '../workers/quantWorker';
+import { downloadTextFile, generateMicroAlphaPython, generateResearchMemoMarkdown } from '../utils/exportSuite';
 
 interface FactorObservation {
   t: number;
@@ -19,7 +22,13 @@ interface FactorObservation {
   fwdRet50: number;
 }
 
-export const MicroAlphaLab: React.FC<{ selectedDate: string }> = ({ selectedDate }) => {
+interface MicroAlphaLabProps {
+  selectedDate: string;
+  customTrades?: ReplayTrade[] | null;
+  onClearCustomTrades?: () => void;
+}
+
+export const MicroAlphaLab: React.FC<MicroAlphaLabProps> = ({ selectedDate, customTrades, onClearCustomTrades }) => {
   // Factor Weights Sliders
   const [wOfi, setWOfi] = useState<number>(0.35);
   const [wMpi, setWMpi] = useState<number>(0.25);
@@ -33,8 +42,15 @@ export const MicroAlphaLab: React.FC<{ selectedDate: string }> = ({ selectedDate
   // Data Loading State
   const [trades, setTrades] = useState<ReplayTrade[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [alphaGrid, setAlphaGrid] = useState<AlphaGridResult | null>(null);
+  const isUsingCustomTrades = Boolean(customTrades && customTrades.length >= 60);
 
   useEffect(() => {
+    if (customTrades && customTrades.length >= 60) {
+      setTrades(customTrades);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     fetchReplayWindow('BTCUSDT', selectedDate, 20994, 60, 2000)
       .then((res) => {
@@ -45,7 +61,7 @@ export const MicroAlphaLab: React.FC<{ selectedDate: string }> = ({ selectedDate
         console.error('Failed to load trades for Alpha Lab', err);
         setLoading(false);
       });
-  }, [selectedDate]);
+  }, [selectedDate, customTrades]);
 
   // Compute Raw Microstructure Features across trades
   const dataset = useMemo(() => {
@@ -268,6 +284,92 @@ export const MicroAlphaLab: React.FC<{ selectedDate: string }> = ({ selectedDate
     };
   }, [evaluation.scatterData, horizonK]);
 
+  // Offload 2D (w_ofi x kHorizon) parameter grid sweep to Web Worker
+  useEffect(() => {
+    if (dataset.length < 60) return;
+    let cancelled = false;
+    scanAlphaGridAsync({
+      dataset: dataset.map((d) => ({
+        ofiZ: d.ofiZ,
+        mpiZ: d.mpiZ,
+        cvdZ: d.cvdZ,
+        hwkZ: d.hwkZ,
+        fwdRet5: d.fwdRet5,
+        fwdRet10: d.fwdRet10,
+        fwdRet20: d.fwdRet20,
+        fwdRet50: d.fwdRet50
+      })),
+      wMpi,
+      wCvd,
+      wHawkes,
+      thresholdScore
+    }).then((res) => {
+      if (!cancelled) setAlphaGrid(res);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [dataset, wMpi, wCvd, wHawkes, thresholdScore]);
+
+  const alphaHeatmapOption = useMemo(() => {
+    if (!alphaGrid || alphaGrid.heatmapData.length === 0) return {};
+    const vals = alphaGrid.heatmapData.map((d) => d[2]);
+    const minV = Math.min(...vals);
+    const maxV = Math.max(...vals);
+    return {
+      backgroundColor: 'transparent',
+      tooltip: {
+        position: 'top',
+        backgroundColor: '#0a0f18',
+        borderColor: '#26344b',
+        textStyle: { color: '#f8fafc', fontSize: 12 },
+        formatter: (p: any) => {
+          const k = alphaGrid.horizons[p.value[0]];
+          const w = alphaGrid.wOfiValues[p.value[1]];
+          return `前瞻步长 k = <b>${k}</b><br/>OFI 权重 = <b>${w.toFixed(2)}</b><br/>信号夏普代理: <b style="color:#00f0ff">${p.value[2]}</b>`;
+        }
+      },
+      grid: { left: '12%', right: '6%', top: '10%', bottom: '20%' },
+      xAxis: {
+        type: 'category',
+        name: '前瞻步长 k (笔)',
+        nameLocation: 'middle',
+        nameGap: 24,
+        nameTextStyle: { color: '#94a3b8', fontSize: 10 },
+        data: alphaGrid.horizons.map((h) => `k=${h}`),
+        axisLabel: { color: '#cbd5e1', fontSize: 10 },
+        axisLine: { lineStyle: { color: '#26344b' } }
+      },
+      yAxis: {
+        type: 'category',
+        name: 'OFI 权重',
+        nameTextStyle: { color: '#94a3b8', fontSize: 10 },
+        data: alphaGrid.wOfiValues.map((w) => w.toFixed(2)),
+        axisLabel: { color: '#cbd5e1', fontSize: 10 },
+        axisLine: { lineStyle: { color: '#26344b' } }
+      },
+      visualMap: {
+        min: minV,
+        max: maxV,
+        calculable: true,
+        orient: 'horizontal',
+        left: 'center',
+        bottom: 0,
+        textStyle: { color: '#94a3b8', fontSize: 10 },
+        inRange: { color: ['#ef4444', '#f59e0b', '#0ea5e9', '#10b981'] }
+      },
+      series: [
+        {
+          name: 'Sharpe Proxy',
+          type: 'heatmap',
+          data: alphaGrid.heatmapData,
+          label: { show: true, color: '#fff', fontSize: 10 },
+          emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0,0,0,0.5)' } }
+        }
+      ]
+    };
+  }, [alphaGrid]);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
       {/* Title & Banner */}
@@ -281,7 +383,7 @@ export const MicroAlphaLab: React.FC<{ selectedDate: string }> = ({ selectedDate
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
               <Target size={20} style={{ color: '#00f0ff' }} />
               <h2 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: '#fff' }}>
                 微观结构 Alpha 预测实验室 (Microstructure Alpha Predictor)
@@ -289,14 +391,99 @@ export const MicroAlphaLab: React.FC<{ selectedDate: string }> = ({ selectedDate
               <span style={{ fontSize: '0.66rem', background: 'rgba(56, 189, 248, 0.18)', color: '#38bdf8', border: '1px solid #38bdf8', padding: '1px 7px', borderRadius: '4px', fontWeight: 800 }}>
                 MULTI-FACTOR DIRECTIONAL ENGINE
               </span>
+              {isUsingCustomTrades && (
+                <span style={{ fontSize: '0.66rem', background: 'rgba(168, 85, 247, 0.2)', color: '#c084fc', border: '1px solid #c084fc', padding: '1px 7px', borderRadius: '4px', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                  <Radio size={10} /> 实盘黑匣子样本 ({trades.length} 笔)
+                </span>
+              )}
             </div>
             <p style={{ margin: '5px 0 0 0', fontSize: '0.78rem', color: '#94a3b8', lineHeight: 1.5 }}>
               融合 <strong>OFI 订单流失衡</strong>、<strong>Microprice 偏离</strong>、<strong>CVD 吃单净量</strong> 与 <strong>Hawkes 自激强度差</strong> 四大高频微观因子。
             </p>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             {loading && <span style={{ fontSize: '0.68rem', color: '#fbbf24' }}>⚡ 正在载入逐笔微观数据...</span>}
+            {isUsingCustomTrades && onClearCustomTrades && (
+              <button
+                onClick={onClearCustomTrades}
+                style={{
+                  background: 'rgba(168, 85, 247, 0.15)',
+                  border: '1px solid #c084fc',
+                  color: '#c084fc',
+                  padding: '4px 9px',
+                  borderRadius: '4px',
+                  fontSize: '0.70rem',
+                  fontWeight: 700,
+                  cursor: 'pointer'
+                }}
+              >
+                恢复默认历史样本
+              </button>
+            )}
+            <button
+              onClick={() => {
+                const activeIc = horizonK === 5 ? evaluation.ic5 : horizonK === 10 ? evaluation.ic10 : horizonK === 20 ? evaluation.ic20 : evaluation.ic50;
+                const py = generateMicroAlphaPython({
+                  wOfi,
+                  wMpi,
+                  wCvd,
+                  wHawkes,
+                  horizonK,
+                  thresholdScore,
+                  ic: activeIc,
+                  winRatePct: evaluation.hitRate,
+                  netBps: alphaGrid?.bestCell.sharpeProxy ?? 0
+                });
+                downloadTextFile(`micro_alpha_k${horizonK}.py`, py, 'text/x-python;charset=utf-8');
+              }}
+              style={{
+                background: 'rgba(56, 189, 248, 0.14)',
+                border: '1px solid rgba(56, 189, 248, 0.4)',
+                color: '#38bdf8',
+                padding: '4px 10px',
+                borderRadius: '4px',
+                fontSize: '0.70rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+            >
+              <Code2 size={12} /> 导出 Python 因子
+            </button>
+            <button
+              onClick={() => {
+                const activeIc = horizonK === 5 ? evaluation.ic5 : horizonK === 10 ? evaluation.ic10 : horizonK === 20 ? evaluation.ic20 : evaluation.ic50;
+                const md = generateResearchMemoMarkdown('Micro-Alpha 多因子高频预测研究备忘录', [
+                  {
+                    heading: '1. 因子权重与阈值配置',
+                    body: `- $w_{\\text{ofi}}$: **${wOfi.toFixed(2)}** | $w_{\\text{mpi}}$: **${wMpi.toFixed(2)}** | $w_{\\text{cvd}}$: **${wCvd.toFixed(2)}** | $w_{\\text{hwk}}$: **${wHawkes.toFixed(2)}**\n- 预测步长 $k$: **${horizonK} 笔** | 触发阈值: **${thresholdScore.toFixed(2)}**`
+                  },
+                  {
+                    heading: '2. 实证预测表现',
+                    body: `- 信息系数 (IC): **${activeIc.toFixed(4)}**\n- 方向胜率 (Hit Rate): **${evaluation.hitRate.toFixed(1)}%**\n- Precision / Recall / F1: **${evaluation.precision.toFixed(1)}% / ${evaluation.recall.toFixed(1)}% / ${evaluation.f1.toFixed(1)}%**`
+                  }
+                ]);
+                downloadTextFile(`micro_alpha_memo_k${horizonK}.md`, md, 'text/markdown;charset=utf-8');
+              }}
+              style={{
+                background: 'rgba(16, 185, 129, 0.14)',
+                border: '1px solid rgba(16, 185, 129, 0.4)',
+                color: '#10b981',
+                padding: '4px 10px',
+                borderRadius: '4px',
+                fontSize: '0.70rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+            >
+              <FileText size={12} /> 导出报告 (.md)
+            </button>
             <SegmentedControl
               options={[
                 { id: 5, label: 'k = 5 笔' },
@@ -500,6 +687,51 @@ export const MicroAlphaLab: React.FC<{ selectedDate: string }> = ({ selectedDate
               </div>
             </div>
           </div>
+
+          {/* Web Worker 2D Alpha Grid Heatmap */}
+          {alphaGrid && alphaGrid.heatmapData.length > 0 && (
+            <div className="mml-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Sparkles size={15} style={{ color: '#fbbf24' }} />
+                  <span style={{ fontSize: '0.84rem', fontWeight: 800, color: '#fff' }}>
+                    二维因子参数网格扫描热力图 (w_ofi × Horizon k)
+                  </span>
+                  <span style={{ fontSize: '0.62rem', background: 'rgba(16, 185, 129, 0.16)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.4)', padding: '1px 6px', borderRadius: '3px', fontWeight: 800 }}>
+                    WEB WORKER
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', fontSize: '0.72rem' }}>
+                  <span style={{ color: '#cbd5e1' }}>
+                    最优组合：w_ofi = <strong className="mono" style={{ color: '#00f0ff' }}>{alphaGrid.bestCell.wOfi.toFixed(2)}</strong>, k = <strong className="mono" style={{ color: '#fbbf24' }}>{alphaGrid.bestCell.horizon}</strong> (Sharpe代理: <strong className="mono" style={{ color: '#10b981' }}>{alphaGrid.bestCell.sharpeProxy}</strong>)
+                  </span>
+                  <button
+                    onClick={() => {
+                      setWOfi(alphaGrid.bestCell.wOfi);
+                      setHorizonK(alphaGrid.bestCell.horizon as any);
+                    }}
+                    style={{
+                      background: '#00f0ff',
+                      color: '#000',
+                      fontWeight: 800,
+                      fontSize: '0.68rem',
+                      padding: '4px 10px',
+                      borderRadius: '4px',
+                      border: 'none',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    ⚡ 应用最优组合
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ height: '240px', width: '100%' }}>
+                <MMLChart option={alphaHeatmapOption} style={{ height: '100%', width: '100%' }} />
+              </div>
+            </div>
+          )}
 
           {/* Theory Accordion */}
           <CollapsibleTheory

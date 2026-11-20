@@ -1,8 +1,11 @@
-import React, { useState, useMemo } from 'react';
-import { RotateCcw, Trophy, ShieldCheck, Zap } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { RotateCcw, Trophy, ShieldCheck, Zap, FileText, Sparkles } from 'lucide-react';
 import { MMLChart } from './MMLChart';
 import { MathFormula } from './MathFormula';
 import { PrecisionSlider, SegmentedControl, CollapsibleTheory } from './PrecisionUI';
+import { scanExecutionGridAsync } from '../workers/quantWorkerClient';
+import type { ExecutionGridResult } from '../workers/quantWorker';
+import { downloadTextFile, generateResearchMemoMarkdown } from '../utils/exportSuite';
 
 interface TrajectoryPoint {
   step: number;
@@ -39,8 +42,26 @@ export const OptimalExecutionLab: React.FC = () => {
   const [permImpactGamma, setPermImpactGamma] = useState<number>(0.02); // gamma ($ / BTC)
   const [volatilityBps, setVolatilityBps] = useState<number>(15); // sigma per step (bps)
   const [initialPrice] = useState<number>(60000);
-  const [activeTab, setActiveTab] = useState<'trajectories' | 'slices'>('trajectories');
+  const [activeTab, setActiveTab] = useState<'trajectories' | 'slices' | 'heatmap'>('trajectories');
   const [simSeed, setSimSeed] = useState<number>(42);
+  const [gridResult, setGridResult] = useState<ExecutionGridResult | null>(null);
+
+  // Offload 2D parameter grid sweep to Web Worker
+  useEffect(() => {
+    let cancelled = false;
+    scanExecutionGridAsync({
+      orderSizeBtc,
+      tempImpactEta,
+      permImpactGamma,
+      volatilityBps,
+      initialPrice
+    }).then((res) => {
+      if (!cancelled) setGridResult(res);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [orderSizeBtc, tempImpactEta, permImpactGamma, volatilityBps, initialPrice]);
 
   // Pseudo-random price path generator
   const pricePath = useMemo(() => {
@@ -341,6 +362,65 @@ export const OptimalExecutionLab: React.FC = () => {
 
   const bestAlgo = simulation.results.slice(1).reduce((prev, curr) => (curr.totalCostUsd < prev.totalCostUsd ? curr : prev));
 
+  const heatmapChartOption = useMemo(() => {
+    if (!gridResult) return {};
+    const costs = gridResult.heatmapData.map((d) => d[2]);
+    const minC = Math.min(...costs);
+    const maxC = Math.max(...costs);
+    return {
+      backgroundColor: 'transparent',
+      tooltip: {
+        position: 'top',
+        backgroundColor: '#0a0f18',
+        borderColor: '#26344b',
+        textStyle: { color: '#f8fafc', fontSize: 12 },
+        formatter: (p: any) => {
+          const h = gridResult.horizons[p.value[0]];
+          const lam = gridResult.lambdas[p.value[1]];
+          return `时窗 T = <b>${h}</b> 步<br/>风险厌恶 λ = <b>${lam}</b><br/>风险调整落差: <b style="color:#10b981">${p.value[2]} bps</b>`;
+        }
+      },
+      grid: { left: '10%', right: '6%', top: '10%', bottom: '18%' },
+      xAxis: {
+        type: 'category',
+        name: '执行时窗 T (步)',
+        nameLocation: 'middle',
+        nameGap: 26,
+        nameTextStyle: { color: '#94a3b8', fontSize: 11 },
+        data: gridResult.horizons.map((h) => `T=${h}`),
+        axisLabel: { color: '#cbd5e1', fontSize: 10 },
+        axisLine: { lineStyle: { color: '#26344b' } }
+      },
+      yAxis: {
+        type: 'category',
+        name: '风险厌恶 λ',
+        nameTextStyle: { color: '#94a3b8', fontSize: 11 },
+        data: gridResult.lambdas.map((l) => l.toString()),
+        axisLabel: { color: '#cbd5e1', fontSize: 10 },
+        axisLine: { lineStyle: { color: '#26344b' } }
+      },
+      visualMap: {
+        min: minC,
+        max: maxC,
+        calculable: true,
+        orient: 'horizontal',
+        left: 'center',
+        bottom: 0,
+        textStyle: { color: '#94a3b8', fontSize: 10 },
+        inRange: { color: ['#10b981', '#0ea5e9', '#f59e0b', '#ef4444'] }
+      },
+      series: [
+        {
+          name: 'Shortfall (bps)',
+          type: 'heatmap',
+          data: gridResult.heatmapData,
+          label: { show: true, color: '#fff', fontSize: 10, formatter: (p: any) => `${p.value[2]}` },
+          emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0,0,0,0.5)' } }
+        }
+      ]
+    };
+  }, [gridResult]);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
       {/* Hero Header Banner */}
@@ -368,25 +448,67 @@ export const OptimalExecutionLab: React.FC = () => {
             </p>
           </div>
 
-          <button
-            onClick={() => setSimSeed((s) => s + 1)}
-            style={{
-              background: 'rgba(16, 185, 129, 0.15)',
-              border: '1px solid #10b981',
-              color: '#10b981',
-              fontWeight: 700,
-              fontSize: '0.72rem',
-              padding: '6px 12px',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}
-          >
-            <RotateCcw size={12} />
-            重抽随机价格路径
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <button
+              onClick={() => {
+                const md = generateResearchMemoMarkdown('Almgren-Chriss 最优执行仿真备忘录', [
+                  {
+                    heading: '1. 标定参数配置',
+                    body: `- 待执行总量 $X_0$: **${orderSizeBtc} BTC** ($${((orderSizeBtc * initialPrice) / 1e6).toFixed(2)}M)\n- 执行时窗 $T$: **${horizonSteps} 步**\n- 风险厌恶系数 $\\lambda$: **${riskAversion}**\n- 瞬时冲击 $\\eta$: **${tempImpactEta} $/BTC** | 永久冲击 $\\gamma$: **${permImpactGamma} $/BTC** | 波动 $\\sigma$: **${volatilityBps} bps**\n- 紧迫度特征根 $\\kappa$: **${simulation.kappa.toFixed(4)}**`
+                  },
+                  {
+                    heading: '2. 算法跑马对比结果',
+                    body: simulation.results
+                      .map((r) => `- **${r.name}**: VWAP=$${r.executedVwap.toFixed(2)} | 总落差=${r.shortfallBps.toFixed(2)} bps | 节省资金=+$${Math.round(r.savingsVsNaiveUsd).toLocaleString()}`)
+                      .join('\n')
+                  },
+                  {
+                    heading: '3. Web Worker 二维参数扫描最优解',
+                    body: gridResult
+                      ? `全局最优区间：时窗 **T* = ${gridResult.bestCell.horizon} 步**，风险厌恶 **λ* = ${gridResult.bestCell.lambda}**，风险调整预期落差 **${gridResult.bestCell.costBps} bps**。`
+                      : '暂未完成网格扫描。'
+                  }
+                ]);
+                downloadTextFile(`optimal_execution_memo_${orderSizeBtc}btc.md`, md, 'text/markdown;charset=utf-8');
+              }}
+              style={{
+                background: 'rgba(56, 189, 248, 0.14)',
+                border: '1px solid rgba(56, 189, 248, 0.4)',
+                color: '#38bdf8',
+                fontWeight: 700,
+                fontSize: '0.72rem',
+                padding: '6px 12px',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+            >
+              <FileText size={12} />
+              导出研究备忘录 (.md)
+            </button>
+
+            <button
+              onClick={() => setSimSeed((s) => s + 1)}
+              style={{
+                background: 'rgba(16, 185, 129, 0.15)',
+                border: '1px solid #10b981',
+                color: '#10b981',
+                fontWeight: 700,
+                fontSize: '0.72rem',
+                padding: '6px 12px',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+            >
+              <RotateCcw size={12} />
+              重抽随机价格路径
+            </button>
+          </div>
         </div>
       </div>
 
@@ -510,7 +632,8 @@ export const OptimalExecutionLab: React.FC = () => {
               <SegmentedControl
                 options={[
                   { id: 'trajectories', label: '剩余头寸曲线 x(t)' },
-                  { id: 'slices', label: '各步拆单切片 v(t)' }
+                  { id: 'slices', label: '各步拆单切片 v(t)' },
+                  { id: 'heatmap', label: '二维参数曲面热力图', badge: 'WORKER' }
                 ]}
                 value={activeTab}
                 onChange={setActiveTab}
@@ -519,11 +642,55 @@ export const OptimalExecutionLab: React.FC = () => {
               />
             </div>
 
+            {activeTab === 'heatmap' && gridResult && (
+              <div
+                style={{
+                  marginBottom: '10px',
+                  padding: '8px 12px',
+                  background: 'rgba(16, 185, 129, 0.08)',
+                  border: '1px solid rgba(16, 185, 129, 0.3)',
+                  borderRadius: '6px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: '8px',
+                  fontSize: '0.73rem'
+                }}
+              >
+                <span style={{ color: '#cbd5e1', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Sparkles size={14} style={{ color: '#fbbf24' }} />
+                  Web Worker 全局扫描最优解：时窗 <strong className="mono" style={{ color: '#38bdf8' }}>T* = {gridResult.bestCell.horizon} 步</strong>，风险厌恶 <strong className="mono" style={{ color: '#fbbf24' }}>λ* = {gridResult.bestCell.lambda}</strong> (预期成本 <strong className="mono" style={{ color: '#10b981' }}>{gridResult.bestCell.costBps} bps</strong>)
+                </span>
+                <button
+                  onClick={() => {
+                    setHorizonSteps(gridResult.bestCell.horizon);
+                    setRiskAversion(gridResult.bestCell.lambda);
+                    setActiveTab('trajectories');
+                  }}
+                  style={{
+                    background: '#10b981',
+                    color: '#000',
+                    fontWeight: 800,
+                    fontSize: '0.70rem',
+                    padding: '4px 10px',
+                    borderRadius: '4px',
+                    border: 'none',
+                    cursor: 'pointer'
+                  }}
+                >
+                  ⚡ 一键应用最优参数
+                </button>
+              </div>
+            )}
+
             <div style={{ height: '340px', width: '100%' }}>
               {activeTab === 'trajectories' ? (
                 <MMLChart option={trajectoryChartOption} style={{ height: '100%', width: '100%' }} />
-              ) : (
+              ) : activeTab === 'slices' ? (
                 <MMLChart option={sliceChartOption} style={{ height: '100%', width: '100%' }} />
+              ) : (
+                <MMLChart option={heatmapChartOption} style={{ height: '100%', width: '100%' }} />
               )}
             </div>
           </div>

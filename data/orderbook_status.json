@@ -1,0 +1,11 @@
+{
+  "phase": "Phase 2 (Market Depth & Local Order Book Sync)",
+  "symbol": "BTCUSDT",
+  "data_status": "UNAVAILABLE",
+  "status": "STANDBY",
+  "is_valid": false,
+  "is_running": false,
+  "last_update_id": 0,
+  "sync_errors": 0,
+  "disclaimer": "L2 metrics are strictly computed only when live WebSocket Diff Depth stream is actively synchronized with REST snapshots. In static web hosting without a Python backend, live WebSocket collection is in STANDBY mode."
+}

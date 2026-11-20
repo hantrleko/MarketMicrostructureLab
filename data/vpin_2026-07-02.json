@@ -1,0 +1,2262 @@
+{
+  "status": "COMPUTED",
+  "bucket_size_btc": 5.0,
+  "window_buckets": 25,
+  "total_buckets": 221,
+  "vpin_series": [
+    {
+      "bucket_idx": 1,
+      "time_utc": "2026-07-02T00:00:44.549000Z",
+      "timestamp_ns": 1782950444549000000,
+      "vwap": 60020.9,
+      "buy_volume": 0.94,
+      "sell_volume": 4.06,
+      "imbalance": 3.1201,
+      "vpin": null
+    },
+    {
+      "bucket_idx": 2,
+      "time_utc": "2026-07-02T00:01:12.802411Z",
+      "timestamp_ns": 1782950472802411000,
+      "vwap": 59996.61,
+      "buy_volume": 0.764,
+      "sell_volume": 4.236,
+      "imbalance": 3.472,
+      "vpin": null
+    },
+    {
+      "bucket_idx": 3,
+      "time_utc": "2026-07-02T00:01:35.119967Z",
+      "timestamp_ns": 1782950495119967000,
+      "vwap": 59966.15,
+      "buy_volume": 3.3864,
+      "sell_volume": 1.6136,
+      "imbalance": 1.7728,
+      "vpin": null
+    },
+    {
+      "bucket_idx": 4,
+      "time_utc": "2026-07-02T00:01:59.793649Z",
+      "timestamp_ns": 1782950519793649000,
+      "vwap": 59951.98,
+      "buy_volume": 1.0259,
+      "sell_volume": 3.9741,
+      "imbalance": 2.9481,
+      "vpin": null
+    },
+    {
+      "bucket_idx": 5,
+      "time_utc": "2026-07-02T00:02:09.439270Z",
+      "timestamp_ns": 1782950529439270000,
+      "vwap": 59958.08,
+      "buy_volume": 1.6203,
+      "sell_volume": 3.3797,
+      "imbalance": 1.7594,
+      "vpin": null
+    },
+    {
+      "bucket_idx": 6,
+      "time_utc": "2026-07-02T00:02:20.188039Z",
+      "timestamp_ns": 1782950540188039000,
+      "vwap": 59917.78,
+      "buy_volume": 1.5071,
+      "sell_volume": 3.4929,
+      "imbalance": 1.9859,
+      "vpin": null
+    },
+    {
+      "bucket_idx": 7,
+      "time_utc": "2026-07-02T00:02:28.496370Z",
+      "timestamp_ns": 1782950548496370000,
+      "vwap": 59929.11,
+      "buy_volume": 1.9261,
+      "sell_volume": 3.0739,
+      "imbalance": 1.1479,
+      "vpin": null
+    },
+    {
+      "bucket_idx": 8,
+      "time_utc": "2026-07-02T00:02:45.469328Z",
+      "timestamp_ns": 1782950565469328000,
+      "vwap": 59911.88,
+      "buy_volume": 1.1826,
+      "sell_volume": 3.8174,
+      "imbalance": 2.6347,
+      "vpin": null
+    },
+    {
+      "bucket_idx": 9,
+      "time_utc": "2026-07-02T00:03:07.323379Z",
+      "timestamp_ns": 1782950587323379000,
+      "vwap": 59924.78,
+      "buy_volume": 4.0408,
+      "sell_volume": 0.9592,
+      "imbalance": 3.0816,
+      "vpin": null
+    },
+    {
+      "bucket_idx": 10,
+      "time_utc": "2026-07-02T00:03:28.402277Z",
+      "timestamp_ns": 1782950608402277000,
+      "vwap": 59930.58,
+      "buy_volume": 1.1978,
+      "sell_volume": 3.8022,
+      "imbalance": 2.6044,
+      "vpin": null
+    },
+    {
+      "bucket_idx": 11,
+      "time_utc": "2026-07-02T00:03:30.725868Z",
+      "timestamp_ns": 1782950610725868000,
+      "vwap": 59908.87,
+      "buy_volume": 4.7033,
+      "sell_volume": 0.2967,
+      "imbalance": 4.4067,
+      "vpin": null
+    },
+    {
+      "bucket_idx": 12,
+      "time_utc": "2026-07-02T00:03:50.874663Z",
+      "timestamp_ns": 1782950630874663000,
+      "vwap": 59925.32,
+      "buy_volume": 3.8735,
+      "sell_volume": 1.1265,
+      "imbalance": 2.747,
+      "vpin": null
+    },
+    {
+      "bucket_idx": 13,
+      "time_utc": "2026-07-02T00:04:41.971868Z",
+      "timestamp_ns": 1782950681971868000,
+      "vwap": 59949.0,
+      "buy_volume": 2.5216,
+      "sell_volume": 2.4784,
+      "imbalance": 0.0432,
+      "vpin": null
+    },
+    {
+      "bucket_idx": 14,
+      "time_utc": "2026-07-02T00:05:00.670856Z",
+      "timestamp_ns": 1782950700670856000,
+      "vwap": 59920.0,
+      "buy_volume": 4.0964,
+      "sell_volume": 0.9036,
+      "imbalance": 3.1928,
+      "vpin": null
+    },
+    {
+      "bucket_idx": 15,
+      "time_utc": "2026-07-02T00:05:05.153786Z",
+      "timestamp_ns": 1782950705153786000,
+      "vwap": 59921.4,
+      "buy_volume": 4.6638,
+      "sell_volume": 0.3362,
+      "imbalance": 4.3277,
+      "vpin": null
+    },
+    {
+      "bucket_idx": 16,
+      "time_utc": "2026-07-02T00:05:05.153786Z",
+      "timestamp_ns": 1782950705153786000,
+      "vwap": 59925.49,
+      "buy_volume": 5.0,
+      "sell_volume": 0.0,
+      "imbalance": 5.0,
+      "vpin": null
+    },
+    {
+      "bucket_idx": 17,
+      "time_utc": "2026-07-02T00:05:18.704849Z",
+      "timestamp_ns": 1782950718704849000,
+      "vwap": 59950.79,
+      "buy_volume": 4.1815,
+      "sell_volume": 0.8184,
+      "imbalance": 3.3631,
+      "vpin": null
+    },
+    {
+      "bucket_idx": 18,
+      "time_utc": "2026-07-02T00:05:44.862878Z",
+      "timestamp_ns": 1782950744862878000,
+      "vwap": 59956.15,
+      "buy_volume": 2.7194,
+      "sell_volume": 2.2806,
+      "imbalance": 0.4388,
+      "vpin": null
+    },
+    {
+      "bucket_idx": 19,
+      "time_utc": "2026-07-02T00:06:00.736856Z",
+      "timestamp_ns": 1782950760736856000,
+      "vwap": 59945.63,
+      "buy_volume": 4.9521,
+      "sell_volume": 0.0479,
+      "imbalance": 4.9041,
+      "vpin": null
+    },
+    {
+      "bucket_idx": 20,
+      "time_utc": "2026-07-02T00:06:58.483608Z",
+      "timestamp_ns": 1782950818483608000,
+      "vwap": 59956.18,
+      "buy_volume": 0.9261,
+      "sell_volume": 4.0739,
+      "imbalance": 3.1478,
+      "vpin": null
+    },
+    {
+      "bucket_idx": 21,
+      "time_utc": "2026-07-02T00:07:10.114247Z",
+      "timestamp_ns": 1782950830114247000,
+      "vwap": 59928.38,
+      "buy_volume": 2.888,
+      "sell_volume": 2.112,
+      "imbalance": 0.7761,
+      "vpin": null
+    },
+    {
+      "bucket_idx": 22,
+      "time_utc": "2026-07-02T00:07:26.781802Z",
+      "timestamp_ns": 1782950846781802000,
+      "vwap": 59921.42,
+      "buy_volume": 3.6958,
+      "sell_volume": 1.3042,
+      "imbalance": 2.3915,
+      "vpin": null
+    },
+    {
+      "bucket_idx": 23,
+      "time_utc": "2026-07-02T00:07:26.781802Z",
+      "timestamp_ns": 1782950846781802000,
+      "vwap": 59927.71,
+      "buy_volume": 5.0,
+      "sell_volume": 0.0,
+      "imbalance": 5.0,
+      "vpin": null
+    },
+    {
+      "bucket_idx": 24,
+      "time_utc": "2026-07-02T00:08:12.264175Z",
+      "timestamp_ns": 1782950892264175000,
+      "vwap": 59929.69,
+      "buy_volume": 3.9937,
+      "sell_volume": 1.0063,
+      "imbalance": 2.9873,
+      "vpin": null
+    },
+    {
+      "bucket_idx": 25,
+      "time_utc": "2026-07-02T00:08:32.187266Z",
+      "timestamp_ns": 1782950912187266000,
+      "vwap": 59939.58,
+      "buy_volume": 4.3486,
+      "sell_volume": 0.6514,
+      "imbalance": 3.6973,
+      "vpin": 0.5676
+    },
+    {
+      "bucket_idx": 26,
+      "time_utc": "2026-07-02T00:09:29.381748Z",
+      "timestamp_ns": 1782950969381748000,
+      "vwap": 59954.58,
+      "buy_volume": 3.6679,
+      "sell_volume": 1.3321,
+      "imbalance": 2.3358,
+      "vpin": 0.5613
+    },
+    {
+      "bucket_idx": 27,
+      "time_utc": "2026-07-02T00:10:29.777741Z",
+      "timestamp_ns": 1782951029777741000,
+      "vwap": 59952.88,
+      "buy_volume": 2.2975,
+      "sell_volume": 2.7025,
+      "imbalance": 0.405,
+      "vpin": 0.5368
+    },
+    {
+      "bucket_idx": 28,
+      "time_utc": "2026-07-02T00:11:17.044086Z",
+      "timestamp_ns": 1782951077044086000,
+      "vwap": 59955.09,
+      "buy_volume": 2.2817,
+      "sell_volume": 2.7183,
+      "imbalance": 0.4366,
+      "vpin": 0.5261
+    },
+    {
+      "bucket_idx": 29,
+      "time_utc": "2026-07-02T00:12:50.413204Z",
+      "timestamp_ns": 1782951170413204000,
+      "vwap": 59958.5,
+      "buy_volume": 2.4354,
+      "sell_volume": 2.5646,
+      "imbalance": 0.1292,
+      "vpin": 0.5036
+    },
+    {
+      "bucket_idx": 30,
+      "time_utc": "2026-07-02T00:13:27.664577Z",
+      "timestamp_ns": 1782951207664577000,
+      "vwap": 59974.06,
+      "buy_volume": 4.5536,
+      "sell_volume": 0.4464,
+      "imbalance": 4.1073,
+      "vpin": 0.5223
+    },
+    {
+      "bucket_idx": 31,
+      "time_utc": "2026-07-02T00:14:22.969432Z",
+      "timestamp_ns": 1782951262969432000,
+      "vwap": 59985.2,
+      "buy_volume": 2.5488,
+      "sell_volume": 2.4512,
+      "imbalance": 0.0976,
+      "vpin": 0.5072
+    },
+    {
+      "bucket_idx": 32,
+      "time_utc": "2026-07-02T00:14:51.506348Z",
+      "timestamp_ns": 1782951291506348000,
+      "vwap": 59965.79,
+      "buy_volume": 0.2019,
+      "sell_volume": 4.7981,
+      "imbalance": 4.5962,
+      "vpin": 0.5348
+    },
+    {
+      "bucket_idx": 33,
+      "time_utc": "2026-07-02T00:14:51.506348Z",
+      "timestamp_ns": 1782951291506348000,
+      "vwap": 59948.03,
+      "buy_volume": 0.0,
+      "sell_volume": 5.0,
+      "imbalance": 5.0,
+      "vpin": 0.5537
+    },
+    {
+      "bucket_idx": 34,
+      "time_utc": "2026-07-02T00:14:56.411845Z",
+      "timestamp_ns": 1782951296411845000,
+      "vwap": 59944.36,
+      "buy_volume": 0.0239,
+      "sell_volume": 4.9761,
+      "imbalance": 4.9523,
+      "vpin": 0.5687
+    },
+    {
+      "bucket_idx": 35,
+      "time_utc": "2026-07-02T00:15:03.839777Z",
+      "timestamp_ns": 1782951303839777000,
+      "vwap": 59959.79,
+      "buy_volume": 4.3885,
+      "sell_volume": 0.6115,
+      "imbalance": 3.777,
+      "vpin": 0.5781
+    },
+    {
+      "bucket_idx": 36,
+      "time_utc": "2026-07-02T00:15:04.563170Z",
+      "timestamp_ns": 1782951304563170000,
+      "vwap": 59972.26,
+      "buy_volume": 4.9999,
+      "sell_volume": 0.0001,
+      "imbalance": 4.9997,
+      "vpin": 0.5828
+    },
+    {
+      "bucket_idx": 37,
+      "time_utc": "2026-07-02T00:15:06.102437Z",
+      "timestamp_ns": 1782951306102437000,
+      "vwap": 59973.3,
+      "buy_volume": 4.8685,
+      "sell_volume": 0.1315,
+      "imbalance": 4.737,
+      "vpin": 0.5987
+    },
+    {
+      "bucket_idx": 38,
+      "time_utc": "2026-07-02T00:16:58.407338Z",
+      "timestamp_ns": 1782951418407338000,
+      "vwap": 59950.62,
+      "buy_volume": 2.1739,
+      "sell_volume": 2.8261,
+      "imbalance": 0.6521,
+      "vpin": 0.6036
+    },
+    {
+      "bucket_idx": 39,
+      "time_utc": "2026-07-02T00:17:15.398480Z",
+      "timestamp_ns": 1782951435398480000,
+      "vwap": 59919.01,
+      "buy_volume": 1.6221,
+      "sell_volume": 3.3779,
+      "imbalance": 1.7559,
+      "vpin": 0.5921
+    },
+    {
+      "bucket_idx": 40,
+      "time_utc": "2026-07-02T00:17:28.909703Z",
+      "timestamp_ns": 1782951448909703000,
+      "vwap": 59904.42,
+      "buy_volume": 1.6397,
+      "sell_volume": 3.3603,
+      "imbalance": 1.7205,
+      "vpin": 0.5713
+    },
+    {
+      "bucket_idx": 41,
+      "time_utc": "2026-07-02T00:17:36.153190Z",
+      "timestamp_ns": 1782951456153190000,
+      "vwap": 59888.33,
+      "buy_volume": 0.1852,
+      "sell_volume": 4.8148,
+      "imbalance": 4.6296,
+      "vpin": 0.5683
+    },
+    {
+      "bucket_idx": 42,
+      "time_utc": "2026-07-02T00:17:40.897797Z",
+      "timestamp_ns": 1782951460897797000,
+      "vwap": 59874.34,
+      "buy_volume": 0.1262,
+      "sell_volume": 4.8738,
+      "imbalance": 4.7476,
+      "vpin": 0.5794
+    },
+    {
+      "bucket_idx": 43,
+      "time_utc": "2026-07-02T00:18:13.691591Z",
+      "timestamp_ns": 1782951493691591000,
+      "vwap": 59835.46,
+      "buy_volume": 2.0944,
+      "sell_volume": 2.9056,
+      "imbalance": 0.8111,
+      "vpin": 0.5824
+    },
+    {
+      "bucket_idx": 44,
+      "time_utc": "2026-07-02T00:18:55.759014Z",
+      "timestamp_ns": 1782951535759014000,
+      "vwap": 59819.78,
+      "buy_volume": 1.9767,
+      "sell_volume": 3.0233,
+      "imbalance": 1.0466,
+      "vpin": 0.5515
+    },
+    {
+      "bucket_idx": 45,
+      "time_utc": "2026-07-02T00:19:26.303916Z",
+      "timestamp_ns": 1782951566303916000,
+      "vwap": 59810.3,
+      "buy_volume": 0.2932,
+      "sell_volume": 4.7068,
+      "imbalance": 4.4135,
+      "vpin": 0.5616
+    },
+    {
+      "bucket_idx": 46,
+      "time_utc": "2026-07-02T00:19:38.019115Z",
+      "timestamp_ns": 1782951578019115000,
+      "vwap": 59779.16,
+      "buy_volume": 0.8969,
+      "sell_volume": 4.1031,
+      "imbalance": 3.2062,
+      "vpin": 0.5811
+    },
+    {
+      "bucket_idx": 47,
+      "time_utc": "2026-07-02T00:19:38.077620Z",
+      "timestamp_ns": 1782951578077620000,
+      "vwap": 59771.4,
+      "buy_volume": 0.0,
+      "sell_volume": 5.0,
+      "imbalance": 5.0,
+      "vpin": 0.6019
+    },
+    {
+      "bucket_idx": 48,
+      "time_utc": "2026-07-02T00:19:38.185782Z",
+      "timestamp_ns": 1782951578185782000,
+      "vwap": 59771.31,
+      "buy_volume": 0.3797,
+      "sell_volume": 4.6203,
+      "imbalance": 4.2407,
+      "vpin": 0.5959
+    },
+    {
+      "bucket_idx": 49,
+      "time_utc": "2026-07-02T00:19:39.879804Z",
+      "timestamp_ns": 1782951579879804000,
+      "vwap": 59770.31,
+      "buy_volume": 4.4062,
+      "sell_volume": 0.5938,
+      "imbalance": 3.8124,
+      "vpin": 0.6025
+    },
+    {
+      "bucket_idx": 50,
+      "time_utc": "2026-07-02T00:19:47.819758Z",
+      "timestamp_ns": 1782951587819758000,
+      "vwap": 59769.15,
+      "buy_volume": 2.1439,
+      "sell_volume": 2.8561,
+      "imbalance": 0.7122,
+      "vpin": 0.5786
+    },
+    {
+      "bucket_idx": 51,
+      "time_utc": "2026-07-02T00:19:54.652459Z",
+      "timestamp_ns": 1782951594652459000,
+      "vwap": 59765.24,
+      "buy_volume": 0.2848,
+      "sell_volume": 4.7152,
+      "imbalance": 4.4305,
+      "vpin": 0.5953
+    },
+    {
+      "bucket_idx": 52,
+      "time_utc": "2026-07-02T00:20:05.939912Z",
+      "timestamp_ns": 1782951605939912000,
+      "vwap": 59764.7,
+      "buy_volume": 2.1741,
+      "sell_volume": 2.8259,
+      "imbalance": 0.6518,
+      "vpin": 0.5973
+    },
+    {
+      "bucket_idx": 53,
+      "time_utc": "2026-07-02T00:20:16.248542Z",
+      "timestamp_ns": 1782951616248542000,
+      "vwap": 59766.32,
+      "buy_volume": 2.8233,
+      "sell_volume": 2.1768,
+      "imbalance": 0.6465,
+      "vpin": 0.599
+    },
+    {
+      "bucket_idx": 54,
+      "time_utc": "2026-07-02T00:20:25.410033Z",
+      "timestamp_ns": 1782951625410033000,
+      "vwap": 59750.51,
+      "buy_volume": 2.3334,
+      "sell_volume": 2.6666,
+      "imbalance": 0.3331,
+      "vpin": 0.6006
+    },
+    {
+      "bucket_idx": 55,
+      "time_utc": "2026-07-02T00:20:35.174373Z",
+      "timestamp_ns": 1782951635174373000,
+      "vwap": 59762.42,
+      "buy_volume": 4.4055,
+      "sell_volume": 0.5945,
+      "imbalance": 3.8111,
+      "vpin": 0.5982
+    },
+    {
+      "bucket_idx": 56,
+      "time_utc": "2026-07-02T00:21:41.074414Z",
+      "timestamp_ns": 1782951701074414000,
+      "vwap": 59786.55,
+      "buy_volume": 2.4102,
+      "sell_volume": 2.5898,
+      "imbalance": 0.1797,
+      "vpin": 0.5989
+    },
+    {
+      "bucket_idx": 57,
+      "time_utc": "2026-07-02T00:21:49.641647Z",
+      "timestamp_ns": 1782951709641647000,
+      "vwap": 59814.67,
+      "buy_volume": 4.9197,
+      "sell_volume": 0.0803,
+      "imbalance": 4.8395,
+      "vpin": 0.6009
+    },
+    {
+      "bucket_idx": 58,
+      "time_utc": "2026-07-02T00:22:48.450023Z",
+      "timestamp_ns": 1782951768450023000,
+      "vwap": 59836.38,
+      "buy_volume": 3.2527,
+      "sell_volume": 1.7473,
+      "imbalance": 1.5055,
+      "vpin": 0.5729
+    },
+    {
+      "bucket_idx": 59,
+      "time_utc": "2026-07-02T00:24:04.219740Z",
+      "timestamp_ns": 1782951844219740000,
+      "vwap": 59840.2,
+      "buy_volume": 1.8927,
+      "sell_volume": 3.1073,
+      "imbalance": 1.2146,
+      "vpin": 0.543
+    },
+    {
+      "bucket_idx": 60,
+      "time_utc": "2026-07-02T00:24:53.685544Z",
+      "timestamp_ns": 1782951893685544000,
+      "vwap": 59865.27,
+      "buy_volume": 1.1482,
+      "sell_volume": 3.8519,
+      "imbalance": 2.7037,
+      "vpin": 0.5344
+    },
+    {
+      "bucket_idx": 61,
+      "time_utc": "2026-07-02T00:26:12.162109Z",
+      "timestamp_ns": 1782951972162109000,
+      "vwap": 59841.19,
+      "buy_volume": 1.0369,
+      "sell_volume": 3.9631,
+      "imbalance": 2.9261,
+      "vpin": 0.5178
+    },
+    {
+      "bucket_idx": 62,
+      "time_utc": "2026-07-02T00:27:43.087775Z",
+      "timestamp_ns": 1782952063087775000,
+      "vwap": 59815.07,
+      "buy_volume": 1.4545,
+      "sell_volume": 3.5455,
+      "imbalance": 2.0909,
+      "vpin": 0.4967
+    },
+    {
+      "bucket_idx": 63,
+      "time_utc": "2026-07-02T00:29:27.246870Z",
+      "timestamp_ns": 1782952167246870000,
+      "vwap": 59781.22,
+      "buy_volume": 2.5828,
+      "sell_volume": 2.4172,
+      "imbalance": 0.1657,
+      "vpin": 0.4928
+    },
+    {
+      "bucket_idx": 64,
+      "time_utc": "2026-07-02T00:30:16.181944Z",
+      "timestamp_ns": 1782952216181944000,
+      "vwap": 59781.61,
+      "buy_volume": 2.6604,
+      "sell_volume": 2.3396,
+      "imbalance": 0.3207,
+      "vpin": 0.4813
+    },
+    {
+      "bucket_idx": 65,
+      "time_utc": "2026-07-02T00:30:36.171505Z",
+      "timestamp_ns": 1782952236171505000,
+      "vwap": 59736.02,
+      "buy_volume": 0.4786,
+      "sell_volume": 4.5214,
+      "imbalance": 4.0428,
+      "vpin": 0.4999
+    },
+    {
+      "bucket_idx": 66,
+      "time_utc": "2026-07-02T00:31:03.783972Z",
+      "timestamp_ns": 1782952263783972000,
+      "vwap": 59716.41,
+      "buy_volume": 3.8079,
+      "sell_volume": 1.1921,
+      "imbalance": 2.6158,
+      "vpin": 0.4837
+    },
+    {
+      "bucket_idx": 67,
+      "time_utc": "2026-07-02T00:31:35.753523Z",
+      "timestamp_ns": 1782952295753523000,
+      "vwap": 59717.76,
+      "buy_volume": 2.6508,
+      "sell_volume": 2.3492,
+      "imbalance": 0.3017,
+      "vpin": 0.4482
+    },
+    {
+      "bucket_idx": 68,
+      "time_utc": "2026-07-02T00:31:42.324218Z",
+      "timestamp_ns": 1782952302324218000,
+      "vwap": 59707.77,
+      "buy_volume": 2.6737,
+      "sell_volume": 2.3263,
+      "imbalance": 0.3474,
+      "vpin": 0.4445
+    },
+    {
+      "bucket_idx": 69,
+      "time_utc": "2026-07-02T00:32:10.077246Z",
+      "timestamp_ns": 1782952330077246000,
+      "vwap": 59712.64,
+      "buy_volume": 3.1877,
+      "sell_volume": 1.8123,
+      "imbalance": 1.3754,
+      "vpin": 0.4471
+    },
+    {
+      "bucket_idx": 70,
+      "time_utc": "2026-07-02T00:32:42.646706Z",
+      "timestamp_ns": 1782952362646706000,
+      "vwap": 59716.0,
+      "buy_volume": 3.7016,
+      "sell_volume": 1.2984,
+      "imbalance": 2.4033,
+      "vpin": 0.431
+    },
+    {
+      "bucket_idx": 71,
+      "time_utc": "2026-07-02T00:33:00.951714Z",
+      "timestamp_ns": 1782952380951714000,
+      "vwap": 59719.58,
+      "buy_volume": 1.4991,
+      "sell_volume": 3.5009,
+      "imbalance": 2.0018,
+      "vpin": 0.4214
+    },
+    {
+      "bucket_idx": 72,
+      "time_utc": "2026-07-02T00:33:25.942666Z",
+      "timestamp_ns": 1782952405942666000,
+      "vwap": 59714.74,
+      "buy_volume": 2.9738,
+      "sell_volume": 2.0262,
+      "imbalance": 0.9476,
+      "vpin": 0.389
+    },
+    {
+      "bucket_idx": 73,
+      "time_utc": "2026-07-02T00:33:25.942666Z",
+      "timestamp_ns": 1782952405942666000,
+      "vwap": 59713.19,
+      "buy_volume": 5.0,
+      "sell_volume": 0.0,
+      "imbalance": 5.0,
+      "vpin": 0.395
+    },
+    {
+      "bucket_idx": 74,
+      "time_utc": "2026-07-02T00:33:31.405017Z",
+      "timestamp_ns": 1782952411405017000,
+      "vwap": 59713.56,
+      "buy_volume": 4.1155,
+      "sell_volume": 0.8845,
+      "imbalance": 3.231,
+      "vpin": 0.3904
+    },
+    {
+      "bucket_idx": 75,
+      "time_utc": "2026-07-02T00:33:35.219478Z",
+      "timestamp_ns": 1782952415219478000,
+      "vwap": 59703.18,
+      "buy_volume": 4.8825,
+      "sell_volume": 0.1175,
+      "imbalance": 4.765,
+      "vpin": 0.4228
+    },
+    {
+      "bucket_idx": 76,
+      "time_utc": "2026-07-02T00:33:35.219478Z",
+      "timestamp_ns": 1782952415219478000,
+      "vwap": 59713.06,
+      "buy_volume": 5.0,
+      "sell_volume": 0.0,
+      "imbalance": 5.0,
+      "vpin": 0.4274
+    },
+    {
+      "bucket_idx": 77,
+      "time_utc": "2026-07-02T00:34:14.537026Z",
+      "timestamp_ns": 1782952454537026000,
+      "vwap": 59710.55,
+      "buy_volume": 0.9425,
+      "sell_volume": 4.0575,
+      "imbalance": 3.115,
+      "vpin": 0.4471
+    },
+    {
+      "bucket_idx": 78,
+      "time_utc": "2026-07-02T00:35:05.133373Z",
+      "timestamp_ns": 1782952505133373000,
+      "vwap": 59689.01,
+      "buy_volume": 1.7355,
+      "sell_volume": 3.2645,
+      "imbalance": 1.529,
+      "vpin": 0.4541
+    },
+    {
+      "bucket_idx": 79,
+      "time_utc": "2026-07-02T00:35:58.412673Z",
+      "timestamp_ns": 1782952558412673000,
+      "vwap": 59692.48,
+      "buy_volume": 3.4704,
+      "sell_volume": 1.5296,
+      "imbalance": 1.9408,
+      "vpin": 0.467
+    },
+    {
+      "bucket_idx": 80,
+      "time_utc": "2026-07-02T00:36:25.450974Z",
+      "timestamp_ns": 1782952585450974000,
+      "vwap": 59726.51,
+      "buy_volume": 3.485,
+      "sell_volume": 1.515,
+      "imbalance": 1.97,
+      "vpin": 0.4523
+    },
+    {
+      "bucket_idx": 81,
+      "time_utc": "2026-07-02T00:36:59.170333Z",
+      "timestamp_ns": 1782952619170333000,
+      "vwap": 59725.94,
+      "buy_volume": 1.9102,
+      "sell_volume": 3.0898,
+      "imbalance": 1.1797,
+      "vpin": 0.4603
+    },
+    {
+      "bucket_idx": 82,
+      "time_utc": "2026-07-02T00:37:04.439994Z",
+      "timestamp_ns": 1782952624439994000,
+      "vwap": 59702.28,
+      "buy_volume": 4.763,
+      "sell_volume": 0.237,
+      "imbalance": 4.5259,
+      "vpin": 0.4578
+    },
+    {
+      "bucket_idx": 83,
+      "time_utc": "2026-07-02T00:37:11.155703Z",
+      "timestamp_ns": 1782952631155703000,
+      "vwap": 59705.64,
+      "buy_volume": 4.9995,
+      "sell_volume": 0.0005,
+      "imbalance": 4.9989,
+      "vpin": 0.4857
+    },
+    {
+      "bucket_idx": 84,
+      "time_utc": "2026-07-02T00:37:16.516286Z",
+      "timestamp_ns": 1782952636516286000,
+      "vwap": 59729.15,
+      "buy_volume": 4.7909,
+      "sell_volume": 0.2091,
+      "imbalance": 4.5818,
+      "vpin": 0.5126
+    },
+    {
+      "bucket_idx": 85,
+      "time_utc": "2026-07-02T00:37:46.102355Z",
+      "timestamp_ns": 1782952666102355000,
+      "vwap": 59709.33,
+      "buy_volume": 2.2734,
+      "sell_volume": 2.7266,
+      "imbalance": 0.4532,
+      "vpin": 0.4946
+    },
+    {
+      "bucket_idx": 86,
+      "time_utc": "2026-07-02T00:37:46.102355Z",
+      "timestamp_ns": 1782952666102355000,
+      "vwap": 59699.16,
+      "buy_volume": 5.0,
+      "sell_volume": 0.0,
+      "imbalance": 5.0,
+      "vpin": 0.5112
+    },
+    {
+      "bucket_idx": 87,
+      "time_utc": "2026-07-02T00:37:46.102355Z",
+      "timestamp_ns": 1782952666102355000,
+      "vwap": 59703.87,
+      "buy_volume": 5.0,
+      "sell_volume": 0.0,
+      "imbalance": 5.0,
+      "vpin": 0.5345
+    },
+    {
+      "bucket_idx": 88,
+      "time_utc": "2026-07-02T00:37:56.586255Z",
+      "timestamp_ns": 1782952676586255000,
+      "vwap": 59700.16,
+      "buy_volume": 4.4548,
+      "sell_volume": 0.5452,
+      "imbalance": 3.9097,
+      "vpin": 0.5645
+    },
+    {
+      "bucket_idx": 89,
+      "time_utc": "2026-07-02T00:38:04.799064Z",
+      "timestamp_ns": 1782952684799064000,
+      "vwap": 59663.58,
+      "buy_volume": 3.4661,
+      "sell_volume": 1.5339,
+      "imbalance": 1.9322,
+      "vpin": 0.5773
+    },
+    {
+      "bucket_idx": 90,
+      "time_utc": "2026-07-02T00:38:19.773804Z",
+      "timestamp_ns": 1782952699773804000,
+      "vwap": 59656.72,
+      "buy_volume": 3.6346,
+      "sell_volume": 1.3654,
+      "imbalance": 2.2693,
+      "vpin": 0.5632
+    },
+    {
+      "bucket_idx": 91,
+      "time_utc": "2026-07-02T00:38:45.794712Z",
+      "timestamp_ns": 1782952725794712000,
+      "vwap": 59665.15,
+      "buy_volume": 4.9117,
+      "sell_volume": 0.0883,
+      "imbalance": 4.8234,
+      "vpin": 0.5808
+    },
+    {
+      "bucket_idx": 92,
+      "time_utc": "2026-07-02T00:39:05.902764Z",
+      "timestamp_ns": 1782952745902764000,
+      "vwap": 59653.51,
+      "buy_volume": 3.4335,
+      "sell_volume": 1.5665,
+      "imbalance": 1.8669,
+      "vpin": 0.5933
+    },
+    {
+      "bucket_idx": 93,
+      "time_utc": "2026-07-02T00:39:05.902764Z",
+      "timestamp_ns": 1782952745902764000,
+      "vwap": 59659.82,
+      "buy_volume": 5.0,
+      "sell_volume": 0.0,
+      "imbalance": 5.0,
+      "vpin": 0.6306
+    },
+    {
+      "bucket_idx": 94,
+      "time_utc": "2026-07-02T00:39:05.902764Z",
+      "timestamp_ns": 1782952745902764000,
+      "vwap": 59664.05,
+      "buy_volume": 5.0,
+      "sell_volume": 0.0,
+      "imbalance": 5.0,
+      "vpin": 0.6596
+    },
+    {
+      "bucket_idx": 95,
+      "time_utc": "2026-07-02T00:39:05.902764Z",
+      "timestamp_ns": 1782952745902764000,
+      "vwap": 59666.44,
+      "buy_volume": 5.0,
+      "sell_volume": 0.0,
+      "imbalance": 5.0,
+      "vpin": 0.6803
+    },
+    {
+      "bucket_idx": 96,
+      "time_utc": "2026-07-02T00:39:05.902764Z",
+      "timestamp_ns": 1782952745902764000,
+      "vwap": 59668.84,
+      "buy_volume": 5.0,
+      "sell_volume": 0.0,
+      "imbalance": 5.0,
+      "vpin": 0.7043
+    },
+    {
+      "bucket_idx": 97,
+      "time_utc": "2026-07-02T00:39:12.023616Z",
+      "timestamp_ns": 1782952752023616000,
+      "vwap": 59651.19,
+      "buy_volume": 3.2213,
+      "sell_volume": 1.7787,
+      "imbalance": 1.4426,
+      "vpin": 0.7083
+    },
+    {
+      "bucket_idx": 98,
+      "time_utc": "2026-07-02T00:39:12.023616Z",
+      "timestamp_ns": 1782952752023616000,
+      "vwap": 59658.21,
+      "buy_volume": 5.0,
+      "sell_volume": 0.0,
+      "imbalance": 5.0,
+      "vpin": 0.7083
+    },
+    {
+      "bucket_idx": 99,
+      "time_utc": "2026-07-02T00:39:19.448271Z",
+      "timestamp_ns": 1782952759448271000,
+      "vwap": 59653.07,
+      "buy_volume": 2.8645,
+      "sell_volume": 2.1355,
+      "imbalance": 0.7291,
+      "vpin": 0.6883
+    },
+    {
+      "bucket_idx": 100,
+      "time_utc": "2026-07-02T00:40:01.987076Z",
+      "timestamp_ns": 1782952801987076000,
+      "vwap": 59647.45,
+      "buy_volume": 2.2358,
+      "sell_volume": 2.7642,
+      "imbalance": 0.5284,
+      "vpin": 0.6544
+    },
+    {
+      "bucket_idx": 101,
+      "time_utc": "2026-07-02T00:40:18.499480Z",
+      "timestamp_ns": 1782952818499480000,
+      "vwap": 59642.03,
+      "buy_volume": 4.6943,
+      "sell_volume": 0.3057,
+      "imbalance": 4.3887,
+      "vpin": 0.6495
+    },
+    {
+      "bucket_idx": 102,
+      "time_utc": "2026-07-02T00:41:13.766592Z",
+      "timestamp_ns": 1782952873766592000,
+      "vwap": 59646.25,
+      "buy_volume": 1.8634,
+      "sell_volume": 3.1366,
+      "imbalance": 1.2731,
+      "vpin": 0.6347
+    },
+    {
+      "bucket_idx": 103,
+      "time_utc": "2026-07-02T00:41:34.503065Z",
+      "timestamp_ns": 1782952894503065000,
+      "vwap": 59643.34,
+      "buy_volume": 1.0711,
+      "sell_volume": 3.9289,
+      "imbalance": 2.8579,
+      "vpin": 0.6454
+    },
+    {
+      "bucket_idx": 104,
+      "time_utc": "2026-07-02T00:41:46.063724Z",
+      "timestamp_ns": 1782952906063724000,
+      "vwap": 59637.36,
+      "buy_volume": 1.5143,
+      "sell_volume": 3.4857,
+      "imbalance": 1.9713,
+      "vpin": 0.6456
+    },
+    {
+      "bucket_idx": 105,
+      "time_utc": "2026-07-02T00:42:03.896242Z",
+      "timestamp_ns": 1782952923896242000,
+      "vwap": 59633.95,
+      "buy_volume": 3.4956,
+      "sell_volume": 1.5044,
+      "imbalance": 1.9912,
+      "vpin": 0.6458
+    },
+    {
+      "bucket_idx": 106,
+      "time_utc": "2026-07-02T00:42:44.139761Z",
+      "timestamp_ns": 1782952964139761000,
+      "vwap": 59634.68,
+      "buy_volume": 2.2578,
+      "sell_volume": 2.7422,
+      "imbalance": 0.4845,
+      "vpin": 0.6402
+    },
+    {
+      "bucket_idx": 107,
+      "time_utc": "2026-07-02T00:42:57.637480Z",
+      "timestamp_ns": 1782952977637480000,
+      "vwap": 59600.74,
+      "buy_volume": 0.3254,
+      "sell_volume": 4.6746,
+      "imbalance": 4.3492,
+      "vpin": 0.6388
+    },
+    {
+      "bucket_idx": 108,
+      "time_utc": "2026-07-02T00:43:05.529241Z",
+      "timestamp_ns": 1782952985529241000,
+      "vwap": 59597.13,
+      "buy_volume": 0.1257,
+      "sell_volume": 4.8743,
+      "imbalance": 4.7485,
+      "vpin": 0.6368
+    },
+    {
+      "bucket_idx": 109,
+      "time_utc": "2026-07-02T00:43:23.938859Z",
+      "timestamp_ns": 1782953003938859000,
+      "vwap": 59593.23,
+      "buy_volume": 1.9985,
+      "sell_volume": 3.0015,
+      "imbalance": 1.003,
+      "vpin": 0.6082
+    },
+    {
+      "bucket_idx": 110,
+      "time_utc": "2026-07-02T00:43:23.952569Z",
+      "timestamp_ns": 1782953003952569000,
+      "vwap": 59589.57,
+      "buy_volume": 5.0,
+      "sell_volume": 0.0,
+      "imbalance": 5.0,
+      "vpin": 0.6446
+    },
+    {
+      "bucket_idx": 111,
+      "time_utc": "2026-07-02T00:44:54.000506Z",
+      "timestamp_ns": 1782953094000506000,
+      "vwap": 59600.78,
+      "buy_volume": 3.9095,
+      "sell_volume": 1.0905,
+      "imbalance": 2.8191,
+      "vpin": 0.6271
+    },
+    {
+      "bucket_idx": 112,
+      "time_utc": "2026-07-02T00:45:13.382976Z",
+      "timestamp_ns": 1782953113382976000,
+      "vwap": 59649.13,
+      "buy_volume": 2.5796,
+      "sell_volume": 2.4204,
+      "imbalance": 0.1592,
+      "vpin": 0.5884
+    },
+    {
+      "bucket_idx": 113,
+      "time_utc": "2026-07-02T00:45:39.681671Z",
+      "timestamp_ns": 1782953139681671000,
+      "vwap": 59657.03,
+      "buy_volume": 2.6259,
+      "sell_volume": 2.3741,
+      "imbalance": 0.2517,
+      "vpin": 0.5591
+    },
+    {
+      "bucket_idx": 114,
+      "time_utc": "2026-07-02T00:46:16.402481Z",
+      "timestamp_ns": 1782953176402481000,
+      "vwap": 59665.96,
+      "buy_volume": 0.9793,
+      "sell_volume": 4.0207,
+      "imbalance": 3.0414,
+      "vpin": 0.568
+    },
+    {
+      "bucket_idx": 115,
+      "time_utc": "2026-07-02T00:46:31.431483Z",
+      "timestamp_ns": 1782953191431483000,
+      "vwap": 59655.61,
+      "buy_volume": 2.7272,
+      "sell_volume": 2.2728,
+      "imbalance": 0.4545,
+      "vpin": 0.5535
+    },
+    {
+      "bucket_idx": 116,
+      "time_utc": "2026-07-02T00:47:08.656951Z",
+      "timestamp_ns": 1782953228656951000,
+      "vwap": 59680.54,
+      "buy_volume": 2.7208,
+      "sell_volume": 2.2792,
+      "imbalance": 0.4416,
+      "vpin": 0.5184
+    },
+    {
+      "bucket_idx": 117,
+      "time_utc": "2026-07-02T00:47:13.283027Z",
+      "timestamp_ns": 1782953233283027000,
+      "vwap": 59684.82,
+      "buy_volume": 3.6569,
+      "sell_volume": 1.3431,
+      "imbalance": 2.3139,
+      "vpin": 0.522
+    },
+    {
+      "bucket_idx": 118,
+      "time_utc": "2026-07-02T00:47:33.910192Z",
+      "timestamp_ns": 1782953253910192000,
+      "vwap": 59688.46,
+      "buy_volume": 3.0755,
+      "sell_volume": 1.9244,
+      "imbalance": 1.1511,
+      "vpin": 0.4912
+    },
+    {
+      "bucket_idx": 119,
+      "time_utc": "2026-07-02T00:48:26.063829Z",
+      "timestamp_ns": 1782953306063829000,
+      "vwap": 59693.65,
+      "buy_volume": 1.7154,
+      "sell_volume": 3.2846,
+      "imbalance": 1.5692,
+      "vpin": 0.4638
+    },
+    {
+      "bucket_idx": 120,
+      "time_utc": "2026-07-02T00:48:34.580647Z",
+      "timestamp_ns": 1782953314580647000,
+      "vwap": 59689.51,
+      "buy_volume": 0.7559,
+      "sell_volume": 4.2441,
+      "imbalance": 3.4882,
+      "vpin": 0.4517
+    },
+    {
+      "bucket_idx": 121,
+      "time_utc": "2026-07-02T00:48:41.292189Z",
+      "timestamp_ns": 1782953321292189000,
+      "vwap": 59725.09,
+      "buy_volume": 4.9891,
+      "sell_volume": 0.0109,
+      "imbalance": 4.9782,
+      "vpin": 0.4515
+    },
+    {
+      "bucket_idx": 122,
+      "time_utc": "2026-07-02T00:48:41.292189Z",
+      "timestamp_ns": 1782953321292189000,
+      "vwap": 59746.59,
+      "buy_volume": 5.0,
+      "sell_volume": 0.0,
+      "imbalance": 5.0,
+      "vpin": 0.4799
+    },
+    {
+      "bucket_idx": 123,
+      "time_utc": "2026-07-02T00:48:41.292189Z",
+      "timestamp_ns": 1782953321292189000,
+      "vwap": 59750.7,
+      "buy_volume": 5.0,
+      "sell_volume": 0.0,
+      "imbalance": 5.0,
+      "vpin": 0.4799
+    },
+    {
+      "bucket_idx": 124,
+      "time_utc": "2026-07-02T00:48:41.292189Z",
+      "timestamp_ns": 1782953321292189000,
+      "vwap": 59752.75,
+      "buy_volume": 5.0,
+      "sell_volume": 0.0,
+      "imbalance": 5.0,
+      "vpin": 0.5141
+    },
+    {
+      "bucket_idx": 125,
+      "time_utc": "2026-07-02T00:48:41.292189Z",
+      "timestamp_ns": 1782953321292189000,
+      "vwap": 59755.92,
+      "buy_volume": 5.0,
+      "sell_volume": 0.0,
+      "imbalance": 5.0,
+      "vpin": 0.5499
+    },
+    {
+      "bucket_idx": 126,
+      "time_utc": "2026-07-02T00:48:41.292189Z",
+      "timestamp_ns": 1782953321292189000,
+      "vwap": 59760.25,
+      "buy_volume": 5.0,
+      "sell_volume": 0.0,
+      "imbalance": 5.0,
+      "vpin": 0.5548
+    },
+    {
+      "bucket_idx": 127,
+      "time_utc": "2026-07-02T00:48:41.292189Z",
+      "timestamp_ns": 1782953321292189000,
+      "vwap": 59762.27,
+      "buy_volume": 5.0,
+      "sell_volume": 0.0,
+      "imbalance": 5.0,
+      "vpin": 0.5846
+    },
+    {
+      "bucket_idx": 128,
+      "time_utc": "2026-07-02T00:48:41.292189Z",
+      "timestamp_ns": 1782953321292189000,
+      "vwap": 59764.77,
+      "buy_volume": 5.0,
+      "sell_volume": 0.0,
+      "imbalance": 5.0,
+      "vpin": 0.6017
+    },
+    {
+      "bucket_idx": 129,
+      "time_utc": "2026-07-02T00:48:41.292189Z",
+      "timestamp_ns": 1782953321292189000,
+      "vwap": 59768.74,
+      "buy_volume": 5.0,
+      "sell_volume": 0.0,
+      "imbalance": 5.0,
+      "vpin": 0.626
+    },
+    {
+      "bucket_idx": 130,
+      "time_utc": "2026-07-02T00:48:41.292189Z",
+      "timestamp_ns": 1782953321292189000,
+      "vwap": 59770.15,
+      "buy_volume": 5.0,
+      "sell_volume": 0.0,
+      "imbalance": 5.0,
+      "vpin": 0.65
+    },
+    {
+      "bucket_idx": 131,
+      "time_utc": "2026-07-02T00:48:41.292189Z",
+      "timestamp_ns": 1782953321292189000,
+      "vwap": 59772.1,
+      "buy_volume": 5.0,
+      "sell_volume": 0.0,
+      "imbalance": 5.0,
+      "vpin": 0.6862
+    },
+    {
+      "bucket_idx": 132,
+      "time_utc": "2026-07-02T00:48:41.292189Z",
+      "timestamp_ns": 1782953321292189000,
+      "vwap": 59773.62,
+      "buy_volume": 5.0,
+      "sell_volume": 0.0,
+      "imbalance": 5.0,
+      "vpin": 0.6914
+    },
+    {
+      "bucket_idx": 133,
+      "time_utc": "2026-07-02T00:48:41.292189Z",
+      "timestamp_ns": 1782953321292189000,
+      "vwap": 59776.46,
+      "buy_volume": 5.0,
+      "sell_volume": 0.0,
+      "imbalance": 5.0,
+      "vpin": 0.6934
+    },
+    {
+      "bucket_idx": 134,
+      "time_utc": "2026-07-02T00:48:41.292189Z",
+      "timestamp_ns": 1782953321292189000,
+      "vwap": 59778.3,
+      "buy_volume": 5.0,
+      "sell_volume": 0.0,
+      "imbalance": 5.0,
+      "vpin": 0.7253
+    },
+    {
+      "bucket_idx": 135,
+      "time_utc": "2026-07-02T00:48:41.292189Z",
+      "timestamp_ns": 1782953321292189000,
+      "vwap": 59783.0,
+      "buy_volume": 5.0,
+      "sell_volume": 0.0,
+      "imbalance": 5.0,
+      "vpin": 0.7253
+    },
+    {
+      "bucket_idx": 136,
+      "time_utc": "2026-07-02T00:48:41.292189Z",
+      "timestamp_ns": 1782953321292189000,
+      "vwap": 59785.52,
+      "buy_volume": 5.0,
+      "sell_volume": 0.0,
+      "imbalance": 5.0,
+      "vpin": 0.7428
+    },
+    {
+      "bucket_idx": 137,
+      "time_utc": "2026-07-02T00:48:41.292189Z",
+      "timestamp_ns": 1782953321292189000,
+      "vwap": 59790.14,
+      "buy_volume": 5.0,
+      "sell_volume": 0.0,
+      "imbalance": 5.0,
+      "vpin": 0.7815
+    },
+    {
+      "bucket_idx": 138,
+      "time_utc": "2026-07-02T00:48:41.314882Z",
+      "timestamp_ns": 1782953321314882000,
+      "vwap": 59776.26,
+      "buy_volume": 3.9635,
+      "sell_volume": 1.0365,
+      "imbalance": 2.9271,
+      "vpin": 0.8029
+    },
+    {
+      "bucket_idx": 139,
+      "time_utc": "2026-07-02T00:48:43.365208Z",
+      "timestamp_ns": 1782953323365208000,
+      "vwap": 59750.14,
+      "buy_volume": 0.6568,
+      "sell_volume": 4.3432,
+      "imbalance": 3.6865,
+      "vpin": 0.8081
+    },
+    {
+      "bucket_idx": 140,
+      "time_utc": "2026-07-02T00:49:15.617688Z",
+      "timestamp_ns": 1782953355617688000,
+      "vwap": 59716.33,
+      "buy_volume": 1.8008,
+      "sell_volume": 3.1992,
+      "imbalance": 1.3984,
+      "vpin": 0.8156
+    },
+    {
+      "bucket_idx": 141,
+      "time_utc": "2026-07-02T00:49:43.119466Z",
+      "timestamp_ns": 1782953383119466000,
+      "vwap": 59733.26,
+      "buy_volume": 4.9767,
+      "sell_volume": 0.0233,
+      "imbalance": 4.9534,
+      "vpin": 0.8517
+    },
+    {
+      "bucket_idx": 142,
+      "time_utc": "2026-07-02T00:49:45.817021Z",
+      "timestamp_ns": 1782953385817021000,
+      "vwap": 59766.0,
+      "buy_volume": 4.4924,
+      "sell_volume": 0.5075,
+      "imbalance": 3.9849,
+      "vpin": 0.8651
+    },
+    {
+      "bucket_idx": 143,
+      "time_utc": "2026-07-02T00:49:58.646830Z",
+      "timestamp_ns": 1782953398646830000,
+      "vwap": 59776.35,
+      "buy_volume": 4.9755,
+      "sell_volume": 0.0245,
+      "imbalance": 4.951,
+      "vpin": 0.8955
+    },
+    {
+      "bucket_idx": 144,
+      "time_utc": "2026-07-02T00:50:09.739143Z",
+      "timestamp_ns": 1782953409739143000,
+      "vwap": 59819.03,
+      "buy_volume": 3.6586,
+      "sell_volume": 1.3414,
+      "imbalance": 2.3173,
+      "vpin": 0.9015
+    },
+    {
+      "bucket_idx": 145,
+      "time_utc": "2026-07-02T00:50:30.757068Z",
+      "timestamp_ns": 1782953430757068000,
+      "vwap": 59834.3,
+      "buy_volume": 2.5952,
+      "sell_volume": 2.4048,
+      "imbalance": 0.1903,
+      "vpin": 0.8751
+    },
+    {
+      "bucket_idx": 146,
+      "time_utc": "2026-07-02T00:51:00.669561Z",
+      "timestamp_ns": 1782953460669561000,
+      "vwap": 59809.45,
+      "buy_volume": 1.697,
+      "sell_volume": 3.303,
+      "imbalance": 1.6059,
+      "vpin": 0.8481
+    },
+    {
+      "bucket_idx": 147,
+      "time_utc": "2026-07-02T00:51:18.168580Z",
+      "timestamp_ns": 1782953478168580000,
+      "vwap": 59807.24,
+      "buy_volume": 4.0967,
+      "sell_volume": 0.9033,
+      "imbalance": 3.1934,
+      "vpin": 0.8337
+    },
+    {
+      "bucket_idx": 148,
+      "time_utc": "2026-07-02T00:51:31.046216Z",
+      "timestamp_ns": 1782953491046216000,
+      "vwap": 59816.71,
+      "buy_volume": 4.8204,
+      "sell_volume": 0.1796,
+      "imbalance": 4.6409,
+      "vpin": 0.8308
+    },
+    {
+      "bucket_idx": 149,
+      "time_utc": "2026-07-02T00:52:16.980382Z",
+      "timestamp_ns": 1782953536980382000,
+      "vwap": 59803.61,
+      "buy_volume": 2.5809,
+      "sell_volume": 2.4191,
+      "imbalance": 0.1618,
+      "vpin": 0.7921
+    },
+    {
+      "bucket_idx": 150,
+      "time_utc": "2026-07-02T00:52:54.324121Z",
+      "timestamp_ns": 1782953574324121000,
+      "vwap": 59784.32,
+      "buy_volume": 2.3489,
+      "sell_volume": 2.6511,
+      "imbalance": 0.3023,
+      "vpin": 0.7545
+    },
+    {
+      "bucket_idx": 151,
+      "time_utc": "2026-07-02T00:54:06.506389Z",
+      "timestamp_ns": 1782953646506389000,
+      "vwap": 59769.5,
+      "buy_volume": 2.5024,
+      "sell_volume": 2.4976,
+      "imbalance": 0.0048,
+      "vpin": 0.7145
+    },
+    {
+      "bucket_idx": 152,
+      "time_utc": "2026-07-02T00:55:01.314081Z",
+      "timestamp_ns": 1782953701314081000,
+      "vwap": 59748.6,
+      "buy_volume": 1.2736,
+      "sell_volume": 3.7264,
+      "imbalance": 2.4528,
+      "vpin": 0.6942
+    },
+    {
+      "bucket_idx": 153,
+      "time_utc": "2026-07-02T00:55:23.702407Z",
+      "timestamp_ns": 1782953723702407000,
+      "vwap": 59751.96,
+      "buy_volume": 3.6182,
+      "sell_volume": 1.3818,
+      "imbalance": 2.2363,
+      "vpin": 0.6721
+    },
+    {
+      "bucket_idx": 154,
+      "time_utc": "2026-07-02T00:55:32.571683Z",
+      "timestamp_ns": 1782953732571683000,
+      "vwap": 59738.6,
+      "buy_volume": 1.1709,
+      "sell_volume": 3.8291,
+      "imbalance": 2.6582,
+      "vpin": 0.6533
+    },
+    {
+      "bucket_idx": 155,
+      "time_utc": "2026-07-02T00:56:38.936718Z",
+      "timestamp_ns": 1782953798936718000,
+      "vwap": 59725.22,
+      "buy_volume": 0.6939,
+      "sell_volume": 4.3061,
+      "imbalance": 3.6121,
+      "vpin": 0.6422
+    },
+    {
+      "bucket_idx": 156,
+      "time_utc": "2026-07-02T00:57:28.986280Z",
+      "timestamp_ns": 1782953848986280000,
+      "vwap": 59700.38,
+      "buy_volume": 2.2866,
+      "sell_volume": 2.7134,
+      "imbalance": 0.4267,
+      "vpin": 0.6056
+    },
+    {
+      "bucket_idx": 157,
+      "time_utc": "2026-07-02T00:57:59.784222Z",
+      "timestamp_ns": 1782953879784222000,
+      "vwap": 59707.49,
+      "buy_volume": 4.2175,
+      "sell_volume": 0.7825,
+      "imbalance": 3.435,
+      "vpin": 0.5931
+    },
+    {
+      "bucket_idx": 158,
+      "time_utc": "2026-07-02T00:58:50.409722Z",
+      "timestamp_ns": 1782953930409722000,
+      "vwap": 59709.41,
+      "buy_volume": 2.2018,
+      "sell_volume": 2.7982,
+      "imbalance": 0.5963,
+      "vpin": 0.5579
+    },
+    {
+      "bucket_idx": 159,
+      "time_utc": "2026-07-02T00:59:04.976339Z",
+      "timestamp_ns": 1782953944976339000,
+      "vwap": 59713.43,
+      "buy_volume": 3.6008,
+      "sell_volume": 1.3992,
+      "imbalance": 2.2015,
+      "vpin": 0.5355
+    },
+    {
+      "bucket_idx": 160,
+      "time_utc": "2026-07-02T00:59:44.886389Z",
+      "timestamp_ns": 1782953984886389000,
+      "vwap": 59731.22,
+      "buy_volume": 3.2718,
+      "sell_volume": 1.7282,
+      "imbalance": 1.5437,
+      "vpin": 0.5078
+    },
+    {
+      "bucket_idx": 161,
+      "time_utc": "2026-07-02T00:59:52.776083Z",
+      "timestamp_ns": 1782953992776083000,
+      "vwap": 59733.22,
+      "buy_volume": 3.7754,
+      "sell_volume": 1.2246,
+      "imbalance": 2.5509,
+      "vpin": 0.4883
+    },
+    {
+      "bucket_idx": 162,
+      "time_utc": "2026-07-02T00:59:52.776083Z",
+      "timestamp_ns": 1782953992776083000,
+      "vwap": 59747.46,
+      "buy_volume": 5.0,
+      "sell_volume": 0.0,
+      "imbalance": 5.0,
+      "vpin": 0.4883
+    },
+    {
+      "bucket_idx": 163,
+      "time_utc": "2026-07-02T00:59:52.776083Z",
+      "timestamp_ns": 1782953992776083000,
+      "vwap": 59749.02,
+      "buy_volume": 5.0,
+      "sell_volume": 0.0,
+      "imbalance": 5.0,
+      "vpin": 0.5048
+    },
+    {
+      "bucket_idx": 164,
+      "time_utc": "2026-07-02T00:59:52.776083Z",
+      "timestamp_ns": 1782953992776083000,
+      "vwap": 59749.32,
+      "buy_volume": 5.0,
+      "sell_volume": 0.0,
+      "imbalance": 5.0,
+      "vpin": 0.5153
+    },
+    {
+      "bucket_idx": 165,
+      "time_utc": "2026-07-02T00:59:52.776083Z",
+      "timestamp_ns": 1782953992776083000,
+      "vwap": 59750.39,
+      "buy_volume": 5.0,
+      "sell_volume": 0.0,
+      "imbalance": 5.0,
+      "vpin": 0.5442
+    },
+    {
+      "bucket_idx": 166,
+      "time_utc": "2026-07-02T00:59:52.780305Z",
+      "timestamp_ns": 1782953992780305000,
+      "vwap": 59750.73,
+      "buy_volume": 4.8541,
+      "sell_volume": 0.1459,
+      "imbalance": 4.7081,
+      "vpin": 0.5422
+    },
+    {
+      "bucket_idx": 167,
+      "time_utc": "2026-07-02T00:59:53.700936Z",
+      "timestamp_ns": 1782953993700936000,
+      "vwap": 59749.08,
+      "buy_volume": 2.0107,
+      "sell_volume": 2.9893,
+      "imbalance": 0.9786,
+      "vpin": 0.5181
+    },
+    {
+      "bucket_idx": 168,
+      "time_utc": "2026-07-02T00:59:53.700936Z",
+      "timestamp_ns": 1782953993700936000,
+      "vwap": 59749.24,
+      "buy_volume": 5.0,
+      "sell_volume": 0.0,
+      "imbalance": 5.0,
+      "vpin": 0.5185
+    },
+    {
+      "bucket_idx": 169,
+      "time_utc": "2026-07-02T00:59:53.700936Z",
+      "timestamp_ns": 1782953993700936000,
+      "vwap": 59749.31,
+      "buy_volume": 5.0,
+      "sell_volume": 0.0,
+      "imbalance": 5.0,
+      "vpin": 0.54
+    },
+    {
+      "bucket_idx": 170,
+      "time_utc": "2026-07-02T00:59:53.700936Z",
+      "timestamp_ns": 1782953993700936000,
+      "vwap": 59749.88,
+      "buy_volume": 5.0,
+      "sell_volume": 0.0,
+      "imbalance": 5.0,
+      "vpin": 0.5785
+    },
+    {
+      "bucket_idx": 171,
+      "time_utc": "2026-07-02T00:59:55.304055Z",
+      "timestamp_ns": 1782953995304055000,
+      "vwap": 59752.0,
+      "buy_volume": 5.0,
+      "sell_volume": 0.0,
+      "imbalance": 5.0,
+      "vpin": 0.6056
+    },
+    {
+      "bucket_idx": 172,
+      "time_utc": "2026-07-02T01:00:03.602350Z",
+      "timestamp_ns": 1782954003602350000,
+      "vwap": 59757.51,
+      "buy_volume": 3.1131,
+      "sell_volume": 1.8869,
+      "imbalance": 1.2261,
+      "vpin": 0.5899
+    },
+    {
+      "bucket_idx": 173,
+      "time_utc": "2026-07-02T01:00:05.774517Z",
+      "timestamp_ns": 1782954005774517000,
+      "vwap": 59743.9,
+      "buy_volume": 0.1614,
+      "sell_volume": 4.8386,
+      "imbalance": 4.6773,
+      "vpin": 0.5902
+    },
+    {
+      "bucket_idx": 174,
+      "time_utc": "2026-07-02T01:00:06.541041Z",
+      "timestamp_ns": 1782954006541041000,
+      "vwap": 59731.55,
+      "buy_volume": 0.0026,
+      "sell_volume": 4.9974,
+      "imbalance": 4.9947,
+      "vpin": 0.6288
+    },
+    {
+      "bucket_idx": 175,
+      "time_utc": "2026-07-02T01:00:07.223204Z",
+      "timestamp_ns": 1782954007223204000,
+      "vwap": 59731.18,
+      "buy_volume": 0.0388,
+      "sell_volume": 4.9612,
+      "imbalance": 4.9223,
+      "vpin": 0.6658
+    },
+    {
+      "bucket_idx": 176,
+      "time_utc": "2026-07-02T01:00:07.908860Z",
+      "timestamp_ns": 1782954007908860000,
+      "vwap": 59731.18,
+      "buy_volume": 0.0749,
+      "sell_volume": 4.9251,
+      "imbalance": 4.8501,
+      "vpin": 0.7046
+    },
+    {
+      "bucket_idx": 177,
+      "time_utc": "2026-07-02T01:00:08.630100Z",
+      "timestamp_ns": 1782954008630100000,
+      "vwap": 59730.87,
+      "buy_volume": 0.3994,
+      "sell_volume": 4.6006,
+      "imbalance": 4.2013,
+      "vpin": 0.7186
+    },
+    {
+      "bucket_idx": 178,
+      "time_utc": "2026-07-02T01:00:09.336121Z",
+      "timestamp_ns": 1782954009336121000,
+      "vwap": 59729.37,
+      "buy_volume": 0.0307,
+      "sell_volume": 4.9693,
+      "imbalance": 4.9387,
+      "vpin": 0.7402
+    },
+    {
+      "bucket_idx": 179,
+      "time_utc": "2026-07-02T01:00:09.763891Z",
+      "timestamp_ns": 1782954009763891000,
+      "vwap": 59723.14,
+      "buy_volume": 2.1023,
+      "sell_volume": 2.8977,
+      "imbalance": 0.7955,
+      "vpin": 0.7253
+    },
+    {
+      "bucket_idx": 180,
+      "time_utc": "2026-07-02T01:00:10.479084Z",
+      "timestamp_ns": 1782954010479084000,
+      "vwap": 59722.44,
+      "buy_volume": 0.0,
+      "sell_volume": 5.0,
+      "imbalance": 5.0,
+      "vpin": 0.7364
+    },
+    {
+      "bucket_idx": 181,
+      "time_utc": "2026-07-02T01:00:11.159418Z",
+      "timestamp_ns": 1782954011159418000,
+      "vwap": 59716.9,
+      "buy_volume": 0.0008,
+      "sell_volume": 4.9992,
+      "imbalance": 4.9983,
+      "vpin": 0.7729
+    },
+    {
+      "bucket_idx": 182,
+      "time_utc": "2026-07-02T01:00:11.433159Z",
+      "timestamp_ns": 1782954011433159000,
+      "vwap": 59716.13,
+      "buy_volume": 2.4652,
+      "sell_volume": 2.5348,
+      "imbalance": 0.0696,
+      "vpin": 0.746
+    },
+    {
+      "bucket_idx": 183,
+      "time_utc": "2026-07-02T01:00:11.978959Z",
+      "timestamp_ns": 1782954011978959000,
+      "vwap": 59721.91,
+      "buy_volume": 1.7715,
+      "sell_volume": 3.2285,
+      "imbalance": 1.457,
+      "vpin": 0.7529
+    },
+    {
+      "bucket_idx": 184,
+      "time_utc": "2026-07-02T01:00:15.184194Z",
+      "timestamp_ns": 1782954015184194000,
+      "vwap": 59717.37,
+      "buy_volume": 2.0262,
+      "sell_volume": 2.9738,
+      "imbalance": 0.9475,
+      "vpin": 0.7429
+    },
+    {
+      "bucket_idx": 185,
+      "time_utc": "2026-07-02T01:00:16.685636Z",
+      "timestamp_ns": 1782954016685636000,
+      "vwap": 59723.84,
+      "buy_volume": 4.9924,
+      "sell_volume": 0.0076,
+      "imbalance": 4.9848,
+      "vpin": 0.7704
+    },
+    {
+      "bucket_idx": 186,
+      "time_utc": "2026-07-02T01:01:12.190937Z",
+      "timestamp_ns": 1782954072190937000,
+      "vwap": 59740.97,
+      "buy_volume": 3.4217,
+      "sell_volume": 1.5783,
+      "imbalance": 1.8433,
+      "vpin": 0.7647
+    },
+    {
+      "bucket_idx": 187,
+      "time_utc": "2026-07-02T01:01:32.974532Z",
+      "timestamp_ns": 1782954092974532000,
+      "vwap": 59761.68,
+      "buy_volume": 1.669,
+      "sell_volume": 3.331,
+      "imbalance": 1.6619,
+      "vpin": 0.738
+    },
+    {
+      "bucket_idx": 188,
+      "time_utc": "2026-07-02T01:01:37.988659Z",
+      "timestamp_ns": 1782954097988659000,
+      "vwap": 59754.99,
+      "buy_volume": 0.7414,
+      "sell_volume": 4.2586,
+      "imbalance": 3.5172,
+      "vpin": 0.7262
+    },
+    {
+      "bucket_idx": 189,
+      "time_utc": "2026-07-02T01:01:49.858192Z",
+      "timestamp_ns": 1782954109858192000,
+      "vwap": 59746.77,
+      "buy_volume": 0.218,
+      "sell_volume": 4.782,
+      "imbalance": 4.564,
+      "vpin": 0.7227
+    },
+    {
+      "bucket_idx": 190,
+      "time_utc": "2026-07-02T01:01:53.306767Z",
+      "timestamp_ns": 1782954113306767000,
+      "vwap": 59742.94,
+      "buy_volume": 0.0109,
+      "sell_volume": 4.9891,
+      "imbalance": 4.9781,
+      "vpin": 0.7225
+    },
+    {
+      "bucket_idx": 191,
+      "time_utc": "2026-07-02T01:02:39.374218Z",
+      "timestamp_ns": 1782954159374218000,
+      "vwap": 59754.68,
+      "buy_volume": 2.4813,
+      "sell_volume": 2.5187,
+      "imbalance": 0.0375,
+      "vpin": 0.6852
+    },
+    {
+      "bucket_idx": 192,
+      "time_utc": "2026-07-02T01:03:03.216810Z",
+      "timestamp_ns": 1782954183216810000,
+      "vwap": 59777.16,
+      "buy_volume": 1.2255,
+      "sell_volume": 3.7745,
+      "imbalance": 2.5491,
+      "vpin": 0.6977
+    },
+    {
+      "bucket_idx": 193,
+      "time_utc": "2026-07-02T01:04:02.915065Z",
+      "timestamp_ns": 1782954242915065000,
+      "vwap": 59789.39,
+      "buy_volume": 4.1114,
+      "sell_volume": 0.8886,
+      "imbalance": 3.2227,
+      "vpin": 0.6835
+    },
+    {
+      "bucket_idx": 194,
+      "time_utc": "2026-07-02T01:04:02.915065Z",
+      "timestamp_ns": 1782954242915065000,
+      "vwap": 59806.82,
+      "buy_volume": 5.0,
+      "sell_volume": 0.0,
+      "imbalance": 5.0,
+      "vpin": 0.6835
+    },
+    {
+      "bucket_idx": 195,
+      "time_utc": "2026-07-02T01:04:16.118608Z",
+      "timestamp_ns": 1782954256118608000,
+      "vwap": 59805.99,
+      "buy_volume": 2.7636,
+      "sell_volume": 2.2364,
+      "imbalance": 0.5273,
+      "vpin": 0.6477
+    },
+    {
+      "bucket_idx": 196,
+      "time_utc": "2026-07-02T01:04:59.283713Z",
+      "timestamp_ns": 1782954299283713000,
+      "vwap": 59763.04,
+      "buy_volume": 1.3642,
+      "sell_volume": 3.6358,
+      "imbalance": 2.2715,
+      "vpin": 0.6259
+    },
+    {
+      "bucket_idx": 197,
+      "time_utc": "2026-07-02T01:06:00.573771Z",
+      "timestamp_ns": 1782954360573771000,
+      "vwap": 59748.63,
+      "buy_volume": 4.0425,
+      "sell_volume": 0.9575,
+      "imbalance": 3.085,
+      "vpin": 0.6408
+    },
+    {
+      "bucket_idx": 198,
+      "time_utc": "2026-07-02T01:07:01.415103Z",
+      "timestamp_ns": 1782954421415103000,
+      "vwap": 59749.49,
+      "buy_volume": 2.238,
+      "sell_volume": 2.762,
+      "imbalance": 0.524,
+      "vpin": 0.6075
+    },
+    {
+      "bucket_idx": 199,
+      "time_utc": "2026-07-02T01:07:48.007698Z",
+      "timestamp_ns": 1782954468007698000,
+      "vwap": 59737.51,
+      "buy_volume": 2.231,
+      "sell_volume": 2.769,
+      "imbalance": 0.5381,
+      "vpin": 0.5719
+    },
+    {
+      "bucket_idx": 200,
+      "time_utc": "2026-07-02T01:08:54.417041Z",
+      "timestamp_ns": 1782954534417041000,
+      "vwap": 59754.09,
+      "buy_volume": 3.1794,
+      "sell_volume": 1.8206,
+      "imbalance": 1.3587,
+      "vpin": 0.5434
+    },
+    {
+      "bucket_idx": 201,
+      "time_utc": "2026-07-02T01:09:06.090902Z",
+      "timestamp_ns": 1782954546090902000,
+      "vwap": 59772.98,
+      "buy_volume": 4.7136,
+      "sell_volume": 0.2864,
+      "imbalance": 4.4272,
+      "vpin": 0.54
+    },
+    {
+      "bucket_idx": 202,
+      "time_utc": "2026-07-02T01:09:59.528757Z",
+      "timestamp_ns": 1782954599528757000,
+      "vwap": 59806.7,
+      "buy_volume": 3.0786,
+      "sell_volume": 1.9214,
+      "imbalance": 1.1572,
+      "vpin": 0.5156
+    },
+    {
+      "bucket_idx": 203,
+      "time_utc": "2026-07-02T01:10:10.599406Z",
+      "timestamp_ns": 1782954610599406000,
+      "vwap": 59822.0,
+      "buy_volume": 3.6094,
+      "sell_volume": 1.3906,
+      "imbalance": 2.2189,
+      "vpin": 0.4939
+    },
+    {
+      "bucket_idx": 204,
+      "time_utc": "2026-07-02T01:10:10.683208Z",
+      "timestamp_ns": 1782954610683208000,
+      "vwap": 59833.72,
+      "buy_volume": 4.1299,
+      "sell_volume": 0.8701,
+      "imbalance": 3.2598,
+      "vpin": 0.5136
+    },
+    {
+      "bucket_idx": 205,
+      "time_utc": "2026-07-02T01:11:11.917051Z",
+      "timestamp_ns": 1782954671917051000,
+      "vwap": 59827.84,
+      "buy_volume": 1.7138,
+      "sell_volume": 3.2862,
+      "imbalance": 1.5724,
+      "vpin": 0.4862
+    },
+    {
+      "bucket_idx": 206,
+      "time_utc": "2026-07-02T01:11:39.454123Z",
+      "timestamp_ns": 1782954699454123000,
+      "vwap": 59801.16,
+      "buy_volume": 3.1294,
+      "sell_volume": 1.8706,
+      "imbalance": 1.2588,
+      "vpin": 0.4563
+    },
+    {
+      "bucket_idx": 207,
+      "time_utc": "2026-07-02T01:12:25.086274Z",
+      "timestamp_ns": 1782954745086274000,
+      "vwap": 59802.28,
+      "buy_volume": 3.2659,
+      "sell_volume": 1.7341,
+      "imbalance": 1.5317,
+      "vpin": 0.4679
+    },
+    {
+      "bucket_idx": 208,
+      "time_utc": "2026-07-02T01:13:04.335066Z",
+      "timestamp_ns": 1782954784335066000,
+      "vwap": 59851.38,
+      "buy_volume": 4.3541,
+      "sell_volume": 0.6459,
+      "imbalance": 3.7083,
+      "vpin": 0.486
+    },
+    {
+      "bucket_idx": 209,
+      "time_utc": "2026-07-02T01:13:32.570024Z",
+      "timestamp_ns": 1782954812570024000,
+      "vwap": 59881.15,
+      "buy_volume": 3.7546,
+      "sell_volume": 1.2454,
+      "imbalance": 2.5093,
+      "vpin": 0.4985
+    },
+    {
+      "bucket_idx": 210,
+      "time_utc": "2026-07-02T01:14:01.567727Z",
+      "timestamp_ns": 1782954841567727000,
+      "vwap": 59920.88,
+      "buy_volume": 2.5232,
+      "sell_volume": 2.4768,
+      "imbalance": 0.0464,
+      "vpin": 0.4589
+    },
+    {
+      "bucket_idx": 211,
+      "time_utc": "2026-07-02T01:14:01.567727Z",
+      "timestamp_ns": 1782954841567727000,
+      "vwap": 59916.81,
+      "buy_volume": 5.0,
+      "sell_volume": 0.0,
+      "imbalance": 5.0,
+      "vpin": 0.4842
+    },
+    {
+      "bucket_idx": 212,
+      "time_utc": "2026-07-02T01:14:02.550191Z",
+      "timestamp_ns": 1782954842550191000,
+      "vwap": 59920.52,
+      "buy_volume": 4.9279,
+      "sell_volume": 0.0721,
+      "imbalance": 4.8558,
+      "vpin": 0.5098
+    },
+    {
+      "bucket_idx": 213,
+      "time_utc": "2026-07-02T01:14:23.203275Z",
+      "timestamp_ns": 1782954863203275000,
+      "vwap": 59928.21,
+      "buy_volume": 1.9465,
+      "sell_volume": 3.0535,
+      "imbalance": 1.107,
+      "vpin": 0.4905
+    },
+    {
+      "bucket_idx": 214,
+      "time_utc": "2026-07-02T01:15:10.952636Z",
+      "timestamp_ns": 1782954910952636000,
+      "vwap": 59932.03,
+      "buy_volume": 3.1296,
+      "sell_volume": 1.8704,
+      "imbalance": 1.2591,
+      "vpin": 0.464
+    },
+    {
+      "bucket_idx": 215,
+      "time_utc": "2026-07-02T01:15:11.778469Z",
+      "timestamp_ns": 1782954911778469000,
+      "vwap": 59950.0,
+      "buy_volume": 0.0033,
+      "sell_volume": 4.9967,
+      "imbalance": 4.9933,
+      "vpin": 0.4642
+    },
+    {
+      "bucket_idx": 216,
+      "time_utc": "2026-07-02T01:15:11.778709Z",
+      "timestamp_ns": 1782954911778709000,
+      "vwap": 59950.0,
+      "buy_volume": 0.0,
+      "sell_volume": 5.0,
+      "imbalance": 5.0,
+      "vpin": 0.5039
+    },
+    {
+      "bucket_idx": 217,
+      "time_utc": "2026-07-02T01:15:34.502488Z",
+      "timestamp_ns": 1782954934502488000,
+      "vwap": 59943.67,
+      "buy_volume": 0.5264,
+      "sell_volume": 4.4736,
+      "imbalance": 3.9472,
+      "vpin": 0.515
+    },
+    {
+      "bucket_idx": 218,
+      "time_utc": "2026-07-02T01:16:29.730723Z",
+      "timestamp_ns": 1782954989730723000,
+      "vwap": 59936.23,
+      "buy_volume": 2.0116,
+      "sell_volume": 2.9884,
+      "imbalance": 0.9769,
+      "vpin": 0.4971
+    },
+    {
+      "bucket_idx": 219,
+      "time_utc": "2026-07-02T01:17:15.565019Z",
+      "timestamp_ns": 1782955035565019000,
+      "vwap": 59924.39,
+      "buy_volume": 2.373,
+      "sell_volume": 2.627,
+      "imbalance": 0.2541,
+      "vpin": 0.4591
+    },
+    {
+      "bucket_idx": 220,
+      "time_utc": "2026-07-02T01:17:24.472521Z",
+      "timestamp_ns": 1782955044472521000,
+      "vwap": 59905.73,
+      "buy_volume": 2.0372,
+      "sell_volume": 2.9628,
+      "imbalance": 0.9256,
+      "vpin": 0.4623
+    },
+    {
+      "bucket_idx": 221,
+      "time_utc": "2026-07-02T01:18:11.644070Z",
+      "timestamp_ns": 1782955091644070000,
+      "vwap": 59862.61,
+      "buy_volume": 1.7963,
+      "sell_volume": 3.2037,
+      "imbalance": 1.4073,
+      "vpin": 0.4554
+    }
+  ],
+  "summary": {
+    "mean_vpin": 0.5922,
+    "median_vpin": 0.5786,
+    "p90_vpin": 0.7428,
+    "p95_vpin": 0.8039,
+    "p99_vpin": 0.8759,
+    "max_vpin": 0.9015,
+    "min_vpin": 0.389,
+    "regime": "SEVERE_TOXIC_TSUNAMI",
+    "toxic_bucket_count": 197,
+    "total_valid_buckets": 197,
+    "cdf_distribution": [
+      {
+        "percentile": 10,
+        "vpin_threshold": 0.4598
+      },
+      {
+        "percentile": 25,
+        "vpin_threshold": 0.5072
+      },
+      {
+        "percentile": 50,
+        "vpin_threshold": 0.5786
+      },
+      {
+        "percentile": 75,
+        "vpin_threshold": 0.6544
+      },
+      {
+        "percentile": 90,
+        "vpin_threshold": 0.7428
+      },
+      {
+        "percentile": 95,
+        "vpin_threshold": 0.8039
+      },
+      {
+        "percentile": 99,
+        "vpin_threshold": 0.8759
+      }
+    ]
+  },
+  "date": "2026-07-02",
+  "symbol": "BTCUSDT"
+}
